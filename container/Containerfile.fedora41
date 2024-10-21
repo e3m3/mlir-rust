@@ -1,0 +1,38 @@
+# Copyright 2024, Giordano Salvador
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM registry.fedoraproject.org/fedora:41
+
+LABEL maintainer="Giordano Salvador <73959795+e3m3@users.noreply.github.com>"
+USER root
+
+ENV HOME=/root
+RUN mkdir -p ${HOME}
+
+ENV TERM=xterm-256color
+ENV PROJECT_DIR=${HOME}/project
+ENV CARGO_ENV=${HOME}/.cargo/env
+
+RUN dnf upgrade -y
+RUN dnf install -y gcc llvm llvm-devel mlir mlir-devel clang clang-devel rustup
+RUN dnf clean -y all
+
+ENV RUST_CHANNEL=stable
+
+RUN rustup-init -y
+RUN source ${CARGO_ENV}  &&  rustup toolchain install ${RUST_CHANNEL}
+RUN source ${CARGO_ENV}  &&  rustup override set ${RUST_CHANNEL}
+
+RUN mkdir -p ${PROJECT_DIR}
+RUN mkdir -p ${PROJECT_DIR}/src
+
+COPY Cargo.toml             ${PROJECT_DIR}/
+COPY rust-toolchain.toml    ${PROJECT_DIR}/
+COPY LICENSE                ${PROJECT_DIR}/
+COPY README.md              ${PROJECT_DIR}/
+COPY src                    ${PROJECT_DIR}/src/
+
+ARG BUILD_MODE=
+
+WORKDIR ${PROJECT_DIR}
+RUN source ${CARGO_ENV}  &&  cargo build --verbose ${BUILD_MODE}
