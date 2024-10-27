@@ -24,9 +24,9 @@ use crate::types;
 
 use exit_code::exit;
 use exit_code::ExitCode;
+use ir::Shape;
 use ir::Type;
 use types::IRType;
-use types::Shape;
 
 #[derive(Clone)]
 pub struct Shaped(MlirType);

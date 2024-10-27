@@ -14,6 +14,17 @@ use mlir::mlirAttributeGetTypeID;
 use mlir::mlirAttributeIsAAffineMap;
 use mlir::mlirAttributeIsAArray;
 use mlir::mlirAttributeIsABool;
+use mlir::mlirAttributeIsADenseBoolArray;
+use mlir::mlirAttributeIsADenseF32Array;
+use mlir::mlirAttributeIsADenseF64Array;
+use mlir::mlirAttributeIsADenseI8Array;
+use mlir::mlirAttributeIsADenseI16Array;
+use mlir::mlirAttributeIsADenseI32Array;
+use mlir::mlirAttributeIsADenseI64Array;
+use mlir::mlirAttributeIsADenseElements;
+use mlir::mlirAttributeIsADenseFPElements;
+use mlir::mlirAttributeIsADenseIntElements;
+use mlir::mlirAttributeIsADenseResourceElements;
 use mlir::mlirAttributeIsADictionary;
 use mlir::mlirAttributeIsAElements;
 use mlir::mlirAttributeIsAFlatSymbolRef;
@@ -22,6 +33,8 @@ use mlir::mlirAttributeIsAInteger;
 use mlir::mlirAttributeIsAIntegerSet;
 use mlir::mlirAttributeIsALocation;
 use mlir::mlirAttributeIsAOpaque;
+use mlir::mlirAttributeIsASparseElements;
+use mlir::mlirAttributeIsAStridedLayout;
 use mlir::mlirAttributeIsAString;
 use mlir::mlirAttributeIsASymbolRef;
 use mlir::mlirAttributeIsAType;
@@ -61,6 +74,11 @@ use mlir::mlirIdentifierEqual;
 use mlir::mlirIdentifierGet;
 use mlir::mlirIdentifierGetContext;
 use mlir::mlirIdentifierStr;
+use mlir::mlirIntegerSetDump;
+use mlir::mlirIntegerSetEqual;
+use mlir::mlirIntegerSetEmptyGet;
+use mlir::mlirIntegerSetGet;
+use mlir::mlirIntegerSetGetContext;
 use mlir::mlirLocationCallSiteGet;
 use mlir::mlirLocationEqual;
 use mlir::mlirLocationFromAttribute;
@@ -137,12 +155,14 @@ use mlir::mlirTypeParseGet;
 use mlir::mlirTypeIDCreate;
 use mlir::mlirTypeIDEqual;
 use mlir::mlirTypeIDHashValue;
+use mlir::MlirAffineExpr;
 use mlir::MlirAttribute;
 use mlir::MlirBlock;
 use mlir::MlirContext;
 use mlir::MlirDialect;
 use mlir::MlirDialectRegistry;
 use mlir::MlirIdentifier;
+use mlir::MlirIntegerSet;
 use mlir::MlirLocation;
 use mlir::MlirLogicalResult;
 use mlir::MlirModule;
@@ -164,14 +184,21 @@ use std::ffi::CString;
 use std::str::FromStr;
 
 use crate::attributes;
+use crate::dialects;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::types;
 
 use attributes::IRAttribute;
+use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
 use types::IRType;
+
+pub trait Shape {
+    fn rank(&self) -> usize;
+    fn get(&self) -> &[u64];
+}
 
 #[derive(Clone)]
 pub struct Attribute(MlirAttribute);
@@ -187,6 +214,9 @@ pub struct Dialect(MlirDialect);
 
 #[derive(Clone)]
 pub struct Identifier(MlirIdentifier);
+
+#[derive(Clone)]
+pub struct IntegerSet(MlirIntegerSet);
 
 #[derive(Clone)]
 pub struct Location(MlirLocation);
@@ -213,7 +243,7 @@ pub struct Registry(MlirDialectRegistry);
 
 #[derive(Clone)]
 pub struct StringCallback(MlirStringCallback);
-pub type StringCallbackRaw = unsafe extern "C" fn(arg1: MlirStringRef, arg2: *mut c_void);
+pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
 #[derive(Clone)]
 pub struct StringRef(MlirStringRef);
@@ -285,8 +315,56 @@ impl Attribute {
         do_unsafe!(mlirAttributeIsABool(self.0))
     }
 
+    pub fn is_dense_array_bool(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseBoolArray(self.0))
+    }
+
+    pub fn is_dense_array_f32(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseF32Array(self.0))
+    }
+
+    pub fn is_dense_array_f64(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseF64Array(self.0))
+    }
+
+    pub fn is_dense_array_i8(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseI8Array(self.0))
+    }
+
+    pub fn is_dense_array_i16(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseI16Array(self.0))
+    }
+
+    pub fn is_dense_array_i32(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseI32Array(self.0))
+    }
+
+    pub fn is_dense_array_i64(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseI64Array(self.0))
+    }
+
+    pub fn is_dense_elements(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseElements(self.0))
+    }
+
+    pub fn is_dense_elements_float(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseFPElements(self.0))
+    }
+
+    pub fn is_dense_elements_int(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseIntElements(self.0))
+    }
+
+    pub fn is_dense_elements_resource(&self) -> bool {
+        do_unsafe!(mlirAttributeIsADenseResourceElements(self.0))
+    }
+
     pub fn is_dictionary(&self) -> bool {
         do_unsafe!(mlirAttributeIsADictionary(self.0))
+    }
+
+    pub fn is_elements(&self) -> bool {
+        do_unsafe!(mlirAttributeIsAElements(self.0))
     }
 
     pub fn is_flat_symbol_ref(&self) -> bool {
@@ -295,10 +373,6 @@ impl Attribute {
 
     pub fn is_float(&self) -> bool {
         do_unsafe!(mlirAttributeIsAFloat(self.0))
-    }
-
-    pub fn is_elements(&self) -> bool {
-        do_unsafe!(mlirAttributeIsAElements(self.0))
     }
 
     pub fn is_integer(&self) -> bool {
@@ -315,6 +389,14 @@ impl Attribute {
 
     pub fn is_opaque(&self) -> bool {
         do_unsafe!(mlirAttributeIsAOpaque(self.0))
+    }
+
+    pub fn is_sparse_elements(&self) -> bool {
+        do_unsafe!(mlirAttributeIsASparseElements(self.0))
+    }
+
+    pub fn is_strided_layout(&self) -> bool {
+        do_unsafe!(mlirAttributeIsAStridedLayout(self.0))
     }
 
     pub fn is_string(&self) -> bool {
@@ -576,6 +658,54 @@ impl Identifier {
 impl cmp::PartialEq for Identifier {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirIdentifierEqual(self.0, rhs.0))
+    }
+}
+
+impl IntegerSet {
+    pub fn new(
+        context: &Context,
+        num_dims: isize,
+        num_syms: isize,
+        constraints: &[affine::Expr],
+        flags: &[bool],
+    ) -> Self {
+        let c_len = constraints.len();
+        let f_len = flags.len();
+        if c_len != f_len {
+            eprintln!("Mismatched constraints ('{}') and flags ('{}') sizes", c_len, f_len);
+            exit(ExitCode::IRError);
+        }
+        let c: Vec<MlirAffineExpr> = constraints.iter().map(|e| *e.get()).collect();
+        Self::from(do_unsafe!(mlirIntegerSetGet(
+            *context.get(),
+            num_dims,
+            num_syms,
+            c_len as isize,
+            c.as_ptr(),
+            flags.as_ptr(),
+        )))
+    }
+
+    pub fn new_empty(context: &Context, num_dims: isize, num_syms: isize) -> Self {
+        Self::from(do_unsafe!(mlirIntegerSetEmptyGet(*context.get(), num_dims, num_syms)))
+    }
+
+    pub fn from(set: MlirIntegerSet) -> Self {
+        IntegerSet(set)
+    }
+
+    pub fn dump(&self) -> () {
+        do_unsafe!(mlirIntegerSetDump(self.0))
+    }
+
+    pub fn get_context(&self) -> Context {
+        Context::from(do_unsafe!(mlirIntegerSetGetContext(self.0)))
+    }
+}
+
+impl cmp::PartialEq for IntegerSet {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirIntegerSetEqual(self.0, rhs.0))
     }
 }
 
@@ -934,7 +1064,7 @@ impl StringCallback {
         StringCallback(callback)
     }
 
-    pub fn from_raw(callback: StringCallbackRaw) -> Self {
+    pub fn from_fn(callback: StringCallbackFn) -> Self {
         Self::from(Some(callback))
     }
 

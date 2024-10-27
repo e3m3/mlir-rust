@@ -145,6 +145,10 @@ impl Binary {
         Binary(expr, op)
     }
 
+    pub fn get(&self) -> &MlirAffineExpr {
+        &self.0
+    }
+
     pub fn get_op(&self) -> BinOp {
         self.1
     }
@@ -174,6 +178,10 @@ impl Constant {
         Constant(expr)
     }
 
+    pub fn get(&self) -> &MlirAffineExpr {
+        &self.0
+    }
+
     pub fn get_value(&self) -> i64 {
         do_unsafe!(mlirAffineConstantExprGetValue(self.0))
     }
@@ -193,6 +201,10 @@ impl Dim {
             exit(ExitCode::DialectError);
         }
         Dim(expr)
+    }
+
+    pub fn get(&self) -> &MlirAffineExpr {
+        &self.0
     }
 
     pub fn get_position(&self) -> isize {
@@ -256,6 +268,10 @@ impl Expr {
 
     pub fn dump(&self) -> () {
         do_unsafe!(mlirAffineExprDump(self.0))
+    }
+
+    pub fn get(&self) -> &MlirAffineExpr {
+        &self.0
     }
 
     pub fn get_context(&self) -> Context {
@@ -498,6 +514,10 @@ impl Symbol {
         Symbol(expr)
     }
 
+    pub fn get(&self) -> &MlirAffineExpr {
+        &self.0
+    }
+
     pub fn get_position(&self) -> isize {
         do_unsafe!(mlirAffineSymbolExprGetPosition(self.0))
     }
@@ -509,7 +529,7 @@ impl AffineExpr for Binary {
     }
 
     fn get(&self) -> &MlirAffineExpr {
-        &self.0
+        self.get()
     }
 }
 
@@ -519,7 +539,7 @@ impl AffineExpr for Constant {
     }
 
     fn get(&self) -> &MlirAffineExpr {
-        &self.0
+        self.get()
     }
 }
 
@@ -529,7 +549,7 @@ impl AffineExpr for Dim {
     }
 
     fn get(&self) -> &MlirAffineExpr {
-        &self.0
+        self.get()
     }
 }
 
@@ -539,7 +559,7 @@ impl AffineExpr for Expr {
     }
 
     fn get(&self) -> &MlirAffineExpr {
-        &self.0
+        self.get()
     }
 }
 
@@ -549,7 +569,7 @@ impl AffineExpr for Symbol {
     }
 
     fn get(&self) -> &MlirAffineExpr {
-        &self.0
+        self.get()
     }
 }
 

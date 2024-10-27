@@ -27,11 +27,11 @@ use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
 use ir::Location;
+use ir::Shape;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
 use types::shaped::Shaped;
-use types::Shape;
 
 #[derive(Clone)]
 pub struct MemRef(MlirType);

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
-#![allow(non_camel_case_types)]
-#![allow(non_snake_case)]
 
 extern crate mlir_sys as mlir;
 
@@ -63,33 +61,33 @@ pub struct Float(MlirType, Layout);
 
 #[derive(Clone,Copy,PartialEq)]
 pub enum Layout {
-    f8E5M2,
-    f8E4M3,
-    f8E4M3FN,
-    f8E5M2FNUZ,
-    f8E4M3FNUZ,
-    f8E4M3B11FNUZ,
-    bf16,
-    f16,
-    f32,
-    f64,
-    tf32,
+    F8E5M2,
+    F8E4M3,
+    F8E4M3FN,
+    F8E5M2FNUZ,
+    F8E4M3FNUZ,
+    F8E4M3B11FNUZ,
+    BF16,
+    F16,
+    F32,
+    F64,
+    TF32,
 }
 
 impl Float {
     pub fn new(context: &Context, layout: Layout) -> Self {
         let t = do_unsafe!(match layout {
-            Layout::f8E5M2          => mlirFloat8E5M2TypeGet(*context.get()),
-            Layout::f8E4M3          => mlirFloat8E4M3TypeGet(*context.get()),
-            Layout::f8E4M3FN        => mlirFloat8E4M3FNTypeGet(*context.get()),
-            Layout::f8E5M2FNUZ      => mlirFloat8E5M2FNUZTypeGet(*context.get()),
-            Layout::f8E4M3FNUZ      => mlirFloat8E4M3FNUZTypeGet(*context.get()),
-            Layout::f8E4M3B11FNUZ   => mlirFloat8E4M3B11FNUZTypeGet(*context.get()),
-            Layout::bf16            => mlirBF16TypeGet(*context.get()),
-            Layout::f16             => mlirF16TypeGet(*context.get()),
-            Layout::f32             => mlirF32TypeGet(*context.get()),
-            Layout::f64             => mlirF64TypeGet(*context.get()),
-            Layout::tf32            => mlirTF32TypeGet(*context.get()),
+            Layout::F8E5M2          => mlirFloat8E5M2TypeGet(*context.get()),
+            Layout::F8E4M3          => mlirFloat8E4M3TypeGet(*context.get()),
+            Layout::F8E4M3FN        => mlirFloat8E4M3FNTypeGet(*context.get()),
+            Layout::F8E5M2FNUZ      => mlirFloat8E5M2FNUZTypeGet(*context.get()),
+            Layout::F8E4M3FNUZ      => mlirFloat8E4M3FNUZTypeGet(*context.get()),
+            Layout::F8E4M3B11FNUZ   => mlirFloat8E4M3B11FNUZTypeGet(*context.get()),
+            Layout::BF16            => mlirBF16TypeGet(*context.get()),
+            Layout::F16             => mlirF16TypeGet(*context.get()),
+            Layout::F32             => mlirF32TypeGet(*context.get()),
+            Layout::F64             => mlirF64TypeGet(*context.get()),
+            Layout::TF32            => mlirTF32TypeGet(*context.get()),
         });
         Self::from(t, layout)
     }
@@ -112,29 +110,29 @@ impl Float {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        let mut f = Self::from(*t.get(), Layout::f32); // Unused layout
-        if f.is_f8E5M2() {
-            f.1 = Layout::f8E5M2;
-        } else if f.is_f8E4M3() {
-            f.1 = Layout::f8E4M3;
-        } else if f.is_f8E4M3FN() {
-            f.1 = Layout::f8E4M3FN;
-        } else if f.is_f8E5M2FNUZ() {
-            f.1 = Layout::f8E5M2FNUZ;
-        } else if f.is_f8E4M3FNUZ() {
-            f.1 = Layout::f8E4M3FNUZ;
-        } else if f.is_f8E4M3B11FNUZ() {
-            f.1 = Layout::f8E4M3B11FNUZ;
+        let mut f = Self::from(*t.get(), Layout::F32); // Unused layout
+        f.1 = if f.is_f8_e5_m2() {
+            Layout::F8E5M2
+        } else if f.is_f8_e4_m3() {
+            Layout::F8E4M3
+        } else if f.is_f8_e4_m3_fn() {
+            Layout::F8E4M3FN
+        } else if f.is_f8_e5_m2_fnuz() {
+            Layout::F8E5M2FNUZ
+        } else if f.is_f8_e4_m3_fnuz() {
+            Layout::F8E4M3FNUZ
+        } else if f.is_f8_e4_m3_b11_fnuz() {
+            Layout::F8E4M3B11FNUZ
         } else if f.is_bf16() {
-            f.1 = Layout::bf16;
+            Layout::BF16
         } else if f.is_f16() {
-            f.1 = Layout::f16;
+            Layout::F16
         } else if f.is_f32() {
-            f.1 = Layout::f32;
+            Layout::F32
         } else if f.is_f64() {
-            f.1 = Layout::f64;
+            Layout::F64
         } else if f.is_tf32() {
-            f.1 = Layout::tf32;
+            Layout::TF32
         } else {
             eprint!("Unexpected float layout for type: ");
             t.dump();
@@ -154,17 +152,17 @@ impl Float {
 
     pub fn get_type_id(layout: Layout) -> TypeID {
         TypeID::from(do_unsafe!(match layout {
-            Layout::f8E5M2          => mlirFloat8E5M2TypeGetTypeID(),
-            Layout::f8E4M3          => mlirFloat8E4M3TypeGetTypeID(),
-            Layout::f8E4M3FN        => mlirFloat8E4M3FNTypeGetTypeID(),
-            Layout::f8E5M2FNUZ      => mlirFloat8E5M2FNUZTypeGetTypeID(),
-            Layout::f8E4M3FNUZ      => mlirFloat8E4M3FNUZTypeGetTypeID(),
-            Layout::f8E4M3B11FNUZ   => mlirFloat8E4M3B11FNUZTypeGetTypeID(),
-            Layout::bf16            => mlirBFloat16TypeGetTypeID(),
-            Layout::f16             => mlirFloat16TypeGetTypeID(),
-            Layout::f32             => mlirFloat32TypeGetTypeID(),
-            Layout::f64             => mlirFloat64TypeGetTypeID(),
-            Layout::tf32            => mlirFloatTF32TypeGetTypeID(),
+            Layout::F8E5M2          => mlirFloat8E5M2TypeGetTypeID(),
+            Layout::F8E4M3          => mlirFloat8E4M3TypeGetTypeID(),
+            Layout::F8E4M3FN        => mlirFloat8E4M3FNTypeGetTypeID(),
+            Layout::F8E5M2FNUZ      => mlirFloat8E5M2FNUZTypeGetTypeID(),
+            Layout::F8E4M3FNUZ      => mlirFloat8E4M3FNUZTypeGetTypeID(),
+            Layout::F8E4M3B11FNUZ   => mlirFloat8E4M3B11FNUZTypeGetTypeID(),
+            Layout::BF16            => mlirBFloat16TypeGetTypeID(),
+            Layout::F16             => mlirFloat16TypeGetTypeID(),
+            Layout::F32             => mlirFloat32TypeGetTypeID(),
+            Layout::F64             => mlirFloat64TypeGetTypeID(),
+            Layout::TF32            => mlirFloatTF32TypeGetTypeID(),
         }))
     }
 
@@ -174,41 +172,41 @@ impl Float {
 
     pub fn is(&self, layout: Layout) -> bool {
         match layout {
-            Layout::f8E5M2          => self.is_f8E5M2(),
-            Layout::f8E4M3          => self.is_f8E4M3(),
-            Layout::f8E4M3FN        => self.is_f8E4M3FN(),
-            Layout::f8E5M2FNUZ      => self.is_f8E5M2FNUZ(),
-            Layout::f8E4M3FNUZ      => self.is_f8E4M3FNUZ(),
-            Layout::f8E4M3B11FNUZ   => self.is_f8E4M3B11FNUZ(),
-            Layout::bf16            => self.is_bf16(),
-            Layout::f16             => self.is_f16(),
-            Layout::f32             => self.is_f32(),
-            Layout::f64             => self.is_f64(),
-            Layout::tf32            => self.is_tf32(),
+            Layout::F8E5M2          => self.is_f8_e5_m2(),
+            Layout::F8E4M3          => self.is_f8_e4_m3(),
+            Layout::F8E4M3FN        => self.is_f8_e4_m3_fn(),
+            Layout::F8E5M2FNUZ      => self.is_f8_e5_m2_fnuz(),
+            Layout::F8E4M3FNUZ      => self.is_f8_e4_m3_fnuz(),
+            Layout::F8E4M3B11FNUZ   => self.is_f8_e4_m3_b11_fnuz(),
+            Layout::BF16            => self.is_bf16(),
+            Layout::F16             => self.is_f16(),
+            Layout::F32             => self.is_f32(),
+            Layout::F64             => self.is_f64(),
+            Layout::TF32            => self.is_tf32(),
         }
     }
 
-    pub fn is_f8E5M2(&self) -> bool {
+    pub fn is_f8_e5_m2(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E5M2(self.0))
     }
 
-    pub fn is_f8E4M3(&self) -> bool {
+    pub fn is_f8_e4_m3(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E4M3(self.0))
     }
 
-    pub fn is_f8E4M3FN(&self) -> bool {
+    pub fn is_f8_e4_m3_fn(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E4M3FN(self.0))
     }
 
-    pub fn is_f8E5M2FNUZ(&self) -> bool {
+    pub fn is_f8_e5_m2_fnuz(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E5M2FNUZ(self.0))
     }
 
-    pub fn is_f8E4M3FNUZ(&self) -> bool {
+    pub fn is_f8_e4_m3_fnuz(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E4M3FNUZ(self.0))
     }
 
-    pub fn is_f8E4M3B11FNUZ(&self) -> bool {
+    pub fn is_f8_e4_m3_b11_fnuz(&self) -> bool {
         do_unsafe!(mlirTypeIsAFloat8E4M3B11FNUZ(self.0))
     }
 
@@ -246,17 +244,17 @@ impl IRType for Float {
 impl fmt::Display for Layout {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let s = match self {
-            Layout::f8E5M2          => "f8E5M2",
-            Layout::f8E4M3          => "f8E4M3",
-            Layout::f8E4M3FN        => "f8E4M3FN",
-            Layout::f8E5M2FNUZ      => "f8E5M2FNUZ",
-            Layout::f8E4M3FNUZ      => "f8E4M3FNUZ",
-            Layout::f8E4M3B11FNUZ   => "f8E4M3B11FNUZ",
-            Layout::bf16            => "bf16",
-            Layout::f16             => "f16",
-            Layout::f32             => "f32",
-            Layout::f64             => "f64",
-            Layout::tf32            => "tf32",
+            Layout::F8E5M2          => "f8E5M2",
+            Layout::F8E4M3          => "f8E4M3",
+            Layout::F8E4M3FN        => "f8E4M3FN",
+            Layout::F8E5M2FNUZ      => "f8E5M2FNUZ",
+            Layout::F8E4M3FNUZ      => "f8E4M3FNUZ",
+            Layout::F8E4M3B11FNUZ   => "f8E4M3B11FNUZ",
+            Layout::BF16            => "bf16",
+            Layout::F16             => "f16",
+            Layout::F32             => "f32",
+            Layout::F64             => "f64",
+            Layout::TF32            => "tf32",
         };
         write!(f, "Layout_{}", s)
     }

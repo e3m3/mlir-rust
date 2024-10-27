@@ -20,10 +20,10 @@ use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
 use ir::Location;
+use ir::Shape;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
-use types::Shape;
 use types::shaped::Shaped;
 
 #[derive(Clone)]

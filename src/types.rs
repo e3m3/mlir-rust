@@ -33,11 +33,6 @@ pub trait IRType {
     fn get(&self) -> &MlirType;
 }
 
-pub trait Shape {
-    fn rank(&self) -> usize;
-    fn get(&self) -> Vec<u64>;
-}
-
 impl dyn IRType {
     fn as_type(&self) -> Type {
         Type::from(*self.get())
