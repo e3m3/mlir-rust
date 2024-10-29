@@ -81,6 +81,7 @@ use mlir::mlirIntegerSetGet;
 use mlir::mlirIntegerSetGetContext;
 use mlir::mlirLocationCallSiteGet;
 use mlir::mlirLocationEqual;
+use mlir::mlirLocationFileLineColGet;
 use mlir::mlirLocationFromAttribute;
 use mlir::mlirLocationGetAttribute;
 use mlir::mlirLocationUnknownGet;
@@ -179,6 +180,7 @@ use mlir::MlirValue;
 
 use std::cmp;
 use std::ffi::c_char;
+use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ffi::CString;
 use std::str::FromStr;
@@ -710,6 +712,15 @@ impl cmp::PartialEq for IntegerSet {
 }
 
 impl Location {
+    pub fn new(context: &Context, name: &StringRef, line: usize, col: usize) -> Self {
+        Self::from(do_unsafe!(mlirLocationFileLineColGet(
+            *context.get(),
+            *name.get(),
+            line as c_uint,
+            col as c_uint,
+        )))
+    }
+
     pub fn from(loc: MlirLocation) -> Self {
         Location(loc)
     }
