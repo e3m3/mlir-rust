@@ -197,6 +197,10 @@ use exit_code::exit;
 use exit_code::ExitCode;
 use types::IRType;
 
+pub trait Destroy {
+    fn destroy(&mut self) -> ();
+}
+
 pub trait Shape {
     fn rank(&self) -> usize;
     fn get(&self) -> &[u64];
@@ -579,14 +583,14 @@ impl Default for Context {
     }
 }
 
-impl Drop for Context {
-    fn drop(&mut self) -> () {
+impl Destroy for Context {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirContextDestroy(self.0))
     }
 }
 
-impl Drop for Block {
-    fn drop(&mut self) -> () {
+impl Destroy for Block {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirBlockDestroy(self.0))
     }
 }
@@ -796,8 +800,8 @@ impl Default for Module {
     }
 }
 
-impl Drop for Module {
-    fn drop(&mut self) -> () {
+impl Destroy for Module {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirModuleDestroy(self.0))
     }
 }
@@ -986,8 +990,8 @@ impl Default for Region {
     }
 }
 
-impl Drop for Region {
-    fn drop(&mut self) -> () {
+impl Destroy for Region {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirRegionDestroy(self.0))
     }
 }
@@ -1064,8 +1068,8 @@ impl Default for Registry {
     }
 }
 
-impl Drop for Registry {
-    fn drop(&mut self) -> () {
+impl Destroy for Registry {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirDialectRegistryDestroy(self.0))
     }
 }
@@ -1118,7 +1122,7 @@ impl FromStr for StringRef {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c_string = CString::new(format!("{}\0", s)).expect("Conversion to CString");
+        let c_string = CString::new(format!("{}", s)).expect("Conversion to CString");
         let s = do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr() as *const c_char));
         Ok(Self::from(s))
     }
@@ -1146,8 +1150,8 @@ impl SymbolTable {
     }
 }
 
-impl Drop for SymbolTable {
-    fn drop(&mut self) -> () {
+impl Destroy for SymbolTable {
+    fn destroy(&mut self) -> () {
         do_unsafe!(mlirSymbolTableDestroy(self.0))
     }
 }
