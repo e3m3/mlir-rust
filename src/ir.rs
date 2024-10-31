@@ -41,15 +41,26 @@ use mlir::mlirAttributeIsAType;
 use mlir::mlirAttributeIsAUnit;
 use mlir::mlirAttributeParseGet;
 use mlir::mlirBlockAddArgument;
+use mlir::mlirBlockAppendOwnedOperation;
+use mlir::mlirBlockArgumentGetOwner;
+use mlir::mlirBlockArgumentGetArgNumber;
+use mlir::mlirBlockArgumentSetType;
 use mlir::mlirBlockCreate;
 use mlir::mlirBlockDestroy;
+use mlir::mlirBlockDetach;
 use mlir::mlirBlockEqual;
+use mlir::mlirBlockEraseArgument;
 use mlir::mlirBlockGetArgument;
 use mlir::mlirBlockGetFirstOperation;
 use mlir::mlirBlockGetNextInRegion;
 use mlir::mlirBlockGetNumArguments;
+use mlir::mlirBlockGetParentOperation;
 use mlir::mlirBlockGetParentRegion;
 use mlir::mlirBlockGetTerminator;
+use mlir::mlirBlockInsertArgument;
+use mlir::mlirBlockInsertOwnedOperation;
+use mlir::mlirBlockInsertOwnedOperationAfter;
+use mlir::mlirBlockInsertOwnedOperationBefore;
 use mlir::mlirContextCreate;
 use mlir::mlirContextCreateWithRegistry;
 use mlir::mlirContextDestroy;
@@ -88,37 +99,56 @@ use mlir::mlirLocationUnknownGet;
 use mlir::mlirModuleCreateEmpty;
 use mlir::mlirModuleCreateParse;
 use mlir::mlirModuleDestroy;
+use mlir::mlirModuleFromOperation;
 use mlir::mlirModuleGetBody;
 use mlir::mlirModuleGetOperation;
 use mlir::mlirOperationClone;
 use mlir::mlirOperationCreateParse;
 use mlir::mlirOperationDump;
+use mlir::mlirOperationGetBlock;
+use mlir::mlirOperationGetContext;
+use mlir::mlirOperationGetDiscardableAttribute;
 use mlir::mlirOperationGetDiscardableAttributeByName;
 use mlir::mlirOperationGetFirstRegion;
 use mlir::mlirOperationGetInherentAttributeByName;
+use mlir::mlirOperationGetLocation;
 use mlir::mlirOperationGetName;
 use mlir::mlirOperationGetNextInBlock;
+use mlir::mlirOperationGetNumDiscardableAttributes;
+use mlir::mlirOperationGetNumOperands;
 use mlir::mlirOperationGetNumRegions;
+use mlir::mlirOperationGetNumSuccessors;
 use mlir::mlirOperationGetOperand;
 use mlir::mlirOperationGetRegion;
 use mlir::mlirOperationGetResult;
+use mlir::mlirOperationGetSuccessor;
+use mlir::mlirOperationGetTypeID;
+use mlir::mlirOperationHasInherentAttributeByName;
 use mlir::mlirOperationMoveAfter;
 use mlir::mlirOperationMoveBefore;
+use mlir::mlirOperationRemoveDiscardableAttributeByName;
+use mlir::mlirOperationRemoveFromParent;
 use mlir::mlirOperationSetDiscardableAttributeByName;
 use mlir::mlirOperationSetInherentAttributeByName;
 use mlir::mlirOperationSetOperand;
 use mlir::mlirOperationSetOperands;
+use mlir::mlirOperationSetSuccessor;
 use mlir::mlirOperationVerify;
 use mlir::mlirOpOperandGetNextUse;
 use mlir::mlirOpOperandGetOperandNumber;
 use mlir::mlirOpOperandGetValue;
 use mlir::mlirOpOperandIsNull;
 use mlir::mlirOpResultGetOwner;
+use mlir::mlirRegionAppendOwnedBlock;
 use mlir::mlirRegionCreate;
 use mlir::mlirRegionDestroy;
 use mlir::mlirRegionEqual;
 use mlir::mlirRegionGetFirstBlock;
 use mlir::mlirRegionGetNextInOperation;
+use mlir::mlirRegionInsertOwnedBlock;
+use mlir::mlirRegionInsertOwnedBlockAfter;
+use mlir::mlirRegionInsertOwnedBlockBefore;
+use mlir::mlirRegionTakeBody;
 use mlir::mlirRegisterAllPasses;
 use mlir::mlirStringRefCreateFromCString;
 use mlir::mlirSymbolTableCreate;
@@ -192,6 +222,7 @@ use crate::exit_code;
 use crate::types;
 
 use attributes::IRAttribute;
+use attributes::named::Named;
 use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
@@ -459,6 +490,18 @@ impl Block {
         Value::from(do_unsafe!(mlirBlockAddArgument(self.0, *t.get(), *loc.get())))
     }
 
+    pub fn append_operation(&mut self, op: &mut Operation) -> () {
+        do_unsafe!(mlirBlockAppendOwnedOperation(self.0, *op.get()))
+    }
+
+    pub fn detach(&mut self) -> () {
+        do_unsafe!(mlirBlockDetach(self.0))
+    }
+
+    pub fn erase_arg(&mut self, i: usize) -> () {
+        do_unsafe!(mlirBlockEraseArgument(self.0, i as c_uint))
+    }
+
     pub fn get(&self) -> &MlirBlock {
         &self.0
     }
@@ -475,8 +518,28 @@ impl Block {
         Region::from(do_unsafe!(mlirBlockGetParentRegion(self.0)))
     }
 
+    pub fn get_parent_operation(&self) -> Operation {
+        Operation::from(do_unsafe!(mlirBlockGetParentOperation(self.0)))
+    }
+
     pub fn get_terminator(&self) -> Operation {
         Operation::from(do_unsafe!(mlirBlockGetTerminator(self.0)))
+    }
+
+    pub fn insert_arg(&mut self, t: &Type, loc: &Location, i: usize) -> Value {
+        Value::from(do_unsafe!(mlirBlockInsertArgument(self.0, i as isize, *t.get(), *loc.get())))
+    }
+
+    pub fn insert_operation(&mut self, op: &mut Operation, i: usize) -> () {
+        do_unsafe!(mlirBlockInsertOwnedOperation(self.0, i as isize, *op.get()))
+    }
+
+    pub fn insert_operation_after(&mut self, anchor: &Operation, op: &mut Operation) -> () {
+        do_unsafe!(mlirBlockInsertOwnedOperationAfter(self.0, *anchor.get(), *op.get()))
+    }
+
+    pub fn insert_operation_before(&mut self, anchor: &Operation, op: &mut Operation) -> () {
+        do_unsafe!(mlirBlockInsertOwnedOperationBefore(self.0, *anchor.get(), *op.get()))
     }
 
     pub fn iter(&self) -> Operation {
@@ -789,6 +852,10 @@ impl Module {
         Self::from(do_unsafe!(mlirModuleCreateParse(*context.get(), *string.get())))
     }
 
+    pub fn from_operation(op: &Operation) -> Self {
+        Self::from(do_unsafe!(mlirModuleFromOperation(*op.get())))
+    }
+
     pub fn get_body(&self) -> Block {
         Block::from(do_unsafe!(mlirModuleGetBody(self.0)))
     }
@@ -841,8 +908,24 @@ impl Operation {
         Attribute::from(do_unsafe!(mlirOperationGetDiscardableAttributeByName(self.0, *name.get())))
     }
 
+    pub fn get_attribute_discardable_at(&self, i: usize) -> Named {
+        Named::from(do_unsafe!(mlirOperationGetDiscardableAttribute(self.0, i as isize)))
+    }
+
     pub fn get_attribute_inherent(&self, name: &StringRef) -> Attribute {
         Attribute::from(do_unsafe!(mlirOperationGetInherentAttributeByName(self.0, *name.get())))
+    }
+
+    pub fn get_block(&self) -> Block {
+        Block::from(do_unsafe!(mlirOperationGetBlock(self.0)))
+    }
+
+    pub fn get_context(&self) -> Context {
+        Context::from(do_unsafe!(mlirOperationGetContext(self.0)))
+    }
+
+    pub fn get_location(&self) -> Location {
+        Location::from(do_unsafe!(mlirOperationGetLocation(self.0)))
     }
 
     pub fn get_name(&self) -> Identifier {
@@ -867,6 +950,10 @@ impl Operation {
         Value::from(do_unsafe!(mlirOperationGetResult(self.0, i)))
     }
 
+    pub fn get_successor(&self, i: isize) -> Block {
+        Block::from(do_unsafe!(mlirOperationGetSuccessor(self.0, i)))
+    }
+
     pub fn get_symbol_table(&self) -> Option<SymbolTable> {
         let table = do_unsafe!(mlirSymbolTableCreate(self.0));
         if table.ptr.is_null() {
@@ -874,6 +961,14 @@ impl Operation {
         } else {
             Some(SymbolTable::from(table))
         }
+    }
+
+    pub fn get_type_id(&self) -> TypeID {
+        TypeID::from(do_unsafe!(mlirOperationGetTypeID(self.0)))
+    }
+
+    pub fn has_attribute_inherent(&self, name: &StringRef) -> bool {
+        do_unsafe!(mlirOperationHasInherentAttributeByName(self.0, *name.get()))
     }
 
     pub fn insert_after(&mut self, other: &Self) -> () {
@@ -888,8 +983,28 @@ impl Operation {
         Region::from(do_unsafe!(mlirOperationGetFirstRegion(self.0)))
     }
 
+    pub fn num_attributes_discardable(&self) -> isize {
+        do_unsafe!(mlirOperationGetNumDiscardableAttributes(self.0))
+    }
+
+    pub fn num_operands(&self) -> isize {
+        do_unsafe!(mlirOperationGetNumOperands(self.0))
+    }
+
     pub fn num_regions(&self) -> isize {
         do_unsafe!(mlirOperationGetNumRegions(self.0))
+    }
+
+    pub fn num_successors(&self) -> isize {
+        do_unsafe!(mlirOperationGetNumSuccessors(self.0))
+    }
+
+    pub fn remove_attribute_discardable(&mut self, name: &StringRef) -> bool {
+        do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(self.0, *name.get()))
+    }
+
+    pub fn remove_from_parent(&mut self) -> () {
+        do_unsafe!(mlirOperationRemoveFromParent(self.0))
     }
 
     pub fn set_attribute_discardable(&mut self, name: &StringRef, attr: &Attribute) -> () {
@@ -907,6 +1022,10 @@ impl Operation {
     pub fn set_operands(&mut self, values: &[Value]) -> () {
         let v: Vec<MlirValue> = values.iter().map(|v| *v.get()).collect();
         do_unsafe!(mlirOperationSetOperands(self.0, values.len() as isize, v.as_ptr()))
+    }
+
+    pub fn set_successor(&self, i: isize, block: &mut Block) -> () {
+        do_unsafe!(mlirOperationSetSuccessor(self.0, i, *block.get()))
     }
 
     pub fn verify(&self) -> bool {
@@ -975,12 +1094,36 @@ impl Region {
         Self::from(do_unsafe!(mlirRegionCreate()))
     }
 
-    pub fn from(region: MlirRegion) -> Region {
+    pub fn from(region: MlirRegion) -> Self {
         Region(region)
+    }
+
+    pub fn append_block(&mut self, block: &mut Block) -> () {
+        do_unsafe!(mlirRegionAppendOwnedBlock(self.0, *block.get()))
+    }
+
+    pub fn get(&self) -> &MlirRegion {
+        &self.0
+    }
+
+    pub fn insert_block(&mut self, block: &mut Block, i: usize) -> () {
+        do_unsafe!(mlirRegionInsertOwnedBlock(self.0, i as isize, *block.get()))
+    }
+
+    pub fn insert_block_after(&mut self, anchor: &Block, block: &mut Block) -> () {
+        do_unsafe!(mlirRegionInsertOwnedBlockAfter(self.0, *anchor.get(), *block.get()))
+    }
+
+    pub fn insert_block_before(&mut self, anchor: &Block, block: &mut Block) -> () {
+        do_unsafe!(mlirRegionInsertOwnedBlockBefore(self.0, *anchor.get(), *block.get()))
     }
 
     pub fn iter(&self) -> Block {
         Block::from(do_unsafe!(mlirRegionGetFirstBlock(self.0)))
+    }
+
+    pub fn take_body(&mut self, other: &mut Region) -> () {
+        do_unsafe!(mlirRegionTakeBody(self.0, *other.get()))
     }
 }
 
@@ -1122,7 +1265,7 @@ impl FromStr for StringRef {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c_string = CString::new(format!("{}", s)).expect("Conversion to CString");
+        let c_string = CString::new(format!("{}\0", s)).expect("Conversion to CString");
         let s = do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr() as *const c_char));
         Ok(Self::from(s))
     }
@@ -1287,6 +1430,24 @@ impl Value {
         Value(value)
     }
 
+    fn check_argument(&self) -> () {
+        if !self.is_argument() {
+            eprint!("Value is not a block arg: ");
+            self.dump();
+            eprintln!();
+            exit(ExitCode::IRError);
+        }
+    }
+
+    fn check_result(&self) -> () {
+        if !self.is_result() {
+            eprint!("Value is not a result: ");
+            self.dump();
+            eprintln!();
+            exit(ExitCode::IRError);
+        }
+    }
+
     pub fn dump(&self) -> () {
         do_unsafe!(mlirValueDump(self.0))
     }
@@ -1295,7 +1456,18 @@ impl Value {
         &self.0
     }
 
-    pub fn get_owner(&self) -> Operation {
+    pub fn get_arg_owner(&self) -> Block {
+        self.check_argument();
+        Block::from(do_unsafe!(mlirBlockArgumentGetOwner(self.0)))
+    }
+
+    pub fn get_arg_pos(&self) -> isize {
+        self.check_argument();
+        do_unsafe!(mlirBlockArgumentGetArgNumber(self.0))
+    }
+
+    pub fn get_result_owner(&self) -> Operation {
+        self.check_result();
         Operation::from(do_unsafe!(mlirOpResultGetOwner(self.0)))
     }
 
@@ -1317,6 +1489,11 @@ impl Value {
 
     pub fn iter(&self) -> OpOperand {
         OpOperand::from(do_unsafe!(mlirValueGetFirstUse(self.0)))
+    }
+
+    pub fn set_arg_type(&mut self, t: &Type) -> () {
+        self.check_argument();
+        do_unsafe!(mlirBlockArgumentSetType(self.0, *t.get()))
     }
 
     pub fn set_type(&mut self, t: &Type) -> () {
