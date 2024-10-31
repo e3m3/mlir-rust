@@ -43,12 +43,16 @@ impl Integer {
         Integer(attr)
     }
 
-    fn get(&self) -> &MlirAttribute {
+    pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
     pub fn get_int(&self) -> i64 {
         do_unsafe!(mlirIntegerAttrGetValueInt(self.0))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 
     pub fn get_sint(&self) -> i64 {
@@ -71,5 +75,9 @@ impl IRAttribute for Integer {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

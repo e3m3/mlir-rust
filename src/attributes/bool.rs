@@ -45,6 +45,10 @@ impl Bool {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_value(&self) -> bool {
         do_unsafe!(mlirBoolAttrGetValue(self.0))
     }
@@ -57,5 +61,9 @@ impl IRAttribute for Bool {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

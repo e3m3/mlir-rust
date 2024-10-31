@@ -55,6 +55,10 @@ impl SparseElements {
         Attribute::from(do_unsafe!(mlirSparseElementsAttrGetIndices(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirSparseElementsAttrGetTypeID()))
     }
@@ -71,5 +75,9 @@ impl IRAttribute for SparseElements {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

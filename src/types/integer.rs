@@ -60,8 +60,12 @@ impl Integer {
         Integer(t)
     }
 
-    fn get(&self) -> &MlirType {
+    pub fn get(&self) -> &MlirType {
         &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
     }
 
     pub fn get_width(&self) -> c_uint {
@@ -92,5 +96,9 @@ impl IRType for Integer {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }

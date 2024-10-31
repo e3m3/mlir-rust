@@ -31,6 +31,7 @@ pub mod unranked_tensor;
 pub trait IRType {
     fn as_type(&self) -> Type;
     fn get(&self) -> &MlirType;
+    fn get_mut(&mut self) -> &mut MlirType;
 }
 
 impl dyn IRType {

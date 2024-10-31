@@ -51,6 +51,10 @@ impl Array {
         Attribute::from(do_unsafe!(mlirArrayAttrGetElement(self.0, i)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirArrayAttrGetTypeID()))
     }
@@ -67,5 +71,9 @@ impl IRAttribute for Array {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

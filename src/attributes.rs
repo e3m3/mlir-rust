@@ -36,6 +36,7 @@ pub mod unit;
 pub trait IRAttribute {
     fn as_attribute(&self) -> Attribute;
     fn get(&self) -> &MlirAttribute;
+    fn get_mut(&mut self) -> &mut MlirAttribute;
 }
 
 impl dyn IRAttribute {

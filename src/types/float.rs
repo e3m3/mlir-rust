@@ -150,6 +150,10 @@ impl Float {
         self.1
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_type_id(layout: Layout) -> TypeID {
         TypeID::from(do_unsafe!(match layout {
             Layout::F8E5M2          => mlirFloat8E5M2TypeGetTypeID(),
@@ -238,6 +242,10 @@ impl IRType for Float {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }
 

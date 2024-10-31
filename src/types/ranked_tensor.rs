@@ -79,6 +79,10 @@ impl RankedTensor {
         Attribute::from(do_unsafe!(mlirRankedTensorTypeGetEncoding(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirRankedTensorTypeGetTypeID()))
     }
@@ -91,5 +95,9 @@ impl IRType for RankedTensor {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }

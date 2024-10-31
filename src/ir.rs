@@ -103,6 +103,7 @@ use mlir::mlirModuleFromOperation;
 use mlir::mlirModuleGetBody;
 use mlir::mlirModuleGetOperation;
 use mlir::mlirOperationClone;
+use mlir::mlirOperationCreate;
 use mlir::mlirOperationCreateParse;
 use mlir::mlirOperationDump;
 use mlir::mlirOperationGetBlock;
@@ -134,6 +135,13 @@ use mlir::mlirOperationSetOperand;
 use mlir::mlirOperationSetOperands;
 use mlir::mlirOperationSetSuccessor;
 use mlir::mlirOperationVerify;
+use mlir::mlirOperationStateAddAttributes;
+use mlir::mlirOperationStateAddOperands;
+use mlir::mlirOperationStateAddOwnedRegions;
+use mlir::mlirOperationStateAddResults;
+use mlir::mlirOperationStateAddSuccessors;
+use mlir::mlirOperationStateEnableResultTypeInference;
+use mlir::mlirOperationStateGet;
 use mlir::mlirOpOperandGetNextUse;
 use mlir::mlirOpOperandGetOperandNumber;
 use mlir::mlirOpOperandGetValue;
@@ -197,8 +205,10 @@ use mlir::MlirIntegerSet;
 use mlir::MlirLocation;
 use mlir::MlirLogicalResult;
 use mlir::MlirModule;
+use mlir::MlirNamedAttribute;
 use mlir::MlirPass;
 use mlir::MlirOperation;
+use mlir::MlirOperationState;
 use mlir::MlirOpOperand;
 use mlir::MlirRegion;
 use mlir::MlirStringCallback;
@@ -270,6 +280,9 @@ pub struct Pass(MlirPass);
 pub struct Operation(MlirOperation);
 
 #[derive(Clone)]
+pub struct OperationState(MlirOperationState);
+
+#[derive(Clone)]
 pub struct OpOperand(MlirOpOperand);
 
 #[derive(Clone)]
@@ -330,6 +343,10 @@ impl Attribute {
 
     pub fn get_dialect(&self) -> Dialect {
         Dialect::from(do_unsafe!(mlirAttributeGetDialect(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 
     pub fn get_type(&self) -> Type {
@@ -469,7 +486,11 @@ impl IRAttribute for Attribute {
     }
 
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }
 
@@ -487,11 +508,11 @@ impl Block {
     }
 
     pub fn add_arg(&mut self, t: &Type, loc: &Location) -> Value {
-        Value::from(do_unsafe!(mlirBlockAddArgument(self.0, *t.get(), *loc.get())))
+        Value::from(do_unsafe!(mlirBlockAddArgument(*self.get_mut(), *t.get(), *loc.get())))
     }
 
     pub fn append_operation(&mut self, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockAppendOwnedOperation(self.0, *op.get()))
+        do_unsafe!(mlirBlockAppendOwnedOperation(*self.get_mut(), *op.get_mut()))
     }
 
     pub fn detach(&mut self) -> () {
@@ -514,6 +535,10 @@ impl Block {
         Value::from(do_unsafe!(mlirBlockGetArgument(self.0, i)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirBlock {
+        &mut self.0
+    }
+
     pub fn get_parent(&self) -> Region {
         Region::from(do_unsafe!(mlirBlockGetParentRegion(self.0)))
     }
@@ -527,19 +552,19 @@ impl Block {
     }
 
     pub fn insert_arg(&mut self, t: &Type, loc: &Location, i: usize) -> Value {
-        Value::from(do_unsafe!(mlirBlockInsertArgument(self.0, i as isize, *t.get(), *loc.get())))
+        Value::from(do_unsafe!(mlirBlockInsertArgument(*self.get_mut(), i as isize, *t.get(), *loc.get())))
     }
 
     pub fn insert_operation(&mut self, op: &mut Operation, i: usize) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperation(self.0, i as isize, *op.get()))
+        do_unsafe!(mlirBlockInsertOwnedOperation(*self.get_mut(), i as isize, *op.get_mut()))
     }
 
     pub fn insert_operation_after(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationAfter(self.0, *anchor.get(), *op.get()))
+        do_unsafe!(mlirBlockInsertOwnedOperationAfter(*self.get_mut(), *anchor.get(), *op.get_mut()))
     }
 
     pub fn insert_operation_before(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationBefore(self.0, *anchor.get(), *op.get()))
+        do_unsafe!(mlirBlockInsertOwnedOperationBefore(*self.get_mut(), *anchor.get(), *op.get_mut()))
     }
 
     pub fn iter(&self) -> Operation {
@@ -624,6 +649,10 @@ impl Context {
         )))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirContext {
+        &mut self.0
+    }
+
     pub fn get_unknown_location(&self) -> Location {
         Location::unknown_from(self)
     }
@@ -691,6 +720,10 @@ impl Dialect {
         Context::from(do_unsafe!(mlirDialectGetContext(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirDialect {
+        &mut self.0
+    }
+
     pub fn get_namespace(&self) -> StringRef {
         StringRef::from(do_unsafe!(mlirDialectGetNamespace(self.0)))
     }
@@ -721,6 +754,10 @@ impl Identifier {
 
     pub fn get_context(&self) -> Context {
         Context::from(do_unsafe!(mlirIdentifierGetContext(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirIdentifier {
+        &mut self.0
     }
 }
 
@@ -804,6 +841,10 @@ impl Location {
         Attribute::from(do_unsafe!(mlirLocationGetAttribute(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirLocation {
+        &mut self.0
+    }
+
     pub fn unknown_from(context: &Context) -> Self {
         Location::from(do_unsafe!(mlirLocationUnknownGet(*context.get())))
     }
@@ -828,6 +869,10 @@ impl LogicalResult {
 
     pub fn get(&self) -> &MlirLogicalResult {
         &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirLogicalResult {
+        &mut self.0
     }
 
     pub fn get_value(&self) -> i8 {
@@ -882,12 +927,20 @@ impl Pass {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirPass {
+        &mut self.0
+    }
+
     pub fn register_all_passes() -> () {
         do_unsafe!(mlirRegisterAllPasses())
     }
 }
 
 impl Operation {
+    pub fn new(state: &mut OperationState) -> Self {
+        Self::from(do_unsafe!(mlirOperationCreate(state.get_mut())))
+    }
+
     pub fn from(op: MlirOperation) -> Self {
         Operation(op)
     }
@@ -926,6 +979,10 @@ impl Operation {
 
     pub fn get_location(&self) -> Location {
         Location::from(do_unsafe!(mlirOperationGetLocation(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
     }
 
     pub fn get_name(&self) -> Identifier {
@@ -972,11 +1029,11 @@ impl Operation {
     }
 
     pub fn insert_after(&mut self, other: &Self) -> () {
-        do_unsafe!(mlirOperationMoveAfter(self.0, other.0))
+        do_unsafe!(mlirOperationMoveAfter(*self.get_mut(), other.0))
     }
 
     pub fn insert_before(&mut self, other: &Self) -> () {
-        do_unsafe!(mlirOperationMoveBefore(self.0, other.0))
+        do_unsafe!(mlirOperationMoveBefore(*self.get_mut(), other.0))
     }
 
     pub fn iter(&self) -> Region {
@@ -1053,6 +1110,57 @@ impl Iterator for Operation {
     }
 }
 
+impl OperationState {
+    pub fn new(name: &StringRef, loc: &Location) -> Self {
+        Self::from(do_unsafe!(mlirOperationStateGet(*name.get(), *loc.get())))
+    }
+
+    pub fn from(state: MlirOperationState) -> Self {
+        OperationState(state)
+    }
+
+    pub fn add_attributes(&mut self, attributes: &[Named]) -> () {
+        let a: Vec<MlirNamedAttribute> = attributes.iter().map(|a| *a.get()).collect();
+        do_unsafe!(mlirOperationStateAddAttributes(self.get_mut(), a.len() as isize, a.as_ptr()))
+    }
+
+    pub fn add_operands(&mut self, operands: &[Value]) -> () {
+        let o: Vec<MlirValue> = operands.iter().map(|o| *o.get()).collect();
+        do_unsafe!(mlirOperationStateAddOperands(self.get_mut(), o.len() as isize, o.as_ptr()))
+    }
+
+    pub fn add_regions(&mut self, regions: &[Region]) -> () {
+        let r: Vec<MlirRegion> = regions.iter().map(|r| *r.get()).collect();
+        do_unsafe!(mlirOperationStateAddOwnedRegions(self.get_mut(), r.len() as isize, r.as_ptr()))
+    }
+
+    pub fn add_results(&mut self, types: &[Type]) -> () {
+        let t: Vec<MlirType> = types.iter().map(|t| *t.get()).collect();
+        do_unsafe!(mlirOperationStateAddResults(self.get_mut(), t.len() as isize, t.as_ptr()))
+    }
+
+    pub fn add_successors(&mut self, successors: &[Block]) -> () {
+        let b: Vec<MlirBlock> = successors.iter().map(|b| *b.get()).collect();
+        do_unsafe!(mlirOperationStateAddSuccessors(self.get_mut(), b.len() as isize, b.as_ptr()))
+    }
+
+    pub fn create_operation(&mut self) -> Operation {
+        Operation::new(self)
+    }
+
+    pub fn get(&self) -> &MlirOperationState {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperationState {
+        &mut self.0
+    }
+
+    pub fn set_infer_result_type(&mut self) -> () {
+        do_unsafe!(mlirOperationStateEnableResultTypeInference(self.get_mut()))
+    }
+}
+
 impl OpOperand {
     pub fn from(op: MlirOpOperand) -> Self {
         OpOperand(op)
@@ -1068,6 +1176,10 @@ impl OpOperand {
 
     pub fn get_index(&self) -> usize {
         do_unsafe!(mlirOpOperandGetOperandNumber(self.0)) as usize
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOpOperand {
+        &mut self.0
     }
 
     pub fn is_null(&self) -> bool {
@@ -1099,23 +1211,27 @@ impl Region {
     }
 
     pub fn append_block(&mut self, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionAppendOwnedBlock(self.0, *block.get()))
+        do_unsafe!(mlirRegionAppendOwnedBlock(*self.get_mut(), *block.get_mut()))
     }
 
     pub fn get(&self) -> &MlirRegion {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirRegion {
+        &mut self.0
+    }
+
     pub fn insert_block(&mut self, block: &mut Block, i: usize) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlock(self.0, i as isize, *block.get()))
+        do_unsafe!(mlirRegionInsertOwnedBlock(*self.get_mut(), i as isize, *block.get_mut()))
     }
 
     pub fn insert_block_after(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockAfter(self.0, *anchor.get(), *block.get()))
+        do_unsafe!(mlirRegionInsertOwnedBlockAfter(*self.get_mut(), *anchor.get(), *block.get_mut()))
     }
 
     pub fn insert_block_before(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockBefore(self.0, *anchor.get(), *block.get()))
+        do_unsafe!(mlirRegionInsertOwnedBlockBefore(*self.get_mut(), *anchor.get(), *block.get_mut()))
     }
 
     pub fn iter(&self) -> Block {
@@ -1172,36 +1288,40 @@ impl Registry {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirDialectRegistry {
+        &mut self.0
+    }
+
     pub fn register_arith(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__arith__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__arith__(), *self.get_mut()))
     }
 
     pub fn register_gpu(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__gpu__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__gpu__(), *self.get_mut()))
     }
 
     pub fn register_linalg(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__linalg__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__linalg__(), *self.get_mut()))
     }
 
     pub fn register_llvm(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__llvm__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__llvm__(), *self.get_mut()))
     }
 
     pub fn register_shape(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__shape__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__shape__(), *self.get_mut()))
     }
 
     pub fn register_spirv(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__spirv__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__spirv__(), *self.get_mut()))
     }
 
     pub fn register_tensor(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__tensor__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__tensor__(), *self.get_mut()))
     }
 
     pub fn register_vector(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__vector__(), self.0))
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__vector__(), *self.get_mut()))
     }
 }
 
@@ -1237,6 +1357,10 @@ impl StringCallback {
     pub fn get(&self) -> &MlirStringCallback {
         &self.0
     }
+
+    pub fn get_mut(&mut self) -> &mut MlirStringCallback {
+        &mut self.0
+    }
 }
 
 impl StringRef {
@@ -1250,6 +1374,10 @@ impl StringRef {
 
     pub fn get(&self) -> &MlirStringRef {
         &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirStringRef {
+        &mut self.0
     }
 
     pub fn is_empty(&self) -> bool {
@@ -1280,12 +1408,16 @@ impl SymbolTable {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirSymbolTable {
+        &mut self.0
+    }
+
     pub fn erase(&mut self, op: &Operation) -> () {
         do_unsafe!(mlirSymbolTableErase(self.0, *op.get()))
     }
 
     pub fn insert(&mut self, op: &Operation) -> Attribute {
-        Attribute::from(do_unsafe!(mlirSymbolTableInsert(self.0, *op.get())))
+        Attribute::from(do_unsafe!(mlirSymbolTableInsert(*self.get_mut(), *op.get())))
     }
 
     pub fn lookup(&self, name: &StringRef) -> Operation {
@@ -1308,12 +1440,12 @@ impl Type {
         Self::from(do_unsafe!(mlirTypeParseGet(*context.get(), *s.get())))
     }
 
-    pub fn get(&self) -> &MlirType {
-        &self.0
-    }
-
     pub fn dump(&self) -> () {
         do_unsafe!(mlirTypeDump(self.0))
+    }
+
+    pub fn get(&self) -> &MlirType {
+        &self.0
     }
 
     pub fn get_context(&self) -> Context {
@@ -1326,6 +1458,10 @@ impl Type {
 
     pub fn get_id(&self) -> TypeID {
         TypeID::from(do_unsafe!(mlirTypeGetTypeID(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
     }
 
     pub fn is_complex(&self) -> bool {
@@ -1391,7 +1527,11 @@ impl IRType for Type {
     }
 
     fn get(&self) -> &MlirType {
-        &self.0
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }
 
@@ -1412,6 +1552,10 @@ impl TypeID {
 
     pub fn get(&self) -> &MlirTypeID {
         &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirTypeID {
+        &mut self.0
     }
 
     pub fn hash(&self) -> usize {
@@ -1464,6 +1608,10 @@ impl Value {
     pub fn get_arg_pos(&self) -> isize {
         self.check_argument();
         do_unsafe!(mlirBlockArgumentGetArgNumber(self.0))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirValue {
+        &mut self.0
     }
 
     pub fn get_result_owner(&self) -> Operation {

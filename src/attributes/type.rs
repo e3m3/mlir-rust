@@ -44,6 +44,10 @@ impl Type {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_type(&self) -> ir::Type {
         ir::Type::from(do_unsafe!(mlirTypeAttrGetValue(self.0)))
     }
@@ -60,5 +64,9 @@ impl IRAttribute for Type {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

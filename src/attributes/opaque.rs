@@ -58,6 +58,10 @@ impl Opaque {
         StringRef::from(do_unsafe!(mlirOpaqueAttrGetData(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_namespace(&self) -> StringRef {
         StringRef::from(do_unsafe!(mlirOpaqueAttrGetDialectNamespace(self.0)))
     }
@@ -74,5 +78,9 @@ impl IRAttribute for Opaque {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

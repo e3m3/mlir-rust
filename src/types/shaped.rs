@@ -73,6 +73,10 @@ impl Shaped {
         Type::from(do_unsafe!(mlirShapedTypeGetElementType(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn is_static(&self) -> bool {
         do_unsafe!(mlirShapedTypeHasStaticShape(self.0))
     }
@@ -116,5 +120,9 @@ impl IRType for Shaped {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }

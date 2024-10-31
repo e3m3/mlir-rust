@@ -59,6 +59,10 @@ impl Dictionary {
         Attribute::from(do_unsafe!(mlirDictionaryAttrGetElementByName(self.0, *name.get())))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirDictionaryAttrGetTypeID()))
     }
@@ -75,5 +79,9 @@ impl IRAttribute for Dictionary {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

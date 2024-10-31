@@ -54,6 +54,10 @@ impl None {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirNoneTypeGetTypeID()))
     }
@@ -66,5 +70,9 @@ impl IRType for None {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }

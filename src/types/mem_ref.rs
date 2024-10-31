@@ -133,12 +133,16 @@ impl MemRef {
         Attribute::from(do_unsafe!(mlirMemRefTypeGetMemorySpace(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_strides_and_offset(&self) -> StridesAndOffset {
         let rank = self.as_shaped().rank().unwrap() as usize;
         let mut strides = vec![0; rank];
         let mut offset = vec![0; rank];
         do_unsafe!(mlirMemRefTypeGetStridesAndOffset(self.0, strides.as_mut_ptr(), offset.as_mut_ptr()));
-        StridesAndOffset::new(strides.into_boxed_slice(), offset.into_boxed_slice())
+        StridesAndOffset::new(&strides, &offset)
     }
 
     pub fn get_type_id() -> TypeID {
@@ -154,15 +158,22 @@ impl IRType for MemRef {
     fn get(&self) -> &MlirType {
         self.get()
     }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
+    }
 }
 
 impl StridesAndOffset {
-    pub fn new(strides: Box<[i64]>, offset: Box<[i64]>) -> Self {
+    pub fn new(strides: &[i64], offset: &[i64]) -> Self {
         if strides.len() != offset.len() {
             eprintln!("Mismatched lengths for strides and offset");
             exit(ExitCode::IRError);
         }
-        StridesAndOffset{strides, offset}
+        StridesAndOffset{
+            strides: strides.to_vec().into_boxed_slice(),
+            offset: offset.to_vec().into_boxed_slice(),
+        }
     }
 
     pub fn get_offset(&self) -> &[i64] {

@@ -118,10 +118,6 @@ impl DenseArray {
         &self.0
     }
 
-    pub fn get_layout(&self) -> Layout {
-        self.1
-    }
-
     pub fn get_element_bool(&self, i: isize) -> bool {
         if self.get_layout() != Layout::Bool {
             eprintln!("Dense array does not hold elements of type bool");
@@ -178,6 +174,14 @@ impl DenseArray {
         do_unsafe!(mlirDenseI64ArrayGetElement(self.0, i))
     }
 
+    pub fn get_layout(&self) -> Layout {
+        self.1
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirDenseArrayAttrGetTypeID()))
     }
@@ -206,6 +210,10 @@ impl IRAttribute for DenseArray {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }
 

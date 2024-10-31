@@ -368,6 +368,10 @@ impl DenseElements {
         self.1
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_raw_data(&self) -> *const c_void {
         do_unsafe!(mlirDenseElementsAttrGetRawData(self.0))
     }
@@ -428,6 +432,10 @@ impl IRAttribute for DenseElements {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }
 

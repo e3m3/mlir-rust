@@ -65,6 +65,10 @@ impl SymbolRef {
         StringRef::from(do_unsafe!(mlirSymbolRefAttrGetLeafReference(self.0)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_nested_reference(&self, i: isize) -> Attribute {
         if i >= self.num_nested_references() || i < 0 {
             eprintln!("Index '{}' out of bounds for nested reference of symbol ref", i);
@@ -102,5 +106,9 @@ impl IRAttribute for SymbolRef {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

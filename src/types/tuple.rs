@@ -57,6 +57,10 @@ impl Tuple {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_type(&self, i: isize) -> Type {
         if i >= self.num_types() || i < 0 {
             eprint!("Index '{}' out of bounds for tuple type: ", i);
@@ -83,5 +87,9 @@ impl IRType for Tuple {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }

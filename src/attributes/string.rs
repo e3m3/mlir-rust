@@ -52,6 +52,10 @@ impl String {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_string(&self) -> StringRef {
         StringRef::from(do_unsafe!(mlirStringAttrGetValue(self.0)))
     }
@@ -68,5 +72,9 @@ impl IRAttribute for String {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

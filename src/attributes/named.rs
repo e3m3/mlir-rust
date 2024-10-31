@@ -36,6 +36,10 @@ impl Named {
     pub fn get_identifier(&self) -> Identifier {
         Identifier::from(self.0.name)
     }
+
+    pub fn get_mut(&mut self) -> &mut MlirNamedAttribute {
+        &mut self.0
+    }
 }
 
 impl IRAttribute for Named {
@@ -45,5 +49,9 @@ impl IRAttribute for Named {
 
     fn get(&self) -> &MlirAttribute {
         &self.0.attribute
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0.attribute
     }
 }

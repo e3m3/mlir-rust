@@ -237,6 +237,10 @@ impl DenseResourceElements {
         self.1
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_u8(&self, i: isize) -> u8 {
         do_unsafe!(mlirDenseUInt8ResourceElementsAttrGetValue(self.0, i))
     }
@@ -261,6 +265,10 @@ impl IRAttribute for DenseResourceElements {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }
 

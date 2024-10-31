@@ -40,6 +40,10 @@ impl Elements {
         &self.0
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
     pub fn get_value(&self, shape: &mut dyn Shape) -> Attribute {
         Attribute::from(do_unsafe!(mlirElementsAttrGetValue(
             self.0,
@@ -68,5 +72,9 @@ impl IRAttribute for Elements {
 
     fn get(&self) -> &MlirAttribute {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }

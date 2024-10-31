@@ -76,6 +76,10 @@ impl Function {
         Type::from(do_unsafe!(mlirFunctionTypeGetInput(self.0, i)))
     }
 
+    pub fn get_mut(&mut self) -> &mut MlirType {
+        &mut self.0
+    }
+
     pub fn get_result(&self, i: isize) -> Type {
         if i >= self.num_results() || i < 0 {
             eprint!("Index '{}' out of bounds for function type result: ", i);
@@ -106,5 +110,9 @@ impl IRType for Function {
 
     fn get(&self) -> &MlirType {
         self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
     }
 }
