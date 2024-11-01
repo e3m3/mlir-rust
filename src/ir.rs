@@ -223,6 +223,8 @@ use std::ffi::c_char;
 use std::ffi::c_uint;
 use std::ffi::c_void;
 use std::ffi::CString;
+use std::fmt;
+use std::mem;
 use std::str::FromStr;
 
 use crate::attributes;
@@ -296,7 +298,7 @@ pub struct StringCallback(MlirStringCallback);
 pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
 #[derive(Clone)]
-pub struct StringRef(MlirStringRef);
+pub struct StringRef(MlirStringRef, CString);
 
 #[derive(Clone)]
 pub struct SymbolTable(MlirSymbolTable);
@@ -1365,15 +1367,35 @@ impl StringCallback {
 
 impl StringRef {
     pub fn from(s: MlirStringRef) -> Self {
-        StringRef(s)
+        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
+        StringRef(s, mem::take(&mut c_string))
+    }
+
+    pub fn from_string(s: &String) -> Self {
+        match Self::from_str(s) {
+            Ok(s_)      => s_,
+            Err(msg)    => {
+                eprintln!("Failed to create string reference from string '{}': {}", s, msg);
+                exit(ExitCode::IRError);
+            },
+        }
     }
 
     pub fn as_ptr(&self) -> *const c_char {
         self.0.data
     }
 
+    pub fn as_ptr_mut(&mut self) -> *mut c_char {
+        self.0.data.cast_mut()
+    }
+
     pub fn get(&self) -> &MlirStringRef {
         &self.0
+    }
+
+    /// Returns the (owned) backing string.
+    pub fn get_string(&self) -> &CString {
+        &self.1
     }
 
     pub fn get_mut(&mut self) -> &mut MlirStringRef {
@@ -1389,13 +1411,28 @@ impl StringRef {
     }
 }
 
+impl fmt::Display for StringRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_empty() {
+            return Ok(());
+        }
+        let s = match self.get_string().to_str() {
+            Ok(s)       => s,
+            Err(msg)    => panic!("Failed to convert CString: {}", msg),
+        };
+        write!(f, "{}", s)
+    }
+}
+
 impl FromStr for StringRef {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c_string = CString::new(s).expect("Conversion to CString");
-        let s = do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr() as *const c_char));
-        Ok(Self::from(s))
+        let mut c_string = CString::new(s).expect("Conversion to CString");
+        Ok(Self(
+            do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr())),
+            mem::take(&mut c_string),
+        ))
     }
 }
 
