@@ -6,6 +6,7 @@
 extern crate mlir_sys as mlir;
 
 use mlir::mlirAttributeDump;
+use mlir::mlirAttributeEqual;
 use mlir::mlirAttributeGetContext;
 use mlir::mlirAttributeGetDialect;
 use mlir::mlirAttributeGetNull;
@@ -106,6 +107,7 @@ use mlir::mlirOperationClone;
 use mlir::mlirOperationCreate;
 use mlir::mlirOperationCreateParse;
 use mlir::mlirOperationDump;
+use mlir::mlirOperationEqual;
 use mlir::mlirOperationGetBlock;
 use mlir::mlirOperationGetContext;
 use mlir::mlirOperationGetDiscardableAttribute;
@@ -159,20 +161,14 @@ use mlir::mlirRegionInsertOwnedBlockBefore;
 use mlir::mlirRegionTakeBody;
 use mlir::mlirRegisterAllPasses;
 use mlir::mlirStringRefCreateFromCString;
+use mlir::mlirStringRefEqual;
 use mlir::mlirSymbolTableCreate;
 use mlir::mlirSymbolTableDestroy;
 use mlir::mlirSymbolTableErase;
 use mlir::mlirSymbolTableInsert;
 use mlir::mlirSymbolTableLookup;
-use mlir::mlirValueDump;
-use mlir::mlirValueEqual;
-use mlir::mlirValueGetFirstUse;
-use mlir::mlirValueGetType;
-use mlir::mlirValueIsABlockArgument;
-use mlir::mlirValueIsAOpResult;
-use mlir::mlirValueReplaceAllUsesOfWith;
-use mlir::mlirValueSetType;
 use mlir::mlirTypeDump;
+use mlir::mlirTypeEqual;
 use mlir::mlirTypeGetContext;
 use mlir::mlirTypeGetDialect;
 use mlir::mlirTypeGetTypeID;
@@ -194,6 +190,14 @@ use mlir::mlirTypeParseGet;
 use mlir::mlirTypeIDCreate;
 use mlir::mlirTypeIDEqual;
 use mlir::mlirTypeIDHashValue;
+use mlir::mlirValueDump;
+use mlir::mlirValueEqual;
+use mlir::mlirValueGetFirstUse;
+use mlir::mlirValueGetType;
+use mlir::mlirValueIsABlockArgument;
+use mlir::mlirValueIsAOpResult;
+use mlir::mlirValueReplaceAllUsesOfWith;
+use mlir::mlirValueSetType;
 use mlir::MlirAffineExpr;
 use mlir::MlirAttribute;
 use mlir::MlirBlock;
@@ -298,7 +302,10 @@ pub struct StringCallback(MlirStringCallback);
 pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
 #[derive(Clone)]
-pub struct StringRef(MlirStringRef, CString);
+pub struct StringBacked(MlirStringRef, CString);
+
+#[derive(Clone)]
+pub struct StringRef(MlirStringRef);
 
 #[derive(Clone)]
 pub struct SymbolTable(MlirSymbolTable);
@@ -496,6 +503,12 @@ impl IRAttribute for Attribute {
     }
 }
 
+impl cmp::PartialEq for Attribute {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirAttributeEqual(self.0, rhs.0))
+    }
+}
+
 impl Block {
     pub fn new(num_args: isize, args: &[Type], locs: &[Location]) -> Self {
         assert!(num_args == args.len() as isize);
@@ -661,7 +674,7 @@ impl Context {
 
     /// Load a registered dialect with name
     pub fn load_dialect(&self, name: &str) -> Option<Dialect> {
-        let string = StringRef::from_str(name).unwrap();
+        let string = StringBacked::from_str(name).unwrap();
         let dialect = do_unsafe!(mlirContextGetOrLoadDialect(self.0, *string.get()));
         if dialect.ptr.is_null() {
             None 
@@ -920,6 +933,12 @@ impl Destroy for Module {
     }
 }
 
+impl cmp::PartialEq for Module {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_operation() == rhs.as_operation()
+    }
+}
+
 impl Pass {
     pub fn from(pass: MlirPass) -> Self {
         Pass(pass)
@@ -1109,6 +1128,12 @@ impl Iterator for Operation {
             self.0 = op;
             Some(op)
         }
+    }
+}
+
+impl cmp::PartialEq for Operation {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirOperationEqual(self.0, rhs.0))
     }
 }
 
@@ -1339,6 +1364,88 @@ impl Destroy for Registry {
     }
 }
 
+impl StringBacked {
+    pub fn from(s: MlirStringRef) -> Self {
+        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
+        StringBacked(s, mem::take(&mut c_string))
+    }
+
+    pub fn from_string(s: &String) -> Self {
+        match Self::from_str(s) {
+            Ok(s_)      => s_,
+            Err(msg)    => {
+                eprintln!("Failed to create backed string from string '{}': {}", s, msg);
+                exit(ExitCode::IRError);
+            },
+        }
+    }
+
+    pub fn as_ptr(&self) -> *const c_char {
+        self.0.data
+    }
+
+    pub fn as_ptr_mut(&mut self) -> *mut c_char {
+        self.0.data.cast_mut()
+    }
+
+    pub fn as_string_ref(&self) -> StringRef {
+        StringRef::from(self.0)
+    }
+
+    pub fn get(&self) -> &MlirStringRef {
+        &self.0
+    }
+
+    /// Returns the (owned) backing string.
+    pub fn get_string(&self) -> &CString {
+        &self.1
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirStringRef {
+        &mut self.0
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl fmt::Display for StringBacked {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_empty() {
+            return Ok(());
+        }
+        let s = match self.get_string().to_str() {
+            Ok(s)       => s,
+            Err(msg)    => panic!("Failed to convert CString: {}", msg),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl FromStr for StringBacked {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut c_string = CString::new(s).expect("Conversion to CString");
+        Ok(Self(
+            do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr())),
+            mem::take(&mut c_string),
+        ))
+    }
+}
+
+impl cmp::PartialEq for StringBacked {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
+    }
+}
+
+
 impl StringCallback {
     pub fn from(callback: MlirStringCallback) -> Self {
         StringCallback(callback)
@@ -1367,18 +1474,7 @@ impl StringCallback {
 
 impl StringRef {
     pub fn from(s: MlirStringRef) -> Self {
-        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
-        StringRef(s, mem::take(&mut c_string))
-    }
-
-    pub fn from_string(s: &String) -> Self {
-        match Self::from_str(s) {
-            Ok(s_)      => s_,
-            Err(msg)    => {
-                eprintln!("Failed to create string reference from string '{}': {}", s, msg);
-                exit(ExitCode::IRError);
-            },
-        }
+        StringRef(s)
     }
 
     pub fn as_ptr(&self) -> *const c_char {
@@ -1391,11 +1487,6 @@ impl StringRef {
 
     pub fn get(&self) -> &MlirStringRef {
         &self.0
-    }
-
-    /// Returns the (owned) backing string.
-    pub fn get_string(&self) -> &CString {
-        &self.1
     }
 
     pub fn get_mut(&mut self) -> &mut MlirStringRef {
@@ -1416,7 +1507,18 @@ impl fmt::Display for StringRef {
         if self.is_empty() {
             return Ok(());
         }
-        let s = match self.get_string().to_str() {
+        let mut v: Vec<u8> = Vec::new();
+        for i in 0..self.len() {
+            let p = do_unsafe!(self.as_ptr().add(i));
+            if !p.is_null() {
+                v.push(do_unsafe!(*p) as u8);
+            }
+        }
+        let c_string = match CString::new(v) {
+            Ok(s)       => s,
+            Err(msg)    => panic!("Failed to create CString: {}", msg),
+        };
+        let s = match c_string.to_str() {
             Ok(s)       => s,
             Err(msg)    => panic!("Failed to convert CString: {}", msg),
         };
@@ -1424,15 +1526,9 @@ impl fmt::Display for StringRef {
     }
 }
 
-impl FromStr for StringRef {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut c_string = CString::new(s).expect("Conversion to CString");
-        Ok(Self(
-            do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr())),
-            mem::take(&mut c_string),
-        ))
+impl cmp::PartialEq for StringRef {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
     }
 }
 
@@ -1569,6 +1665,12 @@ impl IRType for Type {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl cmp::PartialEq for Type {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirTypeEqual(self.0, rhs.0))
     }
 }
 
