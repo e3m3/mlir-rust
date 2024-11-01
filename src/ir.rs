@@ -1393,7 +1393,7 @@ impl FromStr for StringRef {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let c_string = CString::new(format!("{}\0", s)).expect("Conversion to CString");
+        let c_string = CString::new(s).expect("Conversion to CString");
         let s = do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr() as *const c_char));
         Ok(Self::from(s))
     }
