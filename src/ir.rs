@@ -259,6 +259,8 @@ pub struct Attribute(MlirAttribute);
 #[derive(Clone)]
 pub struct Block(MlirBlock);
 
+pub struct BlockIter<'a>(&'a Block, Option<Operation>);
+
 #[derive(Clone)]
 pub struct Context(MlirContext);
 
@@ -285,6 +287,8 @@ pub struct Pass(MlirPass);
 
 pub struct Operation(MlirOperation);
 
+pub struct OperationIter<'a>(&'a Operation, Option<Region>);
+
 #[derive(Clone)]
 pub struct OperationState(MlirOperationState);
 
@@ -293,6 +297,8 @@ pub struct OpOperand(MlirOpOperand);
 
 #[derive(Clone)]
 pub struct Region(MlirRegion);
+
+pub struct RegionIter<'a>(&'a Region, Option<Block>);
 
 #[derive(Clone)]
 pub struct Registry(MlirDialectRegistry);
@@ -318,6 +324,8 @@ pub struct TypeID(MlirTypeID);
 
 #[derive(Clone)]
 pub struct Value(MlirValue);
+
+pub struct ValueIter<'a>(&'a Value, Option<OpOperand>);
 
 impl Attribute {
     pub fn new() -> Self {
@@ -582,12 +590,35 @@ impl Block {
         do_unsafe!(mlirBlockInsertOwnedOperationBefore(*self.get_mut(), *anchor.get(), *op.get_mut()))
     }
 
-    pub fn iter(&self) -> Operation {
-        Operation::from(do_unsafe!(mlirBlockGetFirstOperation(self.0)))
+    pub fn iter(&self) -> BlockIter {
+        BlockIter(self, None)
     }
 
     pub fn num_args(&self) -> isize {
         do_unsafe!(mlirBlockGetNumArguments(self.0))
+    }
+}
+
+impl <'a> Iterator for BlockIter<'a> {
+    type Item = Operation;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None            => {
+                self.1 = Some(Operation::from(do_unsafe!(mlirBlockGetFirstOperation(*self.0.get()))));
+                self.1.clone()
+            },
+            Some(ref mut o) => match o.next() {
+                None        => {
+                    self.1 = None;
+                    None
+                },
+                Some(o_)    => {
+                    self.1 = Some(Operation::from(o_));
+                    self.1.clone()
+                },
+            },
+        }
     }
 }
 
@@ -1057,8 +1088,8 @@ impl Operation {
         do_unsafe!(mlirOperationMoveBefore(*self.get_mut(), other.0))
     }
 
-    pub fn iter(&self) -> Region {
-        Region::from(do_unsafe!(mlirOperationGetFirstRegion(self.0)))
+    pub fn iter(&self) -> OperationIter {
+        OperationIter(self, None)
     }
 
     pub fn num_attributes_discardable(&self) -> isize {
@@ -1134,6 +1165,29 @@ impl Iterator for Operation {
 impl cmp::PartialEq for Operation {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirOperationEqual(self.0, rhs.0))
+    }
+}
+
+impl <'a> Iterator for OperationIter<'a> {
+    type Item = Region;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None            => {
+                self.1 = Some(Region::from(do_unsafe!(mlirOperationGetFirstRegion(*self.0.get()))));
+                self.1.clone()
+            },
+            Some(ref mut r) => match r.next() {
+                None        => {
+                    self.1 = None;
+                    None
+                },
+                Some(r_)    => {
+                    self.1 = Some(Region::from(r_));
+                    self.1.clone()
+                },
+            },
+        }
     }
 }
 
@@ -1261,8 +1315,8 @@ impl Region {
         do_unsafe!(mlirRegionInsertOwnedBlockBefore(*self.get_mut(), *anchor.get(), *block.get_mut()))
     }
 
-    pub fn iter(&self) -> Block {
-        Block::from(do_unsafe!(mlirRegionGetFirstBlock(self.0)))
+    pub fn iter(&self) -> RegionIter {
+        RegionIter(self, None)
     }
 
     pub fn take_body(&mut self, other: &mut Region) -> () {
@@ -1299,6 +1353,29 @@ impl Iterator for Region {
 impl cmp::PartialEq for Region {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirRegionEqual(self.0, rhs.0))
+    }
+}
+
+impl <'a> Iterator for RegionIter<'a> {
+    type Item = Block;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None            => {
+                self.1 = Some(Block::from(do_unsafe!(mlirRegionGetFirstBlock(*self.0.get()))));
+                self.1.clone()
+            },
+            Some(ref mut b) => match b.next() {
+                None        => {
+                    self.1 = None;
+                    None
+                },
+                Some(b_)    => {
+                    self.1 = Some(Block::from(b_));
+                    self.1.clone()
+                },
+            },
+        }
     }
 }
 
@@ -1424,6 +1501,12 @@ impl fmt::Display for StringBacked {
             Err(msg)    => panic!("Failed to convert CString: {}", msg),
         };
         write!(f, "{}", s)
+    }
+}
+
+impl Default for StringBacked {
+    fn default() -> Self {
+        Self::from_string(&String::default())
     }
 }
 
@@ -1774,8 +1857,8 @@ impl Value {
         do_unsafe!(mlirValueIsAOpResult(self.0))
     }
 
-    pub fn iter(&self) -> OpOperand {
-        OpOperand::from(do_unsafe!(mlirValueGetFirstUse(self.0)))
+    pub fn iter(&self) -> ValueIter {
+        ValueIter(self, None)
     }
 
     pub fn set_arg_type(&mut self, t: &Type) -> () {
@@ -1795,5 +1878,28 @@ impl Value {
 impl cmp::PartialEq for Value {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirValueEqual(self.0, rhs.0))
+    }
+}
+
+impl <'a> Iterator for ValueIter<'a> {
+    type Item = OpOperand;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None            => {
+                self.1 = Some(OpOperand::from(do_unsafe!(mlirValueGetFirstUse(*self.0.get()))));
+                self.1.clone()
+            },
+            Some(ref mut o) => match o.next() {
+                None        => {
+                    self.1 = None;
+                    None
+                },
+                Some(o_)    => {
+                    self.1 = Some(OpOperand::from(o_));
+                    self.1.clone()
+                },
+            },
+        }
     }
 }
