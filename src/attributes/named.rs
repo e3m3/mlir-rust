@@ -9,6 +9,8 @@ use mlir::mlirNamedAttributeGet;
 use mlir::MlirAttribute;
 use mlir::MlirNamedAttribute;
 
+use std::cmp;
+
 use crate::attributes;
 use crate::do_unsafe;
 use crate::ir;
@@ -53,5 +55,11 @@ impl IRAttribute for Named {
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0.attribute
+    }
+}
+
+impl cmp::PartialEq for Named {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_attribute() == rhs.as_attribute() && self.get_identifier() == rhs.get_identifier()
     }
 }

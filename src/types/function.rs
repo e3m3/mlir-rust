@@ -31,7 +31,7 @@ pub struct Function(MlirType);
 impl Function {
     pub fn new(context: &Context, inputs: &[Type], results: &[Type]) -> Self {
         let i: Vec<MlirType> = inputs.iter().map(|t| *t.get()).collect();
-        let r: Vec<MlirType> = inputs.iter().map(|t| *t.get()).collect();
+        let r: Vec<MlirType> = results.iter().map(|t| *t.get()).collect();
         Self::from(do_unsafe!(mlirFunctionTypeGet(
             *context.get(),
             inputs.len() as isize,

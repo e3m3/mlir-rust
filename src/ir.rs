@@ -75,6 +75,7 @@ use mlir::mlirDialectRegistryCreate;
 use mlir::mlirDialectRegistryDestroy;
 use mlir::mlirDisctinctAttrCreate;
 use mlir::mlirGetDialectHandle__arith__;
+use mlir::mlirGetDialectHandle__func__;
 use mlir::mlirGetDialectHandle__gpu__;
 use mlir::mlirGetDialectHandle__linalg__;
 use mlir::mlirGetDialectHandle__llvm__;
@@ -106,6 +107,7 @@ use mlir::mlirModuleGetOperation;
 use mlir::mlirOperationClone;
 use mlir::mlirOperationCreate;
 use mlir::mlirOperationCreateParse;
+use mlir::mlirOperationDestroy;
 use mlir::mlirOperationDump;
 use mlir::mlirOperationEqual;
 use mlir::mlirOperationGetBlock;
@@ -120,6 +122,7 @@ use mlir::mlirOperationGetNextInBlock;
 use mlir::mlirOperationGetNumDiscardableAttributes;
 use mlir::mlirOperationGetNumOperands;
 use mlir::mlirOperationGetNumRegions;
+use mlir::mlirOperationGetNumResults;
 use mlir::mlirOperationGetNumSuccessors;
 use mlir::mlirOperationGetOperand;
 use mlir::mlirOperationGetRegion;
@@ -165,8 +168,11 @@ use mlir::mlirStringRefEqual;
 use mlir::mlirSymbolTableCreate;
 use mlir::mlirSymbolTableDestroy;
 use mlir::mlirSymbolTableErase;
+use mlir::mlirSymbolTableGetSymbolAttributeName;
+use mlir::mlirSymbolTableGetVisibilityAttributeName;
 use mlir::mlirSymbolTableInsert;
 use mlir::mlirSymbolTableLookup;
+use mlir::mlirSymbolTableReplaceAllSymbolUses;
 use mlir::mlirTypeDump;
 use mlir::mlirTypeEqual;
 use mlir::mlirTypeGetContext;
@@ -526,6 +532,10 @@ impl Block {
         Self::from(do_unsafe!(mlirBlockCreate(num_args, args_raw.as_ptr(), locs_raw.as_ptr())))
     }
 
+    pub fn new_empty() -> Self {
+        Self::new(0, &[], &[])
+    }
+
     pub fn from(block: MlirBlock) -> Self {
         Block(block)
     }
@@ -599,6 +609,12 @@ impl Block {
     }
 }
 
+impl Default for Block {
+    fn default() -> Self {
+        Self::new_empty()
+    }
+}
+
 impl <'a> Iterator for BlockIter<'a> {
     type Item = Operation;
 
@@ -642,6 +658,13 @@ impl Context {
     pub fn get_dialect_arith(&self) -> Dialect {
         Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
             mlirGetDialectHandle__arith__(),
+            self.0
+        )))
+    }
+
+    pub fn get_dialect_func(&self) -> Dialect {
+        Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
+            mlirGetDialectHandle__func__(),
             self.0
         )))
     }
@@ -782,12 +805,12 @@ impl cmp::PartialEq for Dialect {
 }
 
 impl Identifier {
-    pub fn from(id: MlirIdentifier) -> Self {
-        Identifier(id)
+    pub fn new(context: &Context, s: &StringRef) -> Self {
+        Self::from(do_unsafe!(mlirIdentifierGet(*context.get(), *s.get())))
     }
 
-    pub fn from_string(context: &Context, s: &StringRef) -> Self {
-        Self::from(do_unsafe!(mlirIdentifierGet(*context.get(), *s.get())))
+    pub fn from(id: MlirIdentifier) -> Self {
+        Identifier(id)
     }
 
     pub fn as_string(&self) -> StringRef {
@@ -1104,37 +1127,49 @@ impl Operation {
         do_unsafe!(mlirOperationGetNumRegions(self.0))
     }
 
+    pub fn num_results(&self) -> isize {
+        do_unsafe!(mlirOperationGetNumResults(self.0))
+    }
+
     pub fn num_successors(&self) -> isize {
         do_unsafe!(mlirOperationGetNumSuccessors(self.0))
     }
 
     pub fn remove_attribute_discardable(&mut self, name: &StringRef) -> bool {
-        do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(self.0, *name.get()))
+        do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(*self.get_mut(), *name.get()))
     }
 
     pub fn remove_from_parent(&mut self) -> () {
-        do_unsafe!(mlirOperationRemoveFromParent(self.0))
+        do_unsafe!(mlirOperationRemoveFromParent(*self.get_mut()))
+    }
+
+    pub fn replace_all_symbol_uses(&mut self, sym_old: &StringRef, sym_new: &StringRef) -> LogicalResult {
+        LogicalResult::from(do_unsafe!(mlirSymbolTableReplaceAllSymbolUses(
+            *sym_old.get(),
+            *sym_new.get(),
+            *self.get_mut(),
+        )))
     }
 
     pub fn set_attribute_discardable(&mut self, name: &StringRef, attr: &Attribute) -> () {
-        do_unsafe!(mlirOperationSetDiscardableAttributeByName(self.0, *name.get(), *attr.get()))
+        do_unsafe!(mlirOperationSetDiscardableAttributeByName(*self.get_mut(), *name.get(), *attr.get()))
     }
 
     pub fn set_attribute_inherent(&mut self, name: &StringRef, attr: &Attribute) -> () {
-        do_unsafe!(mlirOperationSetInherentAttributeByName(self.0, *name.get(), *attr.get()))
+        do_unsafe!(mlirOperationSetInherentAttributeByName(*self.get_mut(), *name.get(), *attr.get()))
     }
 
     pub fn set_operand(&mut self, i: isize, value: &Value) -> () {
-        do_unsafe!(mlirOperationSetOperand(self.0, i, *value.get()))
+        do_unsafe!(mlirOperationSetOperand(*self.get_mut(), i, *value.get()))
     }
 
     pub fn set_operands(&mut self, values: &[Value]) -> () {
         let v: Vec<MlirValue> = values.iter().map(|v| *v.get()).collect();
-        do_unsafe!(mlirOperationSetOperands(self.0, values.len() as isize, v.as_ptr()))
+        do_unsafe!(mlirOperationSetOperands(*self.get_mut(), values.len() as isize, v.as_ptr()))
     }
 
-    pub fn set_successor(&self, i: isize, block: &mut Block) -> () {
-        do_unsafe!(mlirOperationSetSuccessor(self.0, i, *block.get()))
+    pub fn set_successor(&mut self, i: isize, block: &mut Block) -> () {
+        do_unsafe!(mlirOperationSetSuccessor(*self.get_mut(), i, *block.get_mut()))
     }
 
     pub fn verify(&self) -> bool {
@@ -1145,6 +1180,12 @@ impl Operation {
 impl Clone for Operation {
     fn clone(&self) -> Operation {
         Operation::from(do_unsafe!(mlirOperationClone(self.0)))
+    }
+}
+
+impl Destroy for Operation {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirOperationDestroy(self.0))
     }
 }
 
@@ -1400,6 +1441,10 @@ impl Registry {
         do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__arith__(), *self.get_mut()))
     }
 
+    pub fn register_func(&mut self) -> () {
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__func__(), *self.get_mut()))
+    }
+
     pub fn register_gpu(&mut self) -> () {
         do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__gpu__(), *self.get_mut()))
     }
@@ -1616,6 +1661,10 @@ impl cmp::PartialEq for StringRef {
 }
 
 impl SymbolTable {
+    pub fn new(op: &Operation) -> Self {
+        Self::from(do_unsafe!(mlirSymbolTableCreate(*op.get())))
+    }
+
     pub fn from(table: MlirSymbolTable) -> Self {
         SymbolTable(table)
     }
@@ -1628,10 +1677,19 @@ impl SymbolTable {
         &mut self.0
     }
 
+    pub fn get_symbol_attribute_name() -> StringRef {
+        StringRef::from(do_unsafe!(mlirSymbolTableGetSymbolAttributeName()))
+    }
+
+    pub fn get_visibility_attribute_name() -> StringRef {
+        StringRef::from(do_unsafe!(mlirSymbolTableGetVisibilityAttributeName()))
+    }
+
     pub fn erase(&mut self, op: &Operation) -> () {
         do_unsafe!(mlirSymbolTableErase(self.0, *op.get()))
     }
 
+    /// Requires: Interface::Symbol
     pub fn insert(&mut self, op: &Operation) -> Attribute {
         Attribute::from(do_unsafe!(mlirSymbolTableInsert(*self.get_mut(), *op.get())))
     }

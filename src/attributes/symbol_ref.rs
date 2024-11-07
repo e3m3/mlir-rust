@@ -15,6 +15,9 @@ use mlir::mlirSymbolRefAttrGetRootReference;
 use mlir::mlirSymbolRefAttrGetTypeID;
 use mlir::MlirAttribute;
 
+use std::cmp;
+use std::fmt;
+
 use crate::attributes;
 use crate::do_unsafe;
 use crate::exit_code;
@@ -99,6 +102,15 @@ impl SymbolRef {
     }
 }
 
+impl fmt::Display for SymbolRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self.get_value() {
+            None    => "".to_string(),
+            Some(s) => s.to_string(),
+        })
+    }
+}
+
 impl IRAttribute for SymbolRef {
     fn as_attribute(&self) -> Attribute {
         Attribute::from(self.0)
@@ -110,5 +122,11 @@ impl IRAttribute for SymbolRef {
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
         self.get_mut()
+    }
+}
+
+impl cmp::PartialEq for SymbolRef {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_attribute() == rhs.as_attribute()
     }
 }

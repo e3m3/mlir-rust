@@ -3,8 +3,11 @@
 
 pub mod attributes;
 pub mod dialects;
+//pub mod effects;
 pub mod exit_code;
+pub mod interfaces;
 pub mod ir;
+pub mod traits;
 pub mod types;
 
 #[macro_export]

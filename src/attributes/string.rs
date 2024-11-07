@@ -11,6 +11,8 @@ use mlir::mlirStringAttrGetTypeID;
 use mlir::mlirStringAttrTypedGet;
 use mlir::MlirAttribute;
 
+use std::fmt;
+
 use crate::attributes;
 use crate::do_unsafe;
 use crate::exit_code;
@@ -62,6 +64,12 @@ impl String {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirStringAttrGetTypeID()))
+    }
+}
+
+impl fmt::Display for String {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.get_string())
     }
 }
 
