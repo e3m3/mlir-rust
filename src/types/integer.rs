@@ -51,7 +51,7 @@ impl Integer {
 
     pub fn from(t: MlirType) -> Self {
         let t_ = Type::from(t);
-        if t_.is_integer() {
+        if !t_.is_integer() {
             eprint!("Cannot coerce type to integer type: ");
             t_.dump();
             eprintln!();

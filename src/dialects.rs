@@ -26,13 +26,11 @@ pub mod func;
 
 /// Interface for dialect operations with trait and interface semantics.
 pub trait DialectOperation {
-    const INTERFACES: &'static [Interface];
-    const TRAITS: &'static [Trait];
     fn as_operation(&self) -> Operation;
     fn get_dialect(&self) -> Dialect;
     fn get_interfaces(&self) -> &'static [Interface];
     fn get_name(&self) -> &'static str;
-    fn get_op(&self) -> impl DialectOp + 'static;
+    fn get_op(&self) -> &'static dyn DialectOp;
     fn get_traits(&self) -> &'static [Trait];
 }
 

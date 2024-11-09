@@ -319,12 +319,9 @@ impl Func {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let mut block = Block::default();
-        let operands: Vec<Value> = (0..t.num_inputs())
+        let _operands: Vec<Value> = (0..t.num_inputs())
             .map(|i| block.add_arg(&t.get_input(i), loc))
             .collect();
-        op_state.add_operands(&operands);
-        let results: Vec<Type> = (0..t.num_results()).map(|i| t.get_result(i)).collect();
-        op_state.add_results(&results);
         let mut attrs: Vec<Named> = Vec::new();
         let sym_name_attr = StringAttr::new(&context, f_name);
         let sym_name_string = StringBacked::from_string(&"sym_name".to_string());
@@ -415,7 +412,7 @@ impl Func {
 }
 
 impl Return {
-    pub fn new(parent: &mut Func, args: &[Value], loc: &Location) -> Self {
+    pub fn new(parent: &Func, args: &[Value], loc: &Location) -> Self {
         let t_f = parent.get_type();
         let num_results = t_f.num_results() as usize;
         let symbol_ref = parent.get_symbol_ref();
@@ -442,7 +439,7 @@ impl Return {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(args);
-        Self::from(*op_state.create_operation().get(), parent.get_symbol_ref())
+        Self::from(*op_state.create_operation().get(), symbol_ref)
     }
 
     pub fn from(op: MlirOperation, parent: SymbolRef) -> Self {
@@ -467,14 +464,6 @@ impl Return {
 ///////////////////////////////
 
 impl DialectOperation for Call {
-    const INTERFACES: &'static [Interface] = &[
-        Interface::CallOpInterface,
-        Interface::SymbolUserOpInterface,
-    ];
-
-    const TRAITS: &'static [Trait] = &[
-        Trait::MemRefsNormalizable,
-    ];
 
     fn as_operation(&self) -> Operation {
         Operation::from(*self.get())
@@ -485,19 +474,24 @@ impl DialectOperation for Call {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        Self::INTERFACES
+        &[
+            Interface::CallOpInterface,
+            Interface::SymbolUserOpInterface,
+        ]
     }
 
     fn get_name(&self) -> &'static str {
         Op::Call.get_name()
     }
 
-    fn get_op(&self) -> impl DialectOp + 'static {
-        Op::Call
+    fn get_op(&self) -> &'static dyn DialectOp {
+        &Op::Call
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        Self::TRAITS
+        &[
+            Trait::MemRefsNormalizable,
+        ]
     }
 }
 
@@ -534,12 +528,6 @@ impl cmp::PartialEq for Callee {
 }
 
 impl DialectOperation for CallIndirect {
-    const INTERFACES: &'static [Interface] = &[
-        Interface::CallOpInterface,
-    ];
-
-    const TRAITS: &'static [Trait] = &[];
-
     fn as_operation(&self) -> Operation {
         Operation::from(*self.get())
     }
@@ -549,19 +537,21 @@ impl DialectOperation for CallIndirect {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        Self::INTERFACES
+        &[
+            Interface::CallOpInterface
+        ]
     }
 
     fn get_name(&self) -> &'static str {
         Op::CallIndirect.get_name()
     }
 
-    fn get_op(&self) -> impl DialectOp + 'static {
-        Op::CallIndirect
+    fn get_op(&self) -> &'static dyn DialectOp {
+        &Op::CallIndirect
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        Self::TRAITS
+        &[]
     }
 }
 
@@ -578,18 +568,6 @@ impl cmp::PartialEq for CallIndirect {
 }
 
 impl DialectOperation for Constant {
-    const INTERFACES: &'static [Interface] = &[
-        Interface::ConditionallySpeculatable,
-        Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
-        Interface::OpAsmOpInterface,
-        Interface::SymbolUserOpInterface,
-    ];
-
-    const TRAITS: &'static [Trait] = &[
-        Trait::AlwaysSpeculatableImplTrait,
-        Trait::ConstantLike,
-    ];
-
     fn as_operation(&self) -> Operation {
         Operation::from(*self.get())
     }
@@ -599,19 +577,27 @@ impl DialectOperation for Constant {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        Self::INTERFACES
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::OpAsmOpInterface,
+            Interface::SymbolUserOpInterface,
+        ]
     }
 
     fn get_name(&self) -> &'static str {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> impl DialectOp + 'static {
-        Op::Constant
+    fn get_op(&self) -> &'static dyn DialectOp {
+        &Op::Constant
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        Self::TRAITS
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ConstantLike,
+        ]
     }
 }
 
@@ -628,19 +614,6 @@ impl cmp::PartialEq for Constant {
 }
 
 impl DialectOperation for Func {
-    const INTERFACES: &'static [Interface] = &[
-        Interface::CallableOpInterface,
-        Interface::FunctionOpInterface,
-        Interface::OpAsmOpInterface,
-        Interface::Symbol,
-    ];
-
-    const TRAITS: &'static [Trait] = &[
-        Trait::AffineScope,
-        Trait::AutomaticAllocationScope,
-        Trait::IsolatedFromAbove,
-    ];
-
     fn as_operation(&self) -> Operation {
         Operation::from(*self.get())
     }
@@ -650,19 +623,28 @@ impl DialectOperation for Func {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        Self::INTERFACES
+        &[
+            Interface::CallableOpInterface,
+            Interface::FunctionOpInterface,
+            Interface::OpAsmOpInterface,
+            Interface::Symbol,
+        ]
     }
 
     fn get_name(&self) -> &'static str {
         Op::Func.get_name()
     }
 
-    fn get_op(&self) -> impl DialectOp + 'static {
-        Op::Func
+    fn get_op(&self) -> &'static dyn DialectOp {
+        &Op::Func
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        Self::TRAITS
+        &[
+            Trait::AffineScope,
+            Trait::AutomaticAllocationScope,
+            Trait::IsolatedFromAbove,
+        ]
     }
 }
 
@@ -681,20 +663,6 @@ impl cmp::PartialEq for Func {
 impl DialectOp for Op {}
 
 impl DialectOperation for Return {
-    const INTERFACES: &'static [Interface] = &[
-        Interface::ConditionallySpeculatable,
-        Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
-        Interface::RegionBranchTerminatorOpInterface,
-    ];
-
-    const TRAITS: &'static [Trait] = &[
-        Trait::AlwaysSpeculatableImplTrait,
-        Trait::HasParent(&Op::Func),
-        Trait::MemRefsNormalizable,
-        Trait::ReturnLike,
-        Trait::Terminator,
-    ];
-
     fn as_operation(&self) -> Operation {
         Operation::from(*self.get())
     }
@@ -704,19 +672,29 @@ impl DialectOperation for Return {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        Self::INTERFACES
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::RegionBranchTerminatorOpInterface,
+        ]
     }
 
     fn get_name(&self) -> &'static str {
         Op::Return.get_name()
     }
 
-    fn get_op(&self) -> impl DialectOp + 'static {
-        Op::Return
+    fn get_op(&self) -> &'static dyn DialectOp {
+        &Op::Return
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        Self::TRAITS
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::HasParent(&Op::Func),
+            Trait::MemRefsNormalizable,
+            Trait::ReturnLike,
+            Trait::Terminator,
+        ]
     }
 }
 
