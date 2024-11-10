@@ -14,24 +14,34 @@ use crate::attributes;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
+use crate::types;
 
 use attributes::IRAttribute;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
-use ir::Context;
 use ir::Location;
-use ir::Type;
+use types::float::Float as FloatType;
+use types::IRType;
 
 #[derive(Clone)]
 pub struct Float(MlirAttribute);
 
 impl Float {
-    pub fn new(context: &Context, t: &Type, value: f64) -> Self {
+    pub fn new(t: &FloatType, value: f64) -> Self {
+        if !t.is_f64() {
+            eprintln!("Only double types are supported for float attributes");
+            exit(ExitCode::IRError);
+        }
+        let context = t.as_type().get_context();
         Self::from(do_unsafe!(mlirFloatAttrDoubleGet(*context.get(), *t.get(), value)))
     }
 
-    pub fn new_checked(t: &Type, value: f64, loc: &Location) -> Self {
+    pub fn new_checked(t: &FloatType, value: f64, loc: &Location) -> Self {
+        if !t.is_f64() {
+            eprintln!("Only double types are supported for float attributes");
+            exit(ExitCode::IRError);
+        }
         Self::from(do_unsafe!(mlirFloatAttrDoubleGetChecked(*loc.get(), *t.get(), value)))
     }
 

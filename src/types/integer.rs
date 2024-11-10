@@ -37,6 +37,10 @@ impl Integer {
         Self::from(do_unsafe!(mlirIntegerTypeGet(*context.get(), width)))
     }
 
+    pub fn new_bool(context: &Context) -> Self {
+        Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), 1)))
+    }
+
     pub fn new_signed(context: &Context, width: c_uint) -> Self {
         Self::from(do_unsafe!(mlirIntegerTypeSignedGet(*context.get(), width)))
     }
@@ -74,6 +78,10 @@ impl Integer {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirIntegerTypeGetTypeID()))
+    }
+
+    pub fn is_bool(&self) -> bool {
+        self.is_unsigned() && self.get_width() == 1 as c_uint
     }
 
     pub fn is_signed(&self) -> bool {

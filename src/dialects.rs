@@ -16,9 +16,10 @@ use ir::Operation;
 use traits::Trait;
 
 pub mod affine;
-//pub mod arith;
+pub mod arith;
 pub mod func;
 //pub mod linalg;
+//pub mod tensor;
 
 ///////////////////////////////
 //  Traits
