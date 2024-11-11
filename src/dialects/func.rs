@@ -26,8 +26,8 @@ use attributes::named::Named;
 use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
-use dialects::DialectOp;
-use dialects::DialectOperation;
+use dialects::IROp;
+use dialects::IROperation;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -39,7 +39,6 @@ use ir::Dialect;
 use ir::Destroy;
 use ir::Identifier;
 use ir::Location;
-use ir::Operation;
 use ir::OperationState;
 use ir::StringBacked;
 use ir::StringRef;
@@ -463,10 +462,15 @@ impl Return {
 //  Trait Implementation
 ///////////////////////////////
 
-impl DialectOperation for Call {
+impl Destroy for Call {
+    fn destroy(&mut self) -> () {
+        self.as_operation().destroy()
+    }
+}
 
-    fn as_operation(&self) -> Operation {
-        Operation::from(*self.get())
+impl IROperation for Call {
+    fn get(&self) -> &MlirOperation {
+        self.get()
     }
 
     fn get_dialect(&self) -> Dialect {
@@ -480,11 +484,15 @@ impl DialectOperation for Call {
         ]
     }
 
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
     fn get_name(&self) -> &'static str {
         Op::Call.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn DialectOp {
+    fn get_op(&self) -> &'static dyn IROp {
         &Op::Call
     }
 
@@ -492,12 +500,6 @@ impl DialectOperation for Call {
         &[
             Trait::MemRefsNormalizable,
         ]
-    }
-}
-
-impl Destroy for Call {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -527,9 +529,15 @@ impl cmp::PartialEq for Callee {
     }
 }
 
-impl DialectOperation for CallIndirect {
-    fn as_operation(&self) -> Operation {
-        Operation::from(*self.get())
+impl Destroy for CallIndirect {
+    fn destroy(&mut self) -> () {
+        self.as_operation().destroy()
+    }
+}
+
+impl IROperation for CallIndirect {
+    fn get(&self) -> &MlirOperation {
+        self.get()
     }
 
     fn get_dialect(&self) -> Dialect {
@@ -542,22 +550,20 @@ impl DialectOperation for CallIndirect {
         ]
     }
 
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
     fn get_name(&self) -> &'static str {
         Op::CallIndirect.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn DialectOp {
+    fn get_op(&self) -> &'static dyn IROp {
         &Op::CallIndirect
     }
 
     fn get_traits(&self) -> &'static [Trait] {
         &[]
-    }
-}
-
-impl Destroy for CallIndirect {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -567,9 +573,15 @@ impl cmp::PartialEq for CallIndirect {
     }
 }
 
-impl DialectOperation for Constant {
-    fn as_operation(&self) -> Operation {
-        Operation::from(*self.get())
+impl Destroy for Constant {
+    fn destroy(&mut self) -> () {
+        self.as_operation().destroy()
+    }
+}
+
+impl IROperation for Constant {
+    fn get(&self) -> &MlirOperation {
+        self.get()
     }
 
     fn get_dialect(&self) -> Dialect {
@@ -585,11 +597,15 @@ impl DialectOperation for Constant {
         ]
     }
 
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
     fn get_name(&self) -> &'static str {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn DialectOp {
+    fn get_op(&self) -> &'static dyn IROp {
         &Op::Constant
     }
 
@@ -601,21 +617,21 @@ impl DialectOperation for Constant {
     }
 }
 
-impl Destroy for Constant {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl cmp::PartialEq for Constant {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_operation() == rhs.as_operation()
     }
 }
 
-impl DialectOperation for Func {
-    fn as_operation(&self) -> Operation {
-        Operation::from(*self.get())
+impl Destroy for Func {
+    fn destroy(&mut self) -> () {
+        self.as_operation().destroy()
+    }
+}
+
+impl IROperation for Func {
+    fn get(&self) -> &MlirOperation {
+        self.get()
     }
 
     fn get_dialect(&self) -> Dialect {
@@ -631,11 +647,15 @@ impl DialectOperation for Func {
         ]
     }
 
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
     fn get_name(&self) -> &'static str {
         Op::Func.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn DialectOp {
+    fn get_op(&self) -> &'static dyn IROp {
         &Op::Func
     }
 
@@ -648,27 +668,27 @@ impl DialectOperation for Func {
     }
 }
 
-impl Destroy for Func {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl cmp::PartialEq for Func {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_operation() == rhs.as_operation()
     }
 }
 
-impl DialectOp for Op {
+impl IROp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
 }
 
-impl DialectOperation for Return {
-    fn as_operation(&self) -> Operation {
-        Operation::from(*self.get())
+impl Destroy for Return {
+    fn destroy(&mut self) -> () {
+        self.as_operation().destroy()
+    }
+}
+
+impl IROperation for Return {
+    fn get(&self) -> &MlirOperation {
+        self.get()
     }
 
     fn get_dialect(&self) -> Dialect {
@@ -683,11 +703,15 @@ impl DialectOperation for Return {
         ]
     }
 
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
     fn get_name(&self) -> &'static str {
         Op::Return.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn DialectOp {
+    fn get_op(&self) -> &'static dyn IROp {
         &Op::Return
     }
 
@@ -699,12 +723,6 @@ impl DialectOperation for Return {
             Trait::ReturnLike,
             Trait::Terminator,
         ]
-    }
-}
-
-impl Destroy for Return {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 

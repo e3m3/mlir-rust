@@ -3,6 +3,10 @@
 
 #![allow(dead_code)]
 
+extern crate mlir_sys as mlir;
+
+use mlir::MlirOperation;
+
 use std::cmp;
 use std::fmt;
 
@@ -26,21 +30,26 @@ pub mod func;
 ///////////////////////////////
 
 /// Interface for dialect operations with trait and interface semantics.
-pub trait DialectOperation {
-    fn as_operation(&self) -> Operation;
+pub trait IROperation {
+    fn get(&self) -> &MlirOperation;
     fn get_dialect(&self) -> Dialect;
     fn get_interfaces(&self) -> &'static [Interface];
+    fn get_mut(&mut self) -> &mut MlirOperation;
     fn get_name(&self) -> &'static str;
-    fn get_op(&self) -> &'static dyn DialectOp;
+    fn get_op(&self) -> &'static dyn IROp;
     fn get_traits(&self) -> &'static [Trait];
+
+    fn as_operation(&self) -> Operation {
+        Operation::from(*self.get())
+    }
 }
 
 /// Interface for printable opcode.
-pub trait DialectOp: fmt::Display {
+pub trait IROp: fmt::Display {
     fn get_name(&self) -> &'static str;
 }
 
-impl cmp::PartialEq for dyn DialectOp {
+impl cmp::PartialEq for dyn IROp {
     fn eq(&self, rhs: &Self) -> bool {
         self.to_string() == rhs.to_string()
     }

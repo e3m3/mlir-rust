@@ -8,7 +8,7 @@ extern crate mlir_sys as mlir;
 use std::fmt;
 
 use crate::dialects;
-use dialects::DialectOp;
+use dialects::IROp;
 
 #[derive(Clone,Copy,PartialEq)]
 pub enum Trait {
@@ -18,7 +18,7 @@ pub enum Trait {
     Commutative,
     ConstantLike,
     ElementWise,
-    HasParent(&'static dyn DialectOp),
+    HasParent(&'static dyn IROp),
     IsolatedFromAbove,
     MemRefsNormalizable,
     ReturnLike,
