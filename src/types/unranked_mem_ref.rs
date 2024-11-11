@@ -36,14 +36,7 @@ impl UnrankedMemRef {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_unranked_mem_ref() {
-            eprint!("Cannot coerce type to unranked mem ref type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        UnrankedMemRef(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -53,7 +46,7 @@ impl UnrankedMemRef {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        UnrankedMemRef(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

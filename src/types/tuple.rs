@@ -33,14 +33,7 @@ impl Tuple {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_tuple() {
-            eprint!("Cannot coerce type to tuple type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Tuple(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -50,7 +43,7 @@ impl Tuple {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Tuple(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

@@ -54,14 +54,17 @@ impl Integer {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_integer() {
+        Self::from_type(&Type::from(t))
+    }
+
+    pub fn from_type(t: &Type) -> Self {
+        if !t.is_integer() {
             eprint!("Cannot coerce type to integer type: ");
-            t_.dump();
+            t.dump();
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Integer(t)
+        Integer(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

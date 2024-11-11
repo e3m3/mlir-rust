@@ -69,14 +69,7 @@ impl Vector {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_vector() {
-            eprint!("Cannot coerce type to vector type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Vector(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -86,7 +79,7 @@ impl Vector {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Vector(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {

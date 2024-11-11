@@ -33,14 +33,7 @@ pub struct Shaped(MlirType);
 
 impl Shaped {
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_shaped() {
-            eprint!("Cannot coerce type to shaped type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Shaped(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -50,7 +43,7 @@ impl Shaped {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Shaped(*t.get())
     }
 
     pub fn dim_size(&self, i: isize) -> i64 {

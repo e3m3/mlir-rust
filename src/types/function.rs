@@ -42,14 +42,7 @@ impl Function {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_function() {
-            eprint!("Cannot coerce type to function type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Function(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -59,7 +52,7 @@ impl Function {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Function(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

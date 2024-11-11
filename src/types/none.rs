@@ -30,14 +30,7 @@ impl None {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_none() {
-            eprint!("Cannot coerce type to none type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        None(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -47,7 +40,7 @@ impl None {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        None(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

@@ -33,14 +33,7 @@ impl Opaque {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_opaque() {
-            eprint!("Cannot coerce type to opaque type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Opaque(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -50,7 +43,7 @@ impl Opaque {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Opaque(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

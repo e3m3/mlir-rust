@@ -89,18 +89,11 @@ impl Float {
             Layout::F64             => mlirF64TypeGet(*context.get()),
             Layout::TF32            => mlirTF32TypeGet(*context.get()),
         });
-        Self::from(t, layout)
+        Float(t, layout)
     }
 
-    pub fn from(t: MlirType, layout: Layout) -> Self {
-        let f = Float(t, layout);
-        if !f.is(layout) {
-            eprint!("Cannot coerce type to float type with layout '{}': ", layout);
-            f.as_type().dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        f
+    pub fn from(t: MlirType) -> Self {
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -110,7 +103,7 @@ impl Float {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        let mut f = Self::from(*t.get(), Layout::F32); // Unused layout
+        let mut f = Float(*t.get(), Layout::F32); // Unused layout
         f.1 = if f.is_f8_e5_m2() {
             Layout::F8E5M2
         } else if f.is_f8_e4_m3() {

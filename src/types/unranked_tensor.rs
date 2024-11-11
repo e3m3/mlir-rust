@@ -35,14 +35,7 @@ impl UnrankedTensor {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_unranked_tensor() {
-            eprint!("Cannot coerce type to unranked tensor type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        UnrankedTensor(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -52,7 +45,7 @@ impl UnrankedTensor {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        UnrankedTensor(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {

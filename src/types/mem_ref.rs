@@ -93,14 +93,7 @@ impl MemRef {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_mem_ref() {
-            eprint!("Cannot coerce type to mem ref type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        MemRef(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -110,7 +103,7 @@ impl MemRef {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        MemRef(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {

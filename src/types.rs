@@ -25,9 +25,10 @@ pub mod opaque;
 pub mod ranked_tensor;
 pub mod shaped;
 pub mod tuple;
-pub mod vector;
+pub mod unit;
 pub mod unranked_mem_ref;
 pub mod unranked_tensor;
+pub mod vector;
 
 pub trait IRType {
     fn get(&self) -> &MlirType;

@@ -250,6 +250,7 @@ use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
 use types::IRType;
+use types::unit::Unit;
 
 pub trait Destroy {
     fn destroy(&mut self) -> ();
@@ -1807,8 +1808,10 @@ impl Type {
         do_unsafe!(mlirTypeIsATuple(self.0))
     }
 
-    pub fn is_vector(&self) -> bool {
-        do_unsafe!(mlirTypeIsAVector(self.0))
+    /// Unit type is not exposed by the C API.
+    /// However, we can use the indirectly constructed Unit type from the Unit attribute.
+    pub fn is_unit(&self) -> bool {
+        self.get_id() == Unit::get_type_id()
     }
 
     pub fn is_unranked_mem_ref(&self) -> bool {
@@ -1817,6 +1820,10 @@ impl Type {
 
     pub fn is_unranked_tensor(&self) -> bool {
         do_unsafe!(mlirTypeIsAUnrankedTensor(self.0))
+    }
+
+    pub fn is_vector(&self) -> bool {
+        do_unsafe!(mlirTypeIsAVector(self.0))
     }
 }
 

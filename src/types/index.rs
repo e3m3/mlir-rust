@@ -30,14 +30,7 @@ impl Index {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_index() {
-            eprint!("Cannot coerce type to index type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        Index(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -47,7 +40,7 @@ impl Index {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        Index(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -72,4 +65,3 @@ impl IRType for Index {
         self.get_mut()
     }
 }
-

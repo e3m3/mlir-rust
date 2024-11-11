@@ -47,14 +47,7 @@ impl RankedTensor {
     }
 
     pub fn from(t: MlirType) -> Self {
-        let t_ = Type::from(t);
-        if !t_.is_ranked_tensor() {
-            eprint!("Cannot coerce type to ranked tensor type: ");
-            t_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
-        RankedTensor(t)
+        Self::from_type(&Type::from(t))
     }
 
     pub fn from_type(t: &Type) -> Self {
@@ -64,7 +57,7 @@ impl RankedTensor {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Self::from(*t.get())
+        RankedTensor(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {
