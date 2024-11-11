@@ -43,7 +43,7 @@ pub struct StridesAndOffset {
 
 impl MemRef {
     pub fn new(shape: &dyn Shape, t: &Type, layout: &Attribute, memory_space: &Attribute) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeGet(
             *t.get(),
             r,
@@ -60,7 +60,7 @@ impl MemRef {
         memory_space: &Attribute,
         loc: &Location
     ) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeGetChecked(
             *loc.get(),
             *t.get(),
@@ -72,7 +72,7 @@ impl MemRef {
     }
 
     pub fn new_contiguous(shape: &dyn Shape, t: &Type, memory_space: &Attribute) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeContiguousGet(*t.get(), r, s.as_ptr(), *memory_space.get())))
     }
 
@@ -82,7 +82,7 @@ impl MemRef {
         memory_space: &Attribute,
         loc: &Location
     ) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeContiguousGetChecked(
             *loc.get(),
             *t.get(),
@@ -151,10 +151,6 @@ impl MemRef {
 }
 
 impl IRType for MemRef {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

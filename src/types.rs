@@ -17,6 +17,7 @@ use ir::Type;
 pub mod complex;
 pub mod float;
 pub mod function;
+pub mod index;
 pub mod integer;
 pub mod mem_ref;
 pub mod none;
@@ -29,12 +30,9 @@ pub mod unranked_mem_ref;
 pub mod unranked_tensor;
 
 pub trait IRType {
-    fn as_type(&self) -> Type;
     fn get(&self) -> &MlirType;
     fn get_mut(&mut self) -> &mut MlirType;
-}
 
-impl dyn IRType {
     fn as_type(&self) -> Type {
         Type::from(*self.get())
     }

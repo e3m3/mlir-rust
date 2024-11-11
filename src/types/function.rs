@@ -104,10 +104,6 @@ impl Function {
 }
 
 impl IRType for Function {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

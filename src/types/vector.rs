@@ -33,12 +33,12 @@ pub struct Vector(MlirType);
 
 impl Vector {
     pub fn new(shape: &dyn Shape, t: &Type) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirVectorTypeGet(r, s.as_ptr(), *t.get())))
     }
 
     pub fn new_checked(shape: &dyn Shape, t: &Type, loc: &Location) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirVectorTypeGetChecked(*loc.get(), r, s.as_ptr(), *t.get())))
     }
 
@@ -48,7 +48,7 @@ impl Vector {
         is_scalable: &[bool],
         loc: &Location
     ) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirVectorTypeGetScalableChecked(
             *loc.get(),
             r,
@@ -59,7 +59,7 @@ impl Vector {
     }
 
     pub fn new_scalable(shape: &dyn Shape, t: &Type, is_scalable: &[bool]) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirVectorTypeGetScalable(
             r,
             s.as_ptr(),
@@ -115,10 +115,6 @@ impl Vector {
 }
 
 impl IRType for Vector {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

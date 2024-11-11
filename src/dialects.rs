@@ -36,7 +36,9 @@ pub trait DialectOperation {
 }
 
 /// Interface for printable opcode.
-pub trait DialectOp: fmt::Display {}
+pub trait DialectOp: fmt::Display {
+    fn get_name(&self) -> &'static str;
+}
 
 impl cmp::PartialEq for dyn DialectOp {
     fn eq(&self, rhs: &Self) -> bool {

@@ -660,7 +660,11 @@ impl cmp::PartialEq for Func {
     }
 }
 
-impl DialectOp for Op {}
+impl DialectOp for Op {
+    fn get_name(&self) -> &'static str {
+        self.get_name()
+    }
+}
 
 impl DialectOperation for Return {
     fn as_operation(&self) -> Operation {

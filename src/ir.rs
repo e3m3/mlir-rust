@@ -181,6 +181,7 @@ use mlir::mlirTypeGetTypeID;
 use mlir::mlirTypeIsAComplex;
 use mlir::mlirTypeIsAFloat;
 use mlir::mlirTypeIsAFunction;
+use mlir::mlirTypeIsAIndex;
 use mlir::mlirTypeIsAInteger;
 use mlir::mlirTypeIsAMemRef;
 use mlir::mlirTypeIsANone;
@@ -255,8 +256,20 @@ pub trait Destroy {
 }
 
 pub trait Shape {
-    fn rank(&self) -> usize;
-    fn get(&self) -> &[u64];
+    fn rank(&self) -> isize;
+    fn get(&self, i: isize) -> i64;
+
+    fn to_vec(&self) -> Vec<i64> {
+        if self.rank() >= 0 {
+            (0..self.rank()).map(|i| self.get(i as isize)).collect()
+        } else {
+            Vec::new()
+        }
+    }
+
+    fn unpack(&self) -> (isize, Vec<i64>) {
+        (self.rank(), self.to_vec())
+    }
 }
 
 #[derive(Clone)]
@@ -1486,6 +1499,12 @@ impl Destroy for Registry {
     }
 }
 
+impl cmp::PartialEq for dyn Shape {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.unpack() == rhs.unpack()
+    }
+}
+
 impl StringBacked {
     pub fn from(s: MlirStringRef) -> Self {
         let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
@@ -1748,6 +1767,10 @@ impl Type {
 
     pub fn is_function(&self) -> bool {
         do_unsafe!(mlirTypeIsAFunction(self.0))
+    }
+
+    pub fn is_index(&self) -> bool {
+        do_unsafe!(mlirTypeIsAIndex(self.0))
     }
 
     pub fn is_integer(&self) -> bool {

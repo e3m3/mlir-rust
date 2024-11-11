@@ -1624,7 +1624,11 @@ impl cmp::PartialEq for IntegerOverflow {
     }
 }
 
-impl DialectOp for Op {}
+impl DialectOp for Op {
+    fn get_name(&self) -> &'static str {
+        self.get_name()
+    }
+}
 
 impl DialectOperation for MulF {
     fn as_operation(&self) -> Operation {

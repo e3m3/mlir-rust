@@ -5,8 +5,8 @@
 
 extern crate mlir_sys as mlir;
 
-use mlir::mlirNoneTypeGet;
-use mlir::mlirNoneTypeGetTypeID;
+use mlir::mlirIndexTypeGet;
+use mlir::mlirIndexTypeGetTypeID;
 use mlir::MlirType;
 
 use crate::do_unsafe;
@@ -22,27 +22,27 @@ use ir::TypeID;
 use types::IRType;
 
 #[derive(Clone)]
-pub struct None(MlirType);
+pub struct Index(MlirType);
 
-impl None {
+impl Index {
     pub fn new(context: &Context) -> Self {
-        Self::from(do_unsafe!(mlirNoneTypeGet(*context.get())))
+        Self::from(do_unsafe!(mlirIndexTypeGet(*context.get())))
     }
 
     pub fn from(t: MlirType) -> Self {
         let t_ = Type::from(t);
-        if !t_.is_none() {
-            eprint!("Cannot coerce type to none type: ");
+        if !t_.is_index() {
+            eprint!("Cannot coerce type to index type: ");
             t_.dump();
             eprintln!();
             exit(ExitCode::IRError);
         }
-        None(t)
+        Index(t)
     }
 
     pub fn from_type(t: &Type) -> Self {
-        if !t.is_none() {
-            eprint!("Cannot coerce type to none type: ");
+        if !t.is_index() {
+            eprint!("Cannot coerce type to index type: ");
             t.dump();
             eprintln!();
             exit(ExitCode::IRError);
@@ -59,11 +59,11 @@ impl None {
     }
 
     pub fn get_type_id() -> TypeID {
-        TypeID::from(do_unsafe!(mlirNoneTypeGetTypeID()))
+        TypeID::from(do_unsafe!(mlirIndexTypeGetTypeID()))
     }
 }
 
-impl IRType for None {
+impl IRType for Index {
     fn get(&self) -> &MlirType {
         self.get()
     }
@@ -72,3 +72,4 @@ impl IRType for None {
         self.get_mut()
     }
 }
+

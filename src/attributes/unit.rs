@@ -54,10 +54,6 @@ impl Unit {
 }
 
 impl IRAttribute for Unit {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

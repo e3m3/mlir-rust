@@ -81,10 +81,6 @@ impl Tuple {
 }
 
 impl IRType for Tuple {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

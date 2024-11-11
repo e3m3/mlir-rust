@@ -259,10 +259,6 @@ impl DenseResourceElements {
 }
 
 impl IRAttribute for DenseResourceElements {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -290,4 +286,3 @@ impl fmt::Display for Layout {
         })
     }
 }
-

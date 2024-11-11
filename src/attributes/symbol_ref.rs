@@ -112,10 +112,6 @@ impl fmt::Display for SymbolRef {
 }
 
 impl IRAttribute for SymbolRef {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

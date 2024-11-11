@@ -74,10 +74,6 @@ impl StridedLayout {
 }
 
 impl IRAttribute for StridedLayout {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

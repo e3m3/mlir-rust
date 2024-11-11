@@ -69,10 +69,6 @@ impl UnrankedTensor {
 }
 
 impl IRType for UnrankedTensor {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

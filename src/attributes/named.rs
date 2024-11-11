@@ -45,10 +45,6 @@ impl Named {
 }
 
 impl IRAttribute for Named {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0.attribute)
-    }
-
     fn get(&self) -> &MlirAttribute {
         &self.0.attribute
     }

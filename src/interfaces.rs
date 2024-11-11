@@ -20,6 +20,7 @@ pub enum Interface {
     MemoryEffect(MemoryEffectOpInterface),
     OpAsmOpInterface,
     RegionBranchTerminatorOpInterface,
+    ReifyRankedShapeTypeOpInterface,
     Symbol,
     SymbolUserOpInterface,
     VectorUnrollOpInterface,
@@ -47,6 +48,9 @@ impl fmt::Display for Interface {
             Interface::OpAsmOpInterface                     => "op_asm_op_interface".to_string(),
             Interface::RegionBranchTerminatorOpInterface    => {
                 "region_branch_terminator_op_interface".to_string()
+            },
+            Interface::ReifyRankedShapeTypeOpInterface      => {
+                "reify_ranked_shape_type_op_interface".to_string()
             },
             Interface::Symbol                               => "symbol".to_string(),
             Interface::SymbolUserOpInterface                => "symbol_user_op_interface".to_string(),

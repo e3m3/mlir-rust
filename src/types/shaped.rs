@@ -104,25 +104,24 @@ impl Shaped {
             None
         }
     }
-
-    /// TODO: Not all shapes allowed by MLIR are valid in the MLP AST
-    pub fn unpack_shape(shape: &dyn Shape) -> (isize, Vec<i64>) {
-        let r = shape.rank();
-        let s = shape.get().iter().map(|d| *d as i64).collect();
-        (r as isize, s)
-    }
 }
 
 impl IRType for Shaped {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl Shape for Shaped {
+    fn rank(&self) -> isize {
+        self.rank().unwrap_or(-1) as isize
+    }
+
+    fn get(&self, i: isize) -> i64 {
+        self.dim_size(i)
     }
 }

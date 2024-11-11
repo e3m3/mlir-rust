@@ -44,20 +44,16 @@ impl Elements {
         &mut self.0
     }
 
-    pub fn get_value(&self, shape: &mut dyn Shape) -> Attribute {
-        Attribute::from(do_unsafe!(mlirElementsAttrGetValue(
-            self.0,
-            shape.rank() as isize,
-            shape.get().to_vec().as_mut_ptr(),
-        )))
+    pub fn get_value(&self, shape: &dyn Shape) -> Attribute {
+        let r = shape.rank();
+        let mut s: Vec<u64> = shape.to_vec().iter().map(|i| *i as u64).collect();
+        Attribute::from(do_unsafe!(mlirElementsAttrGetValue(self.0, r, s.as_mut_ptr())))
     }
 
-    pub fn is_valid(&self, shape: &mut dyn Shape) -> bool {
-        do_unsafe!(mlirElementsAttrIsValidIndex(
-            self.0,
-            shape.rank() as isize,
-            shape.get().to_vec().as_mut_ptr(),
-        ))
+    pub fn is_valid_value(&self, shape: &dyn Shape) -> bool {
+        let r = shape.rank();
+        let mut s: Vec<u64> = shape.to_vec().iter().map(|i| *i as u64).collect();
+        do_unsafe!(mlirElementsAttrIsValidIndex(self.0, r, s.as_mut_ptr()))
     }
 
     pub fn num_elements(&self) -> isize {
@@ -66,10 +62,6 @@ impl Elements {
 }
 
 impl IRAttribute for Elements {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

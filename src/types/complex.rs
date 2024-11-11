@@ -68,10 +68,6 @@ impl Complex {
 }
 
 impl IRType for Complex {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

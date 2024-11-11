@@ -74,10 +74,6 @@ impl fmt::Display for String {
 }
 
 impl IRAttribute for String {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

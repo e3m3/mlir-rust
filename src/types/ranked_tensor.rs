@@ -31,12 +31,12 @@ pub struct RankedTensor(MlirType);
 
 impl RankedTensor {
     pub fn new(shape: &dyn Shape, t: &Type, encoding: &Attribute) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirRankedTensorTypeGet(r, s.as_ptr(), *t.get(), *encoding.get())))
     }
 
     pub fn new_checked(shape: &dyn Shape, t: &Type, encoding: &Attribute, loc: &Location) -> Self {
-        let (r, s) = Shaped::unpack_shape(shape);
+        let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirRankedTensorTypeGetChecked(
             *loc.get(),
             r,
@@ -89,10 +89,6 @@ impl RankedTensor {
 }
 
 impl IRType for RankedTensor {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }

@@ -70,10 +70,6 @@ impl UnrankedMemRef {
 }
 
 impl IRType for UnrankedMemRef {
-    fn as_type(&self) -> Type {
-        Type::from(self.0)
-    }
-
     fn get(&self) -> &MlirType {
         self.get()
     }
