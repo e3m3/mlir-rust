@@ -261,7 +261,7 @@ pub trait Shape {
 
     fn to_vec(&self) -> Vec<i64> {
         if self.rank() >= 0 {
-            (0..self.rank()).map(|i| self.get(i as isize)).collect()
+            (0..self.rank()).map(|i| self.get(i)).collect()
         } else {
             Vec::new()
         }
@@ -1649,6 +1649,7 @@ impl StringRef {
     }
 }
 
+#[allow(clippy::unnecessary_cast)]
 impl fmt::Display for StringRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_empty() {
@@ -1658,6 +1659,7 @@ impl fmt::Display for StringRef {
         for i in 0..self.len() {
             let p = do_unsafe!(self.as_ptr().add(i));
             if !p.is_null() {
+                // The type of `*p` is `i8` on darwin and `u8` on linux.
                 v.push(do_unsafe!(*p) as u8);
             }
         }

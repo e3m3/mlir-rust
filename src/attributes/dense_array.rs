@@ -34,7 +34,6 @@ use crate::ir;
 use attributes::IRAttribute;
 use exit_code::exit;
 use exit_code::ExitCode;
-use ir::Attribute;
 use ir::Context;
 use ir::TypeID;
 
