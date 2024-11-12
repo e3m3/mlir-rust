@@ -21,13 +21,17 @@ use crate::traits;
 use crate::types;
 
 use attributes::array::Array;
+use attributes::dictionary::Dictionary;
 use attributes::IRAttribute;
+use attributes::IRAttributeNamed;
 use attributes::named::Named;
 use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
 use dialects::IROp;
 use dialects::IROperation;
+use dialects::OperandSegmentSizes;
+use dialects::ResultSegmentSizes;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -36,8 +40,6 @@ use ir::Attribute;
 use ir::Block;
 use ir::Context;
 use ir::Dialect;
-use ir::Destroy;
-use ir::Identifier;
 use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
@@ -54,7 +56,25 @@ use types::IRType;
 ///////////////////////////////
 
 #[derive(Clone)]
+pub struct Arguments(MlirAttribute);
+
+#[derive(Clone)]
 pub struct Callee(MlirAttribute);
+
+#[derive(Clone)]
+pub struct FunctionAttr(MlirAttribute);
+
+#[derive(Clone)]
+pub struct Referee(MlirAttribute);
+
+#[derive(Clone)]
+pub struct Results(MlirAttribute);
+
+#[derive(Clone)]
+pub struct SymbolName(MlirAttribute);
+
+#[derive(Clone)]
+pub struct SymbolVisibility(MlirAttribute);
 
 ///////////////////////////////
 //  Enums
@@ -70,7 +90,7 @@ pub enum Op {
 }
 
 #[derive(Clone,Copy,Default,PartialEq)]
-pub enum SymbolVisibility {
+pub enum SymbolVisibilityKind {
     #[default]
     None,
     Private,
@@ -99,6 +119,53 @@ pub struct Return(MlirOperation, SymbolRef);
 //  Attribute Implementation
 ///////////////////////////////
 
+impl Arguments {
+    pub fn new(context: &Context, elements: &[Dictionary]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::__from(*attr.get())
+    }
+
+    fn __from(attr: MlirAttribute) -> Self {
+        Arguments(attr)
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let args = Self::__from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of dictionary attributes for arguments");
+            exit(ExitCode::DialectError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
+            eprintln!("Expected array of dictionary attributes for arguments");
+            exit(ExitCode::DialectError);
+        }
+        args
+    }
+
+    pub fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    pub fn as_dictionaries(&self) -> Vec<Dictionary> {
+        let args = self.as_array();
+        (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "arg_attrs"
+    }
+}
+
 impl Callee {
     pub fn new(sym: &SymbolRef) -> Self {
         Self::from(*sym.get())
@@ -124,6 +191,195 @@ impl Callee {
     pub fn get_context(&self) -> Context {
         self.as_attribute().get_context()
     }
+
+    pub fn get_name() -> &'static str {
+        "callee"
+    }
+}
+
+impl FunctionAttr {
+    pub fn new(f: &Function) -> Self {
+        let attr = TypeAttr::new(&f.as_type());
+        Self::from(*attr.get())
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let f = FunctionAttr(attr);
+        let a = f.as_attribute();
+        if !a.is_type() || !TypeAttr::from(*a.get()).get_type().is_function() {
+            eprintln!("Expected typed function attribute");
+            exit(ExitCode::DialectError);
+        }
+        f
+    }
+
+    pub fn as_type_attribute(&self) -> TypeAttr {
+        TypeAttr::from(*self.get())
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "function_type"
+    }
+
+    pub fn get_type(&self) -> Function {
+        Function::from(*self.as_type_attribute().get_type().get())
+    }
+}
+
+impl Referee {
+    pub fn new(sym: &SymbolRef) -> Self {
+        Self::from(*sym.get())
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let referee = Referee(attr);
+        if !referee.as_attribute().is_flat_symbol_ref() {
+            eprintln!("Expected flat symbol reference for referee name");
+            exit(ExitCode::DialectError);
+        }
+        referee
+    }
+
+    pub fn as_symbol_ref(&self) -> SymbolRef {
+        SymbolRef::from(*self.get())
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "value"
+    }
+}
+
+impl Results {
+    pub fn new(context: &Context, elements: &[Dictionary]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::__from(*attr.get())
+    }
+
+    fn __from(attr: MlirAttribute) -> Self {
+        Results(attr)
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let args = Self::__from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of dictionary attributes for results");
+            exit(ExitCode::DialectError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
+            eprintln!("Expected array of dictionary attributes for results");
+            exit(ExitCode::DialectError);
+        }
+        args
+    }
+
+    pub fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    pub fn as_dictionaries(&self) -> Vec<Dictionary> {
+        let args = self.as_array();
+        (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "res_attrs"
+    }
+}
+
+impl SymbolName {
+    pub fn new(context: &Context, s: &StringRef) -> Self {
+        let sym = StringAttr::new(context, s);
+        Self::from(*sym.get())
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let sym = SymbolName(attr);
+        if !sym.as_attribute().is_string() {
+            eprintln!("Expected string attribute for symbol name");
+            exit(ExitCode::DialectError);
+        }
+        sym
+    }
+
+    pub fn as_string(&self) -> StringAttr {
+        StringAttr::from(*self.get())
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "sym_name"
+    }
+}
+
+impl SymbolVisibility {
+    pub fn new(context: &Context, k: SymbolVisibilityKind) -> Option<Self> {
+        match k {
+            SymbolVisibilityKind::None      => None,
+            SymbolVisibilityKind::Private   => {
+                let s = StringBacked::from_string(&k.to_string());
+                let sym = StringAttr::new(context, &s.as_string_ref());
+                Some(Self::from(*sym.as_attribute().get()))
+            },
+        }
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        let sym = SymbolVisibility(attr);
+        if !sym.as_attribute().is_string() {
+            eprintln!("Expected string attribute for symbol visibility");
+            exit(ExitCode::DialectError);
+        }
+        sym
+    }
+
+    pub fn as_string(&self) -> StringAttr {
+        StringAttr::from(*self.get())
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_context(&self) -> Context {
+        self.as_attribute().get_context()
+    }
+
+    pub fn get_name() -> &'static str {
+        "sym_visibility"
+    }
 }
 
 ///////////////////////////////
@@ -142,21 +398,6 @@ impl Op {
     }
 }
 
-impl SymbolVisibility {
-    // TODO: Is this attribute optional for `func.func` or is it empty on `None`?
-    pub fn new_named_attribute(context: &Context, visibility: SymbolVisibility) -> Option<Named> {
-        if visibility == SymbolVisibility::None {
-            return None;
-        }
-        let s = StringBacked::from_string(&visibility.to_string());
-        let string = StringAttr::new(context, &s.as_string_ref());
-        let name = StringBacked::from_string(&"sym_visibility".to_string());
-        let id = Identifier::new(context, &name.as_string_ref());
-        let attr_named = Named::new(&id, &string.as_attribute());
-        Some(attr_named)
-    }
-}
-
 ///////////////////////////////
 //  Operation Implementation
 ///////////////////////////////
@@ -170,13 +411,16 @@ impl Call {
             dialect.get_namespace(),
             Op::Call.get_name(),
         ));
-        let attr_name = StringBacked::from_string(&"value".to_string());
-        let attr_id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&attr_id, &callee.as_attribute());
+        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i64]);
+        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i64]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[
+            callee.as_named_attribute(),
+            opseg_attr.as_named_attribute(),
+            result_attr.as_named_attribute(),
+        ]);
         op_state.add_operands(args);
         op_state.add_results(t);
-        op_state.add_attributes(&[attr_named]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -188,9 +432,10 @@ impl Call {
         &self.0
     }
 
-    pub fn get_callee(&self) -> Attribute {
-        let attr_name = StringBacked::from_string(&"callee".to_string());
-        self.as_operation().get_attribute_inherent(&attr_name.as_string_ref())
+    pub fn get_callee(&self) -> Callee {
+        let attr_name = StringBacked::from_string(&Callee::get_name().to_string());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        Callee::from(*attr.get())
     }
 
     pub fn get_context(&self) -> Context {
@@ -229,7 +474,10 @@ impl CallIndirect {
             dialect.get_namespace(),
             Op::CallIndirect.get_name(),
         ));
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, args.len() as i64]);
+        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i64]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
         op_state.add_operands(&args_);
         op_state.add_results(&t);
         Self::from(*op_state.create_operation().get())
@@ -265,11 +513,9 @@ impl Constant {
             dialect.get_namespace(),
             Op::Constant.get_name(),
         ));
-        let attr_name = StringBacked::from_string(&"value".to_string());
-        let attr_id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&attr_id, &op.get_symbol_ref().as_attribute());
+        let attr = Referee::new(&op.get_symbol_ref());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[attr_named]);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_results(&[op.get_type().as_type()]);
         Self::from(*op_state.create_operation().get())
     }
@@ -294,9 +540,10 @@ impl Constant {
         self.as_operation().get_result(0)
     }
 
-    pub fn get_value(&self) -> Attribute {
-        let attr_name = StringBacked::from_string(&"value".to_string());
-        self.as_operation().get_attribute_inherent(&attr_name.as_string_ref())
+    pub fn get_value(&self) -> Referee {
+        let attr_name = StringBacked::from_string(&Referee::get_name().to_string());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        Referee::from(*attr.get())
     }
 }
 
@@ -304,9 +551,9 @@ impl Func {
     pub fn new(
         t: &Function,
         f_name: &StringRef,
-        visibility: SymbolVisibility,
-        attr_args: &[Attribute],
-        attr_results: &[Attribute],
+        visibility: SymbolVisibilityKind,
+        attr_args: &Arguments,
+        attr_results: &Results,
         loc: &Location,
     ) -> Self {
         let context = t.as_type().get_context();
@@ -321,35 +568,21 @@ impl Func {
         let _operands: Vec<Value> = (0..t.num_inputs())
             .map(|i| block.add_arg(&t.get_input(i), loc))
             .collect();
+        let sym_name_attr = SymbolName::new(&context, f_name);
+        let function_type_attr = FunctionAttr::new(t);
         let mut attrs: Vec<Named> = Vec::new();
-        let sym_name_attr = StringAttr::new(&context, f_name);
-        let sym_name_string = StringBacked::from_string(&"sym_name".to_string());
-        let sym_name_id = Identifier::new(&context, &sym_name_string.as_string_ref());
-        let sym_name_named = Named::new(&sym_name_id, &sym_name_attr.as_attribute());
-        attrs.push(sym_name_named);
-        let function_type_attr = TypeAttr::new(&t.as_type());
-        let function_type_string = StringBacked::from_string(&"function_type".to_string());
-        let function_type_id = Identifier::new(&context, &function_type_string.as_string_ref());
-        let function_type_named = Named::new(&function_type_id, &function_type_attr.as_attribute());
-        attrs.push(function_type_named);
-        match SymbolVisibility::new_named_attribute(&context, visibility) {
-            Some(named) => attrs.push(named),
+        attrs.push(sym_name_attr.as_named_attribute());
+        attrs.push(function_type_attr.as_named_attribute());
+        match SymbolVisibility::new(&context, visibility) {
+            Some(sym)   => attrs.push(sym.as_named_attribute()),
             None        => {
                 let mut region = Region::new();
                 region.append_block(&mut block);
                 op_state.add_regions(&[region]);
             },
         };
-        let args_attr = Array::new(&context, attr_args);
-        let args_string = StringBacked::from_string(&"arg_attrs".to_string());
-        let args_id = Identifier::new(&context, &args_string.as_string_ref());
-        let args_named = Named::new(&args_id, &args_attr.as_attribute());
-        attrs.push(args_named);
-        let results_attr = Array::new(&context, attr_results);
-        let results_string = StringBacked::from_string(&"res_attrs".to_string());
-        let results_id = Identifier::new(&context, &results_string.as_string_ref());
-        let results_named = Named::new(&results_id, &results_attr.as_attribute());
-        attrs.push(results_named);
+        attrs.push(attr_args.as_named_attribute());
+        attrs.push(attr_results.as_named_attribute());
         op_state.add_attributes(&attrs);
         Self::from(*op_state.create_operation().get())
     }
@@ -362,10 +595,10 @@ impl Func {
         &self.0
     }
 
-    pub fn get_arg_attributes(&self) -> Array {
-        let attr_name = StringBacked::from_string(&"arg_attrs".to_string());
+    pub fn get_arguments(&self) -> Arguments {
+        let attr_name = StringBacked::from_string(&Arguments::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Array::from(*attr.get())
+        Arguments::from(*attr.get())
     }
 
     pub fn get_context(&self) -> Context {
@@ -376,36 +609,41 @@ impl Func {
         &mut self.0
     }
 
-    pub fn get_type(&self) -> Function {
-        let attr_name = StringBacked::from_string(&"function_type".to_string());
+    pub fn get_function(&self) -> FunctionAttr {
+        let attr_name = StringBacked::from_string(&FunctionAttr::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        let attr_type = TypeAttr::from(*attr.get());
-        Function::from(*attr_type.get_type().get())
+        FunctionAttr::from(*attr.get())
+    }
+
+    pub fn get_symbol_name(&self) -> SymbolName {
+        let attr_name = StringBacked::from_string(&SymbolName::get_name().to_string());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        SymbolName::from(*attr.get())
     }
 
     pub fn get_symbol_ref(&self) -> SymbolRef {
-        let attr_name = StringBacked::from_string(&"sym_name".to_string());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        let attr_string = StringAttr::from(*attr.get());
-        SymbolRef::new_flat(&self.get_context(), &attr_string.get_string())
+        SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
     }
 
-    pub fn get_result_attributes(&self) -> Array {
-        let attr_name = StringBacked::from_string(&"res_attrs".to_string());
+    pub fn get_result_attributes(&self) -> Results {
+        let attr_name = StringBacked::from_string(&Results::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Array::from(*attr.get())
+        Results::from(*attr.get())
     }
 
-    pub fn get_visibility(&self) -> SymbolVisibility {
-        let attr_name = StringBacked::from_string(&"sym_visibility".to_string());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        let attr_string = StringAttr::from(*attr.get());
-        match SymbolVisibility::from_str(attr_string.to_string().as_str()) {
-            Ok(v)       => v,
-            Err(msg)    => {
-                eprintln!("{}", msg);
-                exit(ExitCode::DialectError);
-            },
+    pub fn get_type(&self) -> Function {
+        self.get_function().get_type()
+    }
+
+    pub fn get_visibility(&self) -> Option<SymbolVisibility> {
+        let op = self.as_operation();
+        let attr_name = StringBacked::from_string(&SymbolVisibility::get_name().to_string());
+        let s_ref = attr_name.as_string_ref();
+        if op.has_attribute_inherent(&s_ref) {
+            let attr = op.get_attribute_inherent(&s_ref);
+            Some(SymbolVisibility::from(*attr.get()))
+        } else {
+            None
         }
     }
 }
@@ -436,7 +674,9 @@ impl Return {
             dialect.get_namespace(),
             Op::Return.get_name(),
         ));
+        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i64]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(args);
         Self::from(*op_state.create_operation().get(), symbol_ref)
     }
@@ -462,9 +702,19 @@ impl Return {
 //  Trait Implementation
 ///////////////////////////////
 
-impl Destroy for Call {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
+impl IRAttribute for Arguments {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for Arguments {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
@@ -503,17 +753,7 @@ impl IROperation for Call {
     }
 }
 
-impl cmp::PartialEq for Call {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
 impl IRAttribute for Callee {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -523,15 +763,9 @@ impl IRAttribute for Callee {
     }
 }
 
-impl cmp::PartialEq for Callee {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_attribute() == rhs.as_attribute()
-    }
-}
-
-impl Destroy for CallIndirect {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
+impl IRAttributeNamed for Callee {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
@@ -564,18 +798,6 @@ impl IROperation for CallIndirect {
 
     fn get_traits(&self) -> &'static [Trait] {
         &[]
-    }
-}
-
-impl cmp::PartialEq for CallIndirect {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Destroy for Constant {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -614,18 +836,6 @@ impl IROperation for Constant {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::ConstantLike,
         ]
-    }
-}
-
-impl cmp::PartialEq for Constant {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Destroy for Func {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -668,9 +878,19 @@ impl IROperation for Func {
     }
 }
 
-impl cmp::PartialEq for Func {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
+impl IRAttribute for FunctionAttr {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for FunctionAttr {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
@@ -680,9 +900,35 @@ impl IROp for Op {
     }
 }
 
-impl Destroy for Return {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
+impl IRAttribute for Referee {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for Referee {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
+    }
+}
+
+impl IRAttribute for Results {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for Results {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
@@ -718,7 +964,7 @@ impl IROperation for Return {
     fn get_traits(&self) -> &'static [Trait] {
         &[
             Trait::AlwaysSpeculatableImplTrait,
-            Trait::HasParent(&Op::Func),
+            Trait::HasParent(&[&Op::Func]),
             Trait::MemRefsNormalizable,
             Trait::ReturnLike,
             Trait::Terminator,
@@ -728,18 +974,50 @@ impl IROperation for Return {
 
 impl cmp::PartialEq for Return {
     fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
+        self.as_operation() == rhs.as_operation() && self.get_parent() == rhs.get_parent()
     }
 }
 
-impl FromStr for SymbolVisibility {
+impl IRAttribute for SymbolName {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for SymbolName {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
+    }
+}
+
+impl IRAttribute for SymbolVisibility {
+    fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IRAttributeNamed for SymbolVisibility {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
+    }
+}
+
+impl FromStr for SymbolVisibilityKind {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            ""          => Ok(SymbolVisibility::None),
-            "private"   => Ok(SymbolVisibility::Private),
-            _           => Err(format!("Invalid symbol visibility: {}", s)),
+            ""          => Ok(SymbolVisibilityKind::None),
+            "private"   => Ok(SymbolVisibilityKind::Private),
+            _           => Err(format!("Invalid symbol visibility kind: {}", s)),
         }
     }
 }
@@ -760,11 +1038,11 @@ impl fmt::Display for Op {
     }
 }
 
-impl fmt::Display for SymbolVisibility {
+impl fmt::Display for SymbolVisibilityKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            SymbolVisibility::None      => "",
-            SymbolVisibility::Private   => "private",
+            SymbolVisibilityKind::None      => "none",
+            SymbolVisibilityKind::Private   => "private",
         })
     }
 }

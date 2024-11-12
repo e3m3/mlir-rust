@@ -5,14 +5,15 @@
 
 extern crate mlir_sys as mlir;
 
-use mlir::mlirAttributeEqual;
 use mlir::MlirAttribute;
 
 use std::cmp;
 
-use crate::do_unsafe;
 use crate::ir;
+use named::Named;
 use ir::Attribute;
+use ir::Identifier;
+use ir::StringBacked;
 
 pub mod array;
 pub mod bool;
@@ -42,8 +43,26 @@ pub trait IRAttribute {
     }
 }
 
+pub trait IRAttributeNamed: IRAttribute {
+    fn get_name(&self) -> &'static str;
+
+    fn as_named_attribute(&self) -> Named {
+        let attr = self.as_attribute();
+        let context = attr.get_context();
+        let name = StringBacked::from_string(&self.get_name().to_string());
+        let id = Identifier::new(&context, &name.as_string_ref());
+        Named::new(&id, &attr.as_attribute())
+    }
+}
+
 impl cmp::PartialEq for dyn IRAttribute {
     fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirAttributeEqual(*self.get(), *rhs.get()))
+        self.as_attribute() == rhs.as_attribute()
+    }
+}
+
+impl cmp::PartialEq for dyn IRAttributeNamed {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_attribute() == rhs.as_attribute()
     }
 }

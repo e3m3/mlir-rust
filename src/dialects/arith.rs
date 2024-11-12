@@ -8,7 +8,6 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
-use std::cmp;
 use std::ffi::c_uint;
 use std::fmt;
 
@@ -23,18 +22,15 @@ use crate::types;
 use attributes::float::Float as FloatAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
-use attributes::named::Named;
+use attributes::IRAttributeNamed;
 use dialects::IROp;
 use dialects::IROperation;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
-use ir::Attribute;
 use ir::Context;
 use ir::Dialect;
-use ir::Destroy;
-use ir::Identifier;
 use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
@@ -47,6 +43,9 @@ use types::IRType;
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
+
+#[derive(Clone)]
+pub struct ArithValue(MlirAttribute);
 
 #[derive(Clone)]
 pub struct FastMath(MlirAttribute);
@@ -246,6 +245,56 @@ pub struct SubI(MlirOperation);
 //  Attribute Implementation
 ///////////////////////////////
 
+impl ArithValue {
+    pub fn new_float(attr: &FloatAttr) -> Self {
+        Self::from(*attr.as_attribute().get())
+    }
+
+    pub fn new_integer(attr: &IntegerAttr) -> Self {
+        Self::from(*attr.as_attribute().get())
+    }
+
+    pub fn from(attr: MlirAttribute) -> Self {
+        ArithValue(attr)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
+    pub fn get_name() -> &'static str {
+        "value"
+    }
+
+    pub fn get_float_attribute(&self) -> Option<FloatAttr> {
+        if self.is_float() {
+            Some(FloatAttr::from(*self.get()))
+        } else {
+            None
+        }
+    }
+
+    pub fn get_integer_attribute(&self) -> Option<IntegerAttr> {
+        if self.is_integer() {
+            Some(IntegerAttr::from(*self.get()))
+        } else {
+            None
+        }
+    }
+
+    pub fn is_float(&self) -> bool {
+        self.as_attribute().is_float()
+    }
+
+    pub fn is_integer(&self) -> bool {
+        self.as_attribute().is_integer()
+    }
+}
+
 impl FastMath {
     pub fn new(context: &Context, flags: FastMathFlags) -> Self {
         const WIDTH: c_uint = 8; // Hardcode width to 8 bits; Attribute only accepts i64 though.
@@ -264,6 +313,10 @@ impl FastMath {
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0
+    }
+
+    pub fn get_name() -> &'static str {
+        "fastmath"
     }
 
     pub fn get_integer_attribute(&self) -> IntegerAttr {
@@ -293,6 +346,10 @@ impl IntegerOverflow {
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0
+    }
+
+    pub fn get_name() -> &'static str {
+        "overflow"
     }
 
     pub fn get_integer_attribute(&self) -> IntegerAttr {
@@ -509,12 +566,9 @@ impl AddF {
             dialect.get_namespace(),
             Op::AddF.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = FastMath::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get()) 
@@ -529,7 +583,7 @@ impl AddF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
+        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -568,12 +622,9 @@ impl AddI {
             dialect.get_namespace(),
             Op::AddI.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = IntegerOverflow::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -588,7 +639,7 @@ impl AddI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
+        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
@@ -663,8 +714,8 @@ impl AddUIExtended {
 }
 
 impl Constant {
-    fn new(attr: &Attribute, loc: &Location) -> Self {
-        let context = attr.get_context();
+    fn new(attr: &ArithValue, loc: &Location) -> Self {
+        let context = attr.as_attribute().get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
@@ -672,19 +723,16 @@ impl Constant {
             Op::Constant.get_name(),
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        let attr_name = StringBacked::from_string(&"value".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         Self::from(*op_state.create_operation().get())
     }
 
     pub fn new_float(attr: &FloatAttr, loc: &Location) -> Self {
-        Self::new(&attr.as_attribute(), loc)
+        Self::new(&ArithValue::new_float(attr), loc)
     }
 
     pub fn new_integer(attr: &IntegerAttr, loc: &Location) -> Self {
-        Self::new(&attr.as_attribute(), loc)
+        Self::new(&ArithValue::new_integer(attr), loc)
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -700,27 +748,17 @@ impl Constant {
     }
 
     pub fn get_float_value(&self) -> Option<FloatAttr> {
-        let attr = self.get_value();
-        if attr.is_float() {
-            Some(FloatAttr::from(*attr.get()))
-        } else {
-            None
-        }
+        self.get_value().get_float_attribute()
     }
 
     pub fn get_integer_value(&self) -> Option<IntegerAttr> {
-        let attr = self.get_value();
-        if attr.is_integer() {
-            Some(IntegerAttr::from(*attr.get()))
-        } else {
-            None
-        }
+        self.get_value().get_integer_attribute()
     }
 
-    pub fn get_value(&self) -> Attribute {
-        let attr_name = StringBacked::from_string(&"value".to_string());
+    pub fn get_value(&self) -> ArithValue {
+        let attr_name = StringBacked::from_string(&ArithValue::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Attribute::from(*attr.get())
+        ArithValue::from(*attr.get())
     }
 
     pub fn is_float(&self) -> bool {
@@ -749,12 +787,9 @@ impl DivF {
             dialect.get_namespace(),
             Op::DivF.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = FastMath::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get()) 
@@ -769,7 +804,7 @@ impl DivF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
+        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -904,12 +939,9 @@ impl MulF {
             dialect.get_namespace(),
             Op::MulF.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = FastMath::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get()) 
@@ -924,7 +956,7 @@ impl MulF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
+        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -963,12 +995,9 @@ impl MulI {
             dialect.get_namespace(),
             Op::MulI.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = IntegerOverflow::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -983,7 +1012,7 @@ impl MulI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
+        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
@@ -1126,12 +1155,9 @@ impl SubF {
             dialect.get_namespace(),
             Op::SubF.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = FastMath::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -1146,7 +1172,7 @@ impl SubF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&"fastmath".to_string());
+        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -1185,12 +1211,9 @@ impl SubI {
             dialect.get_namespace(),
             Op::SubI.get_name(),
         ));
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let attr = IntegerOverflow::new(&context, flags);
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
-        let id = Identifier::new(&context, &attr_name.as_string_ref());
-        let attr_named = Named::new(&id, &attr.as_attribute());
-        op_state.add_attributes(&[attr_named]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -1205,7 +1228,7 @@ impl SubI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&"overflow".to_string());
+        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
@@ -1230,12 +1253,6 @@ impl SubI {
 ///////////////////////////////
 //  Trait Implementation
 ///////////////////////////////
-
-impl Destroy for AddF {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
 
 impl IROperation for AddF {
     fn get(&self) -> &MlirOperation {
@@ -1278,18 +1295,6 @@ impl IROperation for AddF {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
-    }
-}
-
-impl cmp::PartialEq for AddF {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for AddI {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -1338,18 +1343,6 @@ impl IROperation for AddI {
     }
 }
 
-impl cmp::PartialEq for AddI {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for AddUIExtended {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl IROperation for AddUIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1391,15 +1384,19 @@ impl IROperation for AddUIExtended {
     }
 }
 
-impl cmp::PartialEq for AddUIExtended {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
+impl IRAttribute for ArithValue {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
     }
 }
 
-impl Destroy for Constant {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
+impl IRAttributeNamed for ArithValue {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
@@ -1439,18 +1436,6 @@ impl IROperation for Constant {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::ConstantLike,
         ]
-    }
-}
-
-impl cmp::PartialEq for Constant {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_value() == rhs.get_value()
-    }
-}
-
-impl Destroy for DivF {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -1497,18 +1482,6 @@ impl IROperation for DivF {
     }
 }
 
-impl cmp::PartialEq for DivF {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for DivSI {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl IROperation for DivSI {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1548,18 +1521,6 @@ impl IROperation for DivSI {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
-    }
-}
-
-impl cmp::PartialEq for DivSI {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Destroy for DivUI {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -1605,17 +1566,7 @@ impl IROperation for DivUI {
     }
 }
 
-impl cmp::PartialEq for DivUI {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
 impl IRAttribute for FastMath {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1625,17 +1576,13 @@ impl IRAttribute for FastMath {
     }
 }
 
-impl cmp::PartialEq for FastMath {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_attribute() == rhs.as_attribute()
+impl IRAttributeNamed for FastMath {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
 impl IRAttribute for IntegerOverflow {
-    fn as_attribute(&self) -> Attribute {
-        Attribute::from(self.0)
-    }
-
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1645,21 +1592,15 @@ impl IRAttribute for IntegerOverflow {
     }
 }
 
-impl cmp::PartialEq for IntegerOverflow {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_attribute() == rhs.as_attribute()
+impl IRAttributeNamed for IntegerOverflow {
+    fn get_name(&self) -> &'static str {
+        Self::get_name()
     }
 }
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
-    }
-}
-
-impl Destroy for MulF {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -1707,17 +1648,6 @@ impl IROperation for MulF {
     }
 }
 
-impl cmp::PartialEq for MulF {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for MulI {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
 
 impl IROperation for MulI {
     fn get(&self) -> &MlirOperation {
@@ -1765,18 +1695,6 @@ impl IROperation for MulI {
     }
 }
 
-impl cmp::PartialEq for MulI {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for MulSIExtended {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl IROperation for MulSIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1819,18 +1737,6 @@ impl IROperation for MulSIExtended {
     }
 }
 
-impl cmp::PartialEq for MulSIExtended {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Destroy for MulUIExtended {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl IROperation for MulUIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1870,18 +1776,6 @@ impl IROperation for MulUIExtended {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
-    }
-}
-
-impl cmp::PartialEq for MulUIExtended {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Destroy for SubF {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
     }
 }
 
@@ -1928,18 +1822,6 @@ impl IROperation for SubF {
     }
 }
 
-impl cmp::PartialEq for SubF {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
-    }
-}
-
-impl Destroy for SubI {
-    fn destroy(&mut self) -> () {
-        self.as_operation().destroy()
-    }
-}
-
 impl IROperation for SubI {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1981,12 +1863,6 @@ impl IROperation for SubI {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
-    }
-}
-
-impl cmp::PartialEq for SubI {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() && self.get_flags() == rhs.get_flags()
     }
 }
 

@@ -79,6 +79,29 @@ impl RankedTensor {
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirRankedTensorTypeGetTypeID()))
     }
+
+    pub fn has_matching_ranks(&self, other: &Self) -> bool {
+        let s = self.as_shaped();
+        let s_other = other.as_shaped();
+        s.rank().unwrap_or(0) == s_other.rank().unwrap_or(0)
+    }
+
+    pub fn has_matching_static_dimensions(&self, other: &Self) -> bool {
+        if !self.has_matching_ranks(other) {
+            return false;
+        }
+        let s = self.as_shaped();
+        let s_other = other.as_shaped();
+        let rank = s.rank().unwrap_or(0);
+        for i in 0..rank {
+            let i_ = i as isize;
+            if !s.is_dynamic_dim(i_) && !s_other.is_dynamic_dim(i_) &&
+                s.dim_size(i_) != s_other.dim_size(i_) {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 impl IRType for RankedTensor {

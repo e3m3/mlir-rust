@@ -97,6 +97,21 @@ impl Shaped {
             None
         }
     }
+
+    /// Can only be computed if the shaped is statically sized.
+    pub fn num_elements(&self) -> Option<i64> {
+        if self.is_static() {
+            self.rank().map(|rank| (0..rank).fold(0, |acc,i| acc + self.dim_size(i as isize)))
+        } else {
+            None
+        }
+    }
+
+    pub fn num_dynamic_dims(&self) -> Option<i64> {
+        self.rank().map(|rank| (0..rank)
+            .fold(0, |acc,i| acc + if self.is_dynamic_dim(i as isize) { 1 } else { 0 })
+        )
+    }
 }
 
 impl IRType for Shaped {

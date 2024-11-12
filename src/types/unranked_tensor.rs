@@ -21,6 +21,7 @@ use ir::Location;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
+use types::shaped::Shaped;
 
 #[derive(Clone)]
 pub struct UnrankedTensor(MlirType);
@@ -46,6 +47,10 @@ impl UnrankedTensor {
             exit(ExitCode::IRError);
         }
         UnrankedTensor(*t.get())
+    }
+
+    pub fn as_shaped(&self) -> Shaped {
+        Shaped::from(self.0)
     }
 
     pub fn get(&self) -> &MlirType {

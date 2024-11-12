@@ -13,6 +13,7 @@ pub enum Interface {
     ArithIntegerOverflowFlagsInterface,
     CallOpInterface,
     CallableOpInterface,
+    CastOpInterface,
     ConditionallySpeculatable,
     FunctionOpInterface,
     InferIntRangeInterface,
@@ -21,6 +22,7 @@ pub enum Interface {
     OpAsmOpInterface,
     RegionBranchTerminatorOpInterface,
     ReifyRankedShapeTypeOpInterface,
+    ShapedDimOpInterface,
     Symbol,
     SymbolUserOpInterface,
     VectorUnrollOpInterface,
@@ -40,6 +42,7 @@ impl fmt::Display for Interface {
             },
             Interface::CallOpInterface                      => "call_op_interface".to_string(),
             Interface::CallableOpInterface                  => "callable_op_interface".to_string(),
+            Interface::CastOpInterface                      => "cast_op_interface".to_string(),
             Interface::ConditionallySpeculatable            => "conditionally_speculatable".to_string(),
             Interface::FunctionOpInterface                  => "function_op_interface".to_string(),
             Interface::InferIntRangeInterface               => "infer_int_range_interface".to_string(),
@@ -52,6 +55,7 @@ impl fmt::Display for Interface {
             Interface::ReifyRankedShapeTypeOpInterface      => {
                 "reify_ranked_shape_type_op_interface".to_string()
             },
+            Interface::ShapedDimOpInterface                 => "shaped_dim_op_interface".to_string(),
             Interface::Symbol                               => "symbol".to_string(),
             Interface::SymbolUserOpInterface                => "symbol_user_op_interface".to_string(),
             Interface::VectorUnrollOpInterface              => "vector_unroll_op_interface".to_string(),

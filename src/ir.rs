@@ -97,6 +97,7 @@ use mlir::mlirLocationEqual;
 use mlir::mlirLocationFileLineColGet;
 use mlir::mlirLocationFromAttribute;
 use mlir::mlirLocationGetAttribute;
+use mlir::mlirLocationGetContext;
 use mlir::mlirLocationUnknownGet;
 use mlir::mlirModuleCreateEmpty;
 use mlir::mlirModuleCreateParse;
@@ -125,6 +126,7 @@ use mlir::mlirOperationGetNumRegions;
 use mlir::mlirOperationGetNumResults;
 use mlir::mlirOperationGetNumSuccessors;
 use mlir::mlirOperationGetOperand;
+use mlir::mlirOperationGetParentOperation;
 use mlir::mlirOperationGetRegion;
 use mlir::mlirOperationGetResult;
 use mlir::mlirOperationGetSuccessor;
@@ -924,6 +926,10 @@ impl Location {
         Attribute::from(do_unsafe!(mlirLocationGetAttribute(self.0)))
     }
 
+    pub fn get_context(&self) -> Context {
+        Context::from(do_unsafe!(mlirLocationGetContext(self.0)))
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirLocation {
         &mut self.0
     }
@@ -1080,6 +1086,10 @@ impl Operation {
 
     pub fn get_operand(&self, i: isize) -> Value {
         Value::from(do_unsafe!(mlirOperationGetOperand(self.0, i)))
+    }
+
+    pub fn get_parent(&self) -> Operation {
+        Operation::from(do_unsafe!(mlirOperationGetParentOperation(self.0)) )
     }
 
     pub fn get_region(&self, i: isize) -> Region {

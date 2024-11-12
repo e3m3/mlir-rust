@@ -131,7 +131,7 @@ impl MemRef {
     }
 
     pub fn get_strides_and_offset(&self) -> StridesAndOffset {
-        let rank = self.as_shaped().rank().unwrap() as usize;
+        let rank = self.as_shaped().rank().unwrap_or(0) as usize;
         let mut strides = vec![0; rank];
         let mut offset = vec![0; rank];
         do_unsafe!(mlirMemRefTypeGetStridesAndOffset(self.0, strides.as_mut_ptr(), offset.as_mut_ptr()));
