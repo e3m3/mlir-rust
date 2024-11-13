@@ -485,12 +485,12 @@ impl RoundingMode {
 
 impl AddF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddF operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_float() {
             eprintln!("Expected integer types for AddF operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for AddF operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -541,12 +541,12 @@ impl AddF {
 
 impl AddI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddI operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for AddI operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for AddI operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -597,12 +597,12 @@ impl AddI {
 
 impl AddUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for AddUIExtended operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for AddUIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -656,8 +656,17 @@ impl Constant {
             dialect.get_namespace(),
             Op::Constant.get_name(),
         ));
+        let t = if attr.is_float() {
+            attr.as_float().unwrap().get_type()
+        } else if attr.is_integer() {
+            attr.as_integer().unwrap().get_type()
+        } else {
+            eprintln!("Expected float or integer arith value for constant");
+            exit(ExitCode::DialectError);
+        };
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_results(&[t]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -706,12 +715,12 @@ impl Constant {
 
 impl DivF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivF operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_float() {
             eprintln!("Expected integer types for DivF operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for DivF operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -762,12 +771,12 @@ impl DivF {
 
 impl DivSI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivSI operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for DivSI operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for DivSI operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -810,12 +819,12 @@ impl DivSI {
 
 impl DivUI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivUI operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for DivUI operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for DivUI operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -858,12 +867,12 @@ impl DivUI {
 
 impl MulF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulF operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_float() {
             eprintln!("Expected integer types for MulF operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for MulF operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -914,12 +923,12 @@ impl MulF {
 
 impl MulI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulI operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for MulI operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for MulI operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -970,12 +979,12 @@ impl MulI {
 
 impl MulSIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulSIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for MulSIExtended operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for MulSIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -1022,12 +1031,12 @@ impl MulSIExtended {
 
 impl MulUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for MulUIExtended operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for MulUIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -1074,12 +1083,12 @@ impl MulUIExtended {
 
 impl SubF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for SubF operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_float() {
             eprintln!("Expected integer types for SubF operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for SubF operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -1130,12 +1139,12 @@ impl SubF {
 
 impl SubI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for SubI operands and result");
-            exit(ExitCode::DialectError);
-        }
         if !t.is_integer() {
             eprintln!("Expected integer types for SubI operands and result");
+            exit(ExitCode::DialectError);
+        }
+        if *t != lhs.get_type() || *t != rhs.get_type() {
+            eprintln!("Expected matching types for SubI operands and result");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();

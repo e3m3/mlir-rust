@@ -48,7 +48,7 @@ use ir::Region;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::function::Function;
+use types::function::Function as FunctionType;
 use types::IRType;
 
 ///////////////////////////////
@@ -270,7 +270,7 @@ impl CallIndirect {
             eprintln!("Expected function value type for indirect callee");
             exit(ExitCode::DialectError);
         }
-        let t_f = Function::from(*f.get_type().get());
+        let t_f = FunctionType::from(*f.get_type().get());
         if t_f.num_inputs() != args.len() as isize {
             eprintln!("Expected number of inputs to match for callee and arguments provided");
             exit(ExitCode::DialectError);
@@ -333,7 +333,7 @@ impl Constant {
         let attr = Referee::new(&context, op.get_symbol_ref().get_value().as_ref().unwrap());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
-        op_state.add_results(&[op.get_type().as_type()]);
+        op_state.add_results(&[op.get_function_type().as_type()]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -366,7 +366,7 @@ impl Constant {
 
 impl Func {
     pub fn new(
-        t: &Function,
+        t: &FunctionType,
         f_name: &StringRef,
         visibility: SymbolVisibilityKind,
         attr_args: &Arguments,
@@ -426,10 +426,14 @@ impl Func {
         &mut self.0
     }
 
-    pub fn get_function(&self) -> FunctionAttr {
+    pub fn get_function_attribute(&self) -> FunctionAttr {
         let attr_name = StringBacked::from_string(&FunctionAttr::get_name().to_string());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FunctionAttr::from(*attr.get())
+    }
+
+    pub fn get_function_type(&self) -> FunctionType {
+        self.get_function_attribute().get_function()
     }
 
     pub fn get_symbol_name(&self) -> SymbolName {
@@ -448,10 +452,6 @@ impl Func {
         Results::from(*attr.get())
     }
 
-    pub fn get_type(&self) -> Function {
-        self.get_function().get_type()
-    }
-
     pub fn get_visibility(&self) -> Option<SymbolVisibility> {
         let op = self.as_operation();
         let attr_name = StringBacked::from_string(&SymbolVisibility::get_name().to_string());
@@ -467,7 +467,7 @@ impl Func {
 
 impl Return {
     pub fn new(parent: &Func, args: &[Value], loc: &Location) -> Self {
-        let t_f = parent.get_type();
+        let t_f = parent.get_function_type();
         let num_results = t_f.num_results() as usize;
         let symbol_ref = parent.get_symbol_ref();
         if num_results != args.len() {

@@ -15,6 +15,7 @@ use ir::Attribute;
 use ir::Context;
 use ir::Identifier;
 use ir::StringBacked;
+use ir::Type;
 
 use named::Named;
 
@@ -52,6 +53,10 @@ pub trait IRAttribute {
 
     fn get_context(&self) -> Context {
         self.as_attribute().get_context()
+    }
+
+    fn get_type(&self) -> Type {
+        self.as_attribute().get_type()
     }
 }
 

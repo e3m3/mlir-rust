@@ -176,7 +176,7 @@ pub trait NamedFunction: From<MlirAttribute> + IRAttributeNamed + Sized {
         TypeAttr::from(*self.get())
     }
 
-    fn get_type(&self) -> Function {
+    fn get_function(&self) -> Function {
         Function::from(*self.as_type_attribute().get_type().get())
     }
 }
