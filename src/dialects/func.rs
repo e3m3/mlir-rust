@@ -20,14 +20,15 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::array::Array;
-use attributes::dictionary::Dictionary;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::NamedArrayOfDictionaries;
+use attributes::NamedFunction;
+use attributes::NamedI64DenseArray;
+use attributes::NamedString;
+use attributes::NamedSymbolRef;
 use attributes::named::Named;
-use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
-use attributes::r#type::Type as TypeAttr;
 use dialects::IROp;
 use dialects::IROperation;
 use dialects::OperandSegmentSizes;
@@ -36,7 +37,6 @@ use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
-use ir::Attribute;
 use ir::Block;
 use ir::Context;
 use ir::Dialect;
@@ -120,227 +120,62 @@ pub struct Return(MlirOperation, SymbolRef);
 ///////////////////////////////
 
 impl Arguments {
-    pub fn new(context: &Context, elements: &[Dictionary]) -> Self {
-        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
-        let attr = Array::new(context, &e);
-        Self::__from(*attr.get())
-    }
-
-    fn __from(attr: MlirAttribute) -> Self {
-        Arguments(attr)
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let args = Self::__from(attr);
-        if !args.as_attribute().is_array() {
-            eprintln!("Expected array of dictionary attributes for arguments");
-            exit(ExitCode::DialectError);
-        }
-        let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
-            eprintln!("Expected array of dictionary attributes for arguments");
-            exit(ExitCode::DialectError);
-        }
-        args
-    }
-
-    pub fn as_array(&self) -> Array {
-        Array::from(*self.get())
-    }
-
-    pub fn as_dictionaries(&self) -> Vec<Dictionary> {
-        let args = self.as_array();
-        (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "arg_attrs"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl Callee {
-    pub fn new(sym: &SymbolRef) -> Self {
-        Self::from(*sym.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let callee = Callee(attr);
-        if !callee.as_attribute().is_flat_symbol_ref() {
-            eprintln!("Expected flat symbol reference for callee name");
-            exit(ExitCode::DialectError);
-        }
-        callee
-    }
-
-    pub fn as_symbol_ref(&self) -> SymbolRef {
-        SymbolRef::from(*self.get())
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "callee"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl FunctionAttr {
-    pub fn new(f: &Function) -> Self {
-        let attr = TypeAttr::new(&f.as_type());
-        Self::from(*attr.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let f = FunctionAttr(attr);
-        let a = f.as_attribute();
-        if !a.is_type() || !TypeAttr::from(*a.get()).get_type().is_function() {
-            eprintln!("Expected typed function attribute");
-            exit(ExitCode::DialectError);
-        }
-        f
-    }
-
-    pub fn as_type_attribute(&self) -> TypeAttr {
-        TypeAttr::from(*self.get())
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "function_type"
-    }
-
-    pub fn get_type(&self) -> Function {
-        Function::from(*self.as_type_attribute().get_type().get())
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl Referee {
-    pub fn new(sym: &SymbolRef) -> Self {
-        Self::from(*sym.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let referee = Referee(attr);
-        if !referee.as_attribute().is_flat_symbol_ref() {
-            eprintln!("Expected flat symbol reference for referee name");
-            exit(ExitCode::DialectError);
-        }
-        referee
-    }
-
-    pub fn as_symbol_ref(&self) -> SymbolRef {
-        SymbolRef::from(*self.get())
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "value"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl Results {
-    pub fn new(context: &Context, elements: &[Dictionary]) -> Self {
-        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
-        let attr = Array::new(context, &e);
-        Self::__from(*attr.get())
-    }
-
-    fn __from(attr: MlirAttribute) -> Self {
-        Results(attr)
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let args = Self::__from(attr);
-        if !args.as_attribute().is_array() {
-            eprintln!("Expected array of dictionary attributes for results");
-            exit(ExitCode::DialectError);
-        }
-        let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
-            eprintln!("Expected array of dictionary attributes for results");
-            exit(ExitCode::DialectError);
-        }
-        args
-    }
-
-    pub fn as_array(&self) -> Array {
-        Array::from(*self.get())
-    }
-
-    pub fn as_dictionaries(&self) -> Vec<Dictionary> {
-        let args = self.as_array();
-        (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "res_attrs"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl SymbolName {
-    pub fn new(context: &Context, s: &StringRef) -> Self {
-        let sym = StringAttr::new(context, s);
-        Self::from(*sym.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let sym = SymbolName(attr);
-        if !sym.as_attribute().is_string() {
-            eprintln!("Expected string attribute for symbol name");
-            exit(ExitCode::DialectError);
-        }
-        sym
-    }
-
-    pub fn as_string(&self) -> StringAttr {
-        StringAttr::from(*self.get())
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "sym_name"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
@@ -350,35 +185,17 @@ impl SymbolVisibility {
             SymbolVisibilityKind::None      => None,
             SymbolVisibilityKind::Private   => {
                 let s = StringBacked::from_string(&k.to_string());
-                let sym = StringAttr::new(context, &s.as_string_ref());
-                Some(Self::from(*sym.as_attribute().get()))
+                Some(<Self as NamedString>::new(context, &s.as_string_ref()))
             },
         }
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        let sym = SymbolVisibility(attr);
-        if !sym.as_attribute().is_string() {
-            eprintln!("Expected string attribute for symbol visibility");
-            exit(ExitCode::DialectError);
-        }
-        sym
-    }
-
-    pub fn as_string(&self) -> StringAttr {
-        StringAttr::from(*self.get())
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_context(&self) -> Context {
-        self.as_attribute().get_context()
-    }
-
-    pub fn get_name() -> &'static str {
-        "sym_visibility"
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
@@ -513,7 +330,7 @@ impl Constant {
             dialect.get_namespace(),
             Op::Constant.get_name(),
         ));
-        let attr = Referee::new(&op.get_symbol_ref());
+        let attr = Referee::new(&context, op.get_symbol_ref().get_value().as_ref().unwrap());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_results(&[op.get_type().as_type()]);
@@ -622,7 +439,7 @@ impl Func {
     }
 
     pub fn get_symbol_ref(&self) -> SymbolRef {
-        SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
+        self.get_symbol_name().as_symbol_ref()
     }
 
     pub fn get_result_attributes(&self) -> Results {
@@ -702,6 +519,12 @@ impl Return {
 //  Trait Implementation
 ///////////////////////////////
 
+impl From<MlirAttribute> for Arguments {
+    fn from(attr: MlirAttribute) -> Self {
+        Arguments(attr)
+    }
+}
+
 impl IRAttribute for Arguments {
     fn get(&self) -> &MlirAttribute {
         &self.0
@@ -713,10 +536,12 @@ impl IRAttribute for Arguments {
 }
 
 impl IRAttributeNamed for Arguments {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "arg_attrs"
     }
 }
+
+impl NamedArrayOfDictionaries for Arguments {}
 
 impl IROperation for Call {
     fn get(&self) -> &MlirOperation {
@@ -753,6 +578,12 @@ impl IROperation for Call {
     }
 }
 
+impl From<MlirAttribute> for Callee {
+    fn from(attr: MlirAttribute) -> Self {
+        Callee(attr)
+    }
+}
+
 impl IRAttribute for Callee {
     fn get(&self) -> &MlirAttribute {
         &self.0
@@ -764,10 +595,12 @@ impl IRAttribute for Callee {
 }
 
 impl IRAttributeNamed for Callee {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "callee"
     }
 }
+
+impl NamedSymbolRef for Callee {}
 
 impl IROperation for CallIndirect {
     fn get(&self) -> &MlirOperation {
@@ -878,6 +711,12 @@ impl IROperation for Func {
     }
 }
 
+impl From<MlirAttribute> for FunctionAttr {
+    fn from(attr: MlirAttribute) -> Self {
+        FunctionAttr(attr)
+    }
+}
+
 impl IRAttribute for FunctionAttr {
     fn get(&self) -> &MlirAttribute {
         &self.0
@@ -889,14 +728,22 @@ impl IRAttribute for FunctionAttr {
 }
 
 impl IRAttributeNamed for FunctionAttr {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "function_type"
     }
 }
+
+impl NamedFunction for FunctionAttr {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
+    }
+}
+
+impl From<MlirAttribute> for Referee {
+    fn from(attr: MlirAttribute) -> Self {
+        Referee(attr)
     }
 }
 
@@ -911,8 +758,16 @@ impl IRAttribute for Referee {
 }
 
 impl IRAttributeNamed for Referee {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "value"
+    }
+}
+
+impl NamedSymbolRef for Referee {}
+
+impl From<MlirAttribute> for Results {
+    fn from(attr: MlirAttribute) -> Self {
+        Results(attr)
     }
 }
 
@@ -927,10 +782,12 @@ impl IRAttribute for Results {
 }
 
 impl IRAttributeNamed for Results {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "res_attrs"
     }
 }
+
+impl NamedSymbolRef for Results {}
 
 impl IROperation for Return {
     fn get(&self) -> &MlirOperation {
@@ -978,6 +835,12 @@ impl cmp::PartialEq for Return {
     }
 }
 
+impl From<MlirAttribute> for SymbolName {
+    fn from(attr: MlirAttribute) -> Self {
+        SymbolName(attr)
+    }
+}
+
 impl IRAttribute for SymbolName {
     fn get(&self) -> &MlirAttribute {
         &self.0
@@ -989,8 +852,16 @@ impl IRAttribute for SymbolName {
 }
 
 impl IRAttributeNamed for SymbolName {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "sym_name"
+    }
+}
+
+impl NamedSymbolRef for SymbolName {}
+
+impl From<MlirAttribute> for SymbolVisibility {
+    fn from(attr: MlirAttribute) -> Self {
+        SymbolVisibility(attr)
     }
 }
 
@@ -1005,10 +876,12 @@ impl IRAttribute for SymbolVisibility {
 }
 
 impl IRAttributeNamed for SymbolVisibility {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "sym_visibility"
     }
 }
+
+impl NamedString for SymbolVisibility {}
 
 impl FromStr for SymbolVisibilityKind {
     type Err = String;

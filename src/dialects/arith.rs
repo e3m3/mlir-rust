@@ -23,6 +23,8 @@ use attributes::float::Float as FloatAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::NamedFloatOrInteger;
+use attributes::NamedInteger;
 use dialects::IROp;
 use dialects::IROperation;
 use exit_code::exit;
@@ -246,65 +248,19 @@ pub struct SubI(MlirOperation);
 ///////////////////////////////
 
 impl ArithValue {
-    pub fn new_float(attr: &FloatAttr) -> Self {
-        Self::from(*attr.as_attribute().get())
-    }
-
-    pub fn new_integer(attr: &IntegerAttr) -> Self {
-        Self::from(*attr.as_attribute().get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        ArithValue(attr)
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0
-    }
-
-    pub fn get_name() -> &'static str {
-        "value"
-    }
-
-    pub fn get_float_attribute(&self) -> Option<FloatAttr> {
-        if self.is_float() {
-            Some(FloatAttr::from(*self.get()))
-        } else {
-            None
-        }
-    }
-
-    pub fn get_integer_attribute(&self) -> Option<IntegerAttr> {
-        if self.is_integer() {
-            Some(IntegerAttr::from(*self.get()))
-        } else {
-            None
-        }
-    }
-
-    pub fn is_float(&self) -> bool {
-        self.as_attribute().is_float()
-    }
-
-    pub fn is_integer(&self) -> bool {
-        self.as_attribute().is_integer()
     }
 }
 
 impl FastMath {
     pub fn new(context: &Context, flags: FastMathFlags) -> Self {
         const WIDTH: c_uint = 8; // Hardcode width to 8 bits; Attribute only accepts i64 though.
-        let t = IntegerType::new_signless(context, WIDTH);
-        let attr = IntegerAttr::new(&t.as_type(), flags as i64);
-        Self::from(*attr.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        FastMath(attr)
+        NamedInteger::new(context, flags as i64, WIDTH)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -315,29 +271,15 @@ impl FastMath {
         &mut self.0
     }
 
-    pub fn get_name() -> &'static str {
-        "fastmath"
-    }
-
-    pub fn get_integer_attribute(&self) -> IntegerAttr {
-        IntegerAttr::from(self.0)
-    }
-
     pub fn get_flags(&self) -> FastMathFlags {
-        FastMathFlags::from_i64(self.get_integer_attribute().get_int())
+        FastMathFlags::from_i64(self.as_integer().get_int())
     }
 }
 
 impl IntegerOverflow {
     pub fn new(context: &Context, flags: IntegerOverflowFlags) -> Self {
         const WIDTH: c_uint = 8; // Hardcode width to 8 bits; Attribute only accepts i64 though.
-        let t = IntegerType::new_signless(context, WIDTH);
-        let attr = IntegerAttr::new(&t.as_type(), flags as i64);
-        Self::from(*attr.get())
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        IntegerOverflow(attr)
+        NamedInteger::new(context, flags as i64, WIDTH)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -348,16 +290,8 @@ impl IntegerOverflow {
         &mut self.0
     }
 
-    pub fn get_name() -> &'static str {
-        "overflow"
-    }
-
-    pub fn get_integer_attribute(&self) -> IntegerAttr {
-        IntegerAttr::from(self.0)
-    }
-
     pub fn get_flags(&self) -> IntegerOverflowFlags {
-        IntegerOverflowFlags::from_i64(self.get_integer_attribute().get_int())
+        IntegerOverflowFlags::from_i64(self.as_integer().get_int())
     }
 }
 
@@ -748,11 +682,11 @@ impl Constant {
     }
 
     pub fn get_float_value(&self) -> Option<FloatAttr> {
-        self.get_value().get_float_attribute()
+        self.get_value().as_float()
     }
 
     pub fn get_integer_value(&self) -> Option<IntegerAttr> {
-        self.get_value().get_integer_attribute()
+        self.get_value().as_integer()
     }
 
     pub fn get_value(&self) -> ArithValue {
@@ -1384,6 +1318,12 @@ impl IROperation for AddUIExtended {
     }
 }
 
+impl From<MlirAttribute> for ArithValue {
+    fn from(attr: MlirAttribute) -> Self {
+        ArithValue(attr)
+    }
+}
+
 impl IRAttribute for ArithValue {
     fn get(&self) -> &MlirAttribute {
         self.get()
@@ -1395,10 +1335,12 @@ impl IRAttribute for ArithValue {
 }
 
 impl IRAttributeNamed for ArithValue {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "value"
     }
 }
+
+impl NamedFloatOrInteger for ArithValue {}
 
 impl IROperation for Constant {
     fn get(&self) -> &MlirOperation {
@@ -1566,6 +1508,12 @@ impl IROperation for DivUI {
     }
 }
 
+impl From<MlirAttribute> for FastMath {
+    fn from(attr: MlirAttribute) -> Self {
+        FastMath(attr)
+    }
+}
+
 impl IRAttribute for FastMath {
     fn get(&self) -> &MlirAttribute {
         self.get()
@@ -1577,8 +1525,16 @@ impl IRAttribute for FastMath {
 }
 
 impl IRAttributeNamed for FastMath {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "fastmath"
+    }
+}
+
+impl NamedInteger for FastMath {}
+
+impl From<MlirAttribute> for IntegerOverflow {
+    fn from(attr: MlirAttribute) -> Self {
+        IntegerOverflow(attr)
     }
 }
 
@@ -1593,10 +1549,12 @@ impl IRAttribute for IntegerOverflow {
 }
 
 impl IRAttributeNamed for IntegerOverflow {
-    fn get_name(&self) -> &'static str {
-        Self::get_name()
+    fn get_name() -> &'static str {
+        "overflow"
     }
 }
+
+impl NamedInteger for IntegerOverflow {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
