@@ -787,7 +787,7 @@ impl IRAttributeNamed for Results {
     }
 }
 
-impl NamedSymbolRef for Results {}
+impl NamedArrayOfDictionaries for Results {}
 
 impl IROperation for Return {
     fn get(&self) -> &MlirOperation {
