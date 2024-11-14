@@ -443,7 +443,7 @@ impl Func {
     }
 
     pub fn get_symbol_ref(&self) -> SymbolRef {
-        self.get_symbol_name().as_symbol_ref()
+        SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
     }
 
     pub fn get_result_attributes(&self) -> Results {
@@ -857,7 +857,7 @@ impl IRAttributeNamed for SymbolName {
     }
 }
 
-impl NamedSymbolRef for SymbolName {}
+impl NamedString for SymbolName {}
 
 impl From<MlirAttribute> for SymbolVisibility {
     fn from(attr: MlirAttribute) -> Self {
