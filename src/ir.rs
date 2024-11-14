@@ -318,7 +318,7 @@ pub struct OperationState(MlirOperationState);
 pub struct OpOperand(MlirOpOperand);
 
 #[derive(Clone)]
-pub struct Region(MlirRegion);
+pub struct Region(MlirRegion, usize);
 
 pub struct RegionIter<'a>(&'a Region, Option<Block>);
 
@@ -1353,11 +1353,14 @@ impl Region {
     }
 
     pub fn from(region: MlirRegion) -> Self {
-        Region(region)
+        let mut r = Region(region, 0);
+        *r.num_blocks_mut() = r.__num_blocks();
+        r
     }
 
     pub fn append_block(&mut self, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionAppendOwnedBlock(*self.get_mut(), *block.get_mut()))
+        do_unsafe!(mlirRegionAppendOwnedBlock(*self.get_mut(), *block.get_mut()));
+        *self.num_blocks_mut() += 1;
     }
 
     pub fn get(&self) -> &MlirRegion {
@@ -1369,23 +1372,48 @@ impl Region {
     }
 
     pub fn insert_block(&mut self, block: &mut Block, i: usize) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlock(*self.get_mut(), i as isize, *block.get_mut()))
+        if i > self.num_blocks() {
+            eprintln!("Block position '{}' out of bounds", i);
+            exit(ExitCode::IRError);
+        }
+        do_unsafe!(mlirRegionInsertOwnedBlock(*self.get_mut(), i as isize, *block.get_mut()));
+        *self.num_blocks_mut() += 1;
     }
 
     pub fn insert_block_after(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockAfter(*self.get_mut(), *anchor.get(), *block.get_mut()))
+        do_unsafe!(mlirRegionInsertOwnedBlockAfter(*self.get_mut(), *anchor.get(), *block.get_mut()));
+        *self.num_blocks_mut() += 1;
     }
 
     pub fn insert_block_before(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockBefore(*self.get_mut(), *anchor.get(), *block.get_mut()))
+        do_unsafe!(mlirRegionInsertOwnedBlockBefore(*self.get_mut(), *anchor.get(), *block.get_mut()));
+        *self.num_blocks_mut() += 1;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.num_blocks() == 0 && self.iter().next().is_none()
     }
 
     pub fn iter(&self) -> RegionIter {
         RegionIter(self, None)
     }
 
+    fn __num_blocks(&self) -> usize {
+        self.iter().fold(0, |acc,_b| acc + 1) as usize
+    }
+
+    pub fn num_blocks(&self) -> usize {
+        self.1
+    }
+
+    pub fn num_blocks_mut(&mut self) -> &mut usize {
+        &mut self.1
+    }
+
     pub fn take_body(&mut self, other: &mut Region) -> () {
-        do_unsafe!(mlirRegionTakeBody(self.0, *other.get()))
+        let n = other.num_blocks();
+        do_unsafe!(mlirRegionTakeBody(self.0, *other.get()));
+        *self.num_blocks_mut() = n;
     }
 }
 
