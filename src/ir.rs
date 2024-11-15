@@ -279,7 +279,7 @@ pub trait Shape {
 pub struct Attribute(MlirAttribute);
 
 #[derive(Clone)]
-pub struct Block(MlirBlock);
+pub struct Block(MlirBlock, usize);
 
 pub struct BlockIter<'a>(&'a Block, Option<Operation>);
 
@@ -553,7 +553,9 @@ impl Block {
     }
 
     pub fn from(block: MlirBlock) -> Self {
-        Block(block)
+        let mut b = Block(block, 0);
+        *b.num_operations_mut() = b.__num_operations();
+        b
     }
 
     pub fn add_arg(&mut self, t: &Type, loc: &Location) -> Value {
@@ -561,7 +563,8 @@ impl Block {
     }
 
     pub fn append_operation(&mut self, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockAppendOwnedOperation(*self.get_mut(), *op.get_mut()))
+        do_unsafe!(mlirBlockAppendOwnedOperation(*self.get_mut(), *op.get_mut()));
+        *self.num_operations_mut() += 1;
     }
 
     pub fn detach(&mut self) -> () {
@@ -605,15 +608,22 @@ impl Block {
     }
 
     pub fn insert_operation(&mut self, op: &mut Operation, i: usize) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperation(*self.get_mut(), i as isize, *op.get_mut()))
+        do_unsafe!(mlirBlockInsertOwnedOperation(*self.get_mut(), i as isize, *op.get_mut()));
+        *self.num_operations_mut() += 1;
     }
 
     pub fn insert_operation_after(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationAfter(*self.get_mut(), *anchor.get(), *op.get_mut()))
+        do_unsafe!(mlirBlockInsertOwnedOperationAfter(*self.get_mut(), *anchor.get(), *op.get_mut()));
+        *self.num_operations_mut() += 1;
     }
 
     pub fn insert_operation_before(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationBefore(*self.get_mut(), *anchor.get(), *op.get_mut()))
+        do_unsafe!(mlirBlockInsertOwnedOperationBefore(*self.get_mut(), *anchor.get(), *op.get_mut()));
+        *self.num_operations_mut() += 1;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.num_operations() == 0 && self.iter().next().is_none()
     }
 
     pub fn iter(&self) -> BlockIter {
@@ -622,6 +632,18 @@ impl Block {
 
     pub fn num_args(&self) -> isize {
         do_unsafe!(mlirBlockGetNumArguments(self.0))
+    }
+
+    fn __num_operations(&self) -> usize {
+        self.iter().fold(0, |acc,_op| acc + 1) as usize
+    }
+
+    pub fn num_operations(&self) -> usize {
+        self.1
+    }
+
+    pub fn num_operations_mut(&mut self) -> &mut usize {
+        &mut self.1
     }
 }
 
