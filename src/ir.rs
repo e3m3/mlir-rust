@@ -480,6 +480,10 @@ impl Attribute {
         do_unsafe!(mlirAttributeIsALocation(self.0))
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn is_opaque(&self) -> bool {
         do_unsafe!(mlirAttributeIsAOpaque(self.0))
     }
@@ -626,6 +630,10 @@ impl Block {
         self.num_operations() == 0 && self.iter().next().is_none()
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn iter(&self) -> BlockIter {
         BlockIter(self, None)
     }
@@ -659,8 +667,16 @@ impl <'a> Iterator for BlockIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
             None            => {
-                self.1 = Some(Operation::from(do_unsafe!(mlirBlockGetFirstOperation(*self.0.get()))));
-                self.1.clone()
+                if self.0.is_null() {
+                    return None;
+                }
+                let op = Operation::from(do_unsafe!(mlirBlockGetFirstOperation(*self.0.get())));
+                if op.is_null() {
+                    None
+                } else {
+                    self.1 = Some(op);
+                    self.1.clone()
+                }
             },
             Some(ref mut o) => match o.next() {
                 None        => {
@@ -764,6 +780,10 @@ impl Context {
         Location::unknown_from(self)
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     /// Load a registered dialect with name
     pub fn load_dialect(&self, name: &str) -> Option<Dialect> {
         let string = StringBacked::from_str(name).unwrap();
@@ -834,6 +854,10 @@ impl Dialect {
     pub fn get_namespace(&self) -> StringRef {
         StringRef::from(do_unsafe!(mlirDialectGetNamespace(self.0)))
     }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
 }
 
 impl cmp::PartialEq for Dialect {
@@ -865,6 +889,10 @@ impl Identifier {
 
     pub fn get_mut(&mut self) -> &mut MlirIdentifier {
         &mut self.0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 }
 
@@ -911,8 +939,20 @@ impl IntegerSet {
         do_unsafe!(mlirIntegerSetDump(self.0))
     }
 
+    pub fn get(&self) -> &MlirIntegerSet {
+        &self.0
+    }
+
     pub fn get_context(&self) -> Context {
         Context::from(do_unsafe!(mlirIntegerSetGetContext(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirIntegerSet {
+        &mut self.0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 }
 
@@ -930,6 +970,10 @@ impl Location {
             line as c_uint,
             col as c_uint,
         )))
+    }
+
+    pub fn new_unknown(context: &Context) -> Self {
+        Location::from(do_unsafe!(mlirLocationUnknownGet(*context.get())))
     }
 
     pub fn from(loc: MlirLocation) -> Self {
@@ -956,8 +1000,12 @@ impl Location {
         &mut self.0
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn unknown_from(context: &Context) -> Self {
-        Location::from(do_unsafe!(mlirLocationUnknownGet(*context.get())))
+        Self::new_unknown(context)
     }
 }
 
@@ -1012,8 +1060,20 @@ impl Module {
         Self::from(do_unsafe!(mlirModuleFromOperation(*op.get())))
     }
 
+    pub fn get(&self) -> &MlirModule {
+        &self.0
+    }
+
     pub fn get_body(&self) -> Block {
         Block::from(do_unsafe!(mlirModuleGetBody(self.0)))
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirModule {
+        &mut self.0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 }
 
@@ -1046,6 +1106,10 @@ impl Pass {
 
     pub fn get_mut(&mut self) -> &mut MlirPass {
         &mut self.0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 
     pub fn register_all_passes() -> () {
@@ -1157,6 +1221,10 @@ impl Operation {
         do_unsafe!(mlirOperationMoveBefore(*self.get_mut(), other.0))
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn iter(&self) -> OperationIter {
         OperationIter(self, None)
     }
@@ -1261,8 +1329,16 @@ impl <'a> Iterator for OperationIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
             None            => {
-                self.1 = Some(Region::from(do_unsafe!(mlirOperationGetFirstRegion(*self.0.get()))));
-                self.1.clone()
+                if self.0.is_null() {
+                    return None;
+                }
+                let region = Region::from(do_unsafe!(mlirOperationGetFirstRegion(*self.0.get())));
+                if region.is_null() {
+                    None
+                } else {
+                    self.1 = Some(region);
+                    self.1.clone()
+                }
             },
             Some(ref mut r) => match r.next() {
                 None        => {
@@ -1416,6 +1492,10 @@ impl Region {
         self.num_blocks() == 0 && self.iter().next().is_none()
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn iter(&self) -> RegionIter {
         RegionIter(self, None)
     }
@@ -1477,8 +1557,16 @@ impl <'a> Iterator for RegionIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
             None            => {
-                self.1 = Some(Block::from(do_unsafe!(mlirRegionGetFirstBlock(*self.0.get()))));
-                self.1.clone()
+                if self.0.is_null() {
+                    return None;
+                }
+                let block = Block::from(do_unsafe!(mlirRegionGetFirstBlock(*self.0.get())));
+                if block.is_null() {
+                    None
+                } else {
+                    self.1 = Some(block);
+                    self.1.clone()
+                }
             },
             Some(ref mut b) => match b.next() {
                 None        => {
@@ -1509,6 +1597,10 @@ impl Registry {
 
     pub fn get_mut(&mut self) -> &mut MlirDialectRegistry {
         &mut self.0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 
     pub fn register_arith(&mut self) -> () {
@@ -1611,6 +1703,10 @@ impl StringBacked {
         self.len() == 0
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().data.is_null()
+    }
+
     pub fn len(&self) -> usize {
         self.0.length
     }
@@ -1678,6 +1774,10 @@ impl StringCallback {
     pub fn get_mut(&mut self) -> &mut MlirStringCallback {
         &mut self.0
     }
+
+    pub fn is_none(&self) -> bool {
+        self.get().is_none()
+    }
 }
 
 impl StringRef {
@@ -1703,6 +1803,10 @@ impl StringRef {
 
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().data.is_null()
     }
 
     pub fn len(&self) -> usize {
@@ -1776,6 +1880,10 @@ impl SymbolTable {
         Attribute::from(do_unsafe!(mlirSymbolTableInsert(*self.get_mut(), *op.get())))
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn lookup(&self, name: &StringRef) -> Operation {
         Operation::from(do_unsafe!(mlirSymbolTableLookup(self.0, *name.get())))
     }
@@ -1846,6 +1954,10 @@ impl Type {
 
     pub fn is_none(&self) -> bool {
         do_unsafe!(mlirTypeIsANone(self.0))
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
     }
 
     pub fn is_opaque(&self) -> bool {
@@ -1933,6 +2045,10 @@ impl TypeID {
     pub fn hash(&self) -> usize {
         do_unsafe!(mlirTypeIDHashValue(self.0))
     }
+
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
 }
 
 impl cmp::PartialEq for TypeID {
@@ -2003,6 +2119,10 @@ impl Value {
         do_unsafe!(mlirValueIsABlockArgument(self.0))
     }
 
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
     pub fn is_result(&self) -> bool {
         do_unsafe!(mlirValueIsAOpResult(self.0))
     }
@@ -2037,8 +2157,16 @@ impl <'a> Iterator for ValueIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
             None            => {
-                self.1 = Some(OpOperand::from(do_unsafe!(mlirValueGetFirstUse(*self.0.get()))));
-                self.1.clone()
+                if self.0.is_null() {
+                    return None;
+                }
+                let op = OpOperand::from(do_unsafe!(mlirValueGetFirstUse(*self.0.get())));
+                if op.is_null() {
+                    None
+                } else {
+                    self.1 = Some(op);
+                    self.1.clone()
+                }
             },
             Some(ref mut o) => match o.next() {
                 None        => {
