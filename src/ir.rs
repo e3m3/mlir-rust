@@ -1075,6 +1075,16 @@ impl Module {
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
     }
+
+    pub fn take_body(&self, block: &mut Block) -> () {
+        let mut region = self.as_operation().get_region(0);
+        let mut region_temp = Region::new();
+        if !block.get_parent().is_null() {
+            block.detach();
+        }
+        region_temp.append_block(block);
+        region.take_body(&mut region_temp);
+    }
 }
 
 impl Default for Module {
