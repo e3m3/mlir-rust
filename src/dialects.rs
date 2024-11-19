@@ -10,10 +10,12 @@ use mlir::MlirOperation;
 use std::cmp;
 use std::fmt;
 
+use crate::effects;
 use crate::interfaces;
 use crate::ir;
 use crate::traits;
 
+use effects::MemoryEffectList;
 use interfaces::Interface;
 use ir::Dialect;
 use ir::Destroy;
@@ -43,6 +45,7 @@ pub mod func;
 pub trait IROperation {
     fn get(&self) -> &MlirOperation;
     fn get_dialect(&self) -> Dialect;
+    fn get_effects(&self) -> MemoryEffectList;
     fn get_interfaces(&self) -> &'static [Interface];
     fn get_mut(&mut self) -> &mut MlirOperation;
     fn get_name(&self) -> &'static str;

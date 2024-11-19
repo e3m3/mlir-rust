@@ -14,6 +14,7 @@ use std::str::FromStr;
 
 use crate::attributes;
 use crate::dialects;
+use crate::effects;
 use crate::exit_code;
 use crate::interfaces;
 use crate::ir;
@@ -33,6 +34,8 @@ use dialects::IROp;
 use dialects::IROperation;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::ResultSegmentSizes;
+use effects::MemoryEffectList;
+use effects::NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -552,6 +555,12 @@ impl IROperation for Call {
         self.as_operation().get_context().get_dialect_func()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::CallOpInterface,
@@ -611,6 +620,12 @@ impl IROperation for CallIndirect {
         self.as_operation().get_context().get_dialect_func()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::CallOpInterface
@@ -641,6 +656,12 @@ impl IROperation for Constant {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_func()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -679,6 +700,12 @@ impl IROperation for Func {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_func()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -796,6 +823,12 @@ impl IROperation for Return {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_func()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {

@@ -31,6 +31,7 @@ pub enum Interface {
 #[derive(Clone,Copy,PartialEq)]
 pub enum MemoryEffectOpInterface {
     NoMemoryEffect,
+    MemoryEffect,
 }
 
 impl fmt::Display for Interface {
@@ -67,6 +68,7 @@ impl fmt::Display for MemoryEffectOpInterface {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
             MemoryEffectOpInterface::NoMemoryEffect => "no_memory_effect",
+            MemoryEffectOpInterface::MemoryEffect   => "memory_effect",
         })
     }
 }

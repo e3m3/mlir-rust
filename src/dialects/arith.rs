@@ -13,6 +13,7 @@ use std::fmt;
 
 use crate::attributes;
 use crate::dialects;
+use crate::effects;
 use crate::exit_code;
 use crate::interfaces;
 use crate::ir;
@@ -27,6 +28,8 @@ use attributes::specialized::NamedFloatOrInteger;
 use attributes::specialized::NamedInteger;
 use dialects::IROp;
 use dialects::IROperation;
+use effects::MemoryEffectList;
+use effects::NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -1206,6 +1209,12 @@ impl IROperation for AddF {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ArithFastMathInterface,
@@ -1248,6 +1257,12 @@ impl IROperation for AddI {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1293,6 +1308,12 @@ impl IROperation for AddUIExtended {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1360,6 +1381,12 @@ impl IROperation for Constant {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ConditionallySpeculatable,
@@ -1397,6 +1424,12 @@ impl IROperation for DivF {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1442,6 +1475,12 @@ impl IROperation for DivSI {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ConditionallySpeculatable,
@@ -1482,6 +1521,12 @@ impl IROperation for DivUI {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1580,6 +1625,12 @@ impl IROperation for MulF {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ArithFastMathInterface,
@@ -1623,6 +1674,12 @@ impl IROperation for MulI {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1671,6 +1728,12 @@ impl IROperation for MulSIExtended {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ConditionallySpeculatable,
@@ -1711,6 +1774,12 @@ impl IROperation for MulUIExtended {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1755,6 +1824,12 @@ impl IROperation for SubF {
         self.as_operation().get_context().get_dialect_arith()
     }
 
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
+    }
+
     fn get_interfaces(&self) -> &'static [Interface] {
         &[
             Interface::ArithFastMathInterface,
@@ -1796,6 +1871,12 @@ impl IROperation for SubI {
 
     fn get_dialect(&self) -> Dialect {
         self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            NO_MEMORY_EFFECT,
+        ]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
