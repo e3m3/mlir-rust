@@ -777,7 +777,7 @@ impl Context {
     }
 
     pub fn get_unknown_location(&self) -> Location {
-        Location::unknown_from(self)
+        Location::new_unknown(self)
     }
 
     pub fn is_null(&self) -> bool {
@@ -1003,15 +1003,11 @@ impl Location {
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
     }
-
-    pub fn unknown_from(context: &Context) -> Self {
-        Self::new_unknown(context)
-    }
 }
 
 impl Default for Location {
     fn default() -> Self {
-        Location::unknown_from(&Context::default())
+        Location::new_unknown(&Context::default())
     }
 }
 
