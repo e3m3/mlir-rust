@@ -90,6 +90,15 @@ impl Vector {
         &self.0
     }
 
+    pub fn get_matching_suffix(&self, other: &Self) -> Option<Self> {
+        let s = self.as_shaped();
+        let s_other = other.as_shaped();
+        s.get_matching_suffix(&s_other).map(|s_suffix| {
+            let t = s.get_element_type();
+            Self::new(&s_suffix, &t)
+        })
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirType {
         &mut self.0
     }

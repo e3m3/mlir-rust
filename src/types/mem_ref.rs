@@ -122,6 +122,17 @@ impl MemRef {
         Attribute::from(do_unsafe!(mlirMemRefTypeGetLayout(self.0)))
     }
 
+    pub fn get_matching_suffix(&self, other: &Self) -> Option<Self> {
+        let s = self.as_shaped();
+        let s_other = other.as_shaped();
+        s.get_matching_suffix(&s_other).map(|s_suffix| {
+            let t = s.get_element_type();
+            let l = self.get_layout();
+            let m = self.get_memory_space();
+            Self::new(&s_suffix, &t, &l, &m)
+        })
+    }
+
     pub fn get_memory_space(&self) -> Attribute {
         Attribute::from(do_unsafe!(mlirMemRefTypeGetMemorySpace(self.0)))
     }

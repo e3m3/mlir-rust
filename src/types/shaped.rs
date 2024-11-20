@@ -25,6 +25,7 @@ use crate::types;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Shape;
+use ir::ShapeImpl;
 use ir::Type;
 use types::IRType;
 
@@ -70,6 +71,44 @@ impl Shaped {
         &mut self.0
     }
 
+    pub fn get_matching_suffix(&self, other: &Self) -> Option<ShapeImpl<Vec<i64>>> {
+        if !self.has_matching_suffix(other) {
+            return None;
+        }
+        let mut v: Vec<i64> = Vec::new();
+        let mut n = (self.num_elements().unwrap_or(0) - 1) as isize;
+        let mut n_other = (other.num_elements().unwrap_or(0) - 1) as isize;
+        loop {
+            if n < 0 || n_other < 0 {
+                break;
+            }
+            let size = self.dim_size(n);
+            let size_other = other.dim_size(n_other);
+            if size == size_other {
+                v.push(size);
+            }
+            n -= 1;
+            n_other -= 1;
+        }
+        Some(ShapeImpl::from(v))
+    }
+
+    pub fn has_matching_suffix(&self, other: &Self) -> bool {
+        if self.get_element_type() != other.get_element_type() {
+            return false;
+        }
+        if !self.has_rank() || !other.has_rank() {
+            return false;
+        }
+        let n = self.num_elements().unwrap_or(0) as isize;
+        let n_other = self.num_elements().unwrap_or(0) as isize;
+        self.dim_size(n - 1) == other.dim_size(n_other - 1)
+    }
+
+    pub fn has_rank(&self) -> bool {
+        do_unsafe!(mlirShapedTypeHasRank(self.0))
+    }
+
     pub fn is_static(&self) -> bool {
         do_unsafe!(mlirShapedTypeHasStaticShape(self.0))
     }
@@ -84,10 +123,6 @@ impl Shaped {
 
     pub fn is_dynamic_stride_or_offset(i: i64) -> bool {
         do_unsafe!(mlirShapedTypeIsDynamicStrideOrOffset(i))
-    }
-
-    pub fn has_rank(&self) -> bool {
-        do_unsafe!(mlirShapedTypeHasRank(self.0))
     }
 
     pub fn rank(&self) -> Option<i64> {
