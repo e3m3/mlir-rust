@@ -65,6 +65,7 @@ use mlir::mlirAffineModExprGet;
 use mlir::mlirAffineMulExprGet;
 use mlir::mlirAffineSymbolExprGet;
 use mlir::mlirAffineSymbolExprGetPosition;
+use mlir::MlirAttribute;
 use mlir::MlirAffineExpr;
 use mlir::MlirAffineMap;
 
@@ -576,6 +577,12 @@ impl AffineExpr for Symbol {
 impl cmp::PartialEq for dyn AffineExpr {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirAffineExprEqual(*self.get(), *rhs.get()))
+    }
+}
+
+impl From<MlirAttribute> for Map {
+    fn from(attr: MlirAttribute) -> Self {
+        Self::from_attribute(&Attribute::from(attr))
     }
 }
 
