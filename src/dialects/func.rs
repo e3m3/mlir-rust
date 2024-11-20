@@ -35,7 +35,7 @@ use dialects::IROperation;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::ResultSegmentSizes;
 use effects::MemoryEffectList;
-use effects::NO_MEMORY_EFFECT;
+use effects::MEFF_NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -557,7 +557,7 @@ impl IROperation for Call {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -622,7 +622,7 @@ impl IROperation for CallIndirect {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -660,7 +660,7 @@ impl IROperation for Constant {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -704,7 +704,7 @@ impl IROperation for Func {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -827,7 +827,7 @@ impl IROperation for Return {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 

@@ -34,9 +34,9 @@ use dialects::common::OperandSegmentSizes;
 use dialects::common::ResultSegmentSizes;
 use dialects::IROp;
 use dialects::IROperation;
-use effects::DEFAULT_WRITE;
 use effects::MemoryEffectList;
-use effects::NO_MEMORY_EFFECT;
+use effects::MEFF_DEFAULT_WRITE;
+use effects::MEFF_NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -726,7 +726,7 @@ impl IROperation for FromElements {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -821,7 +821,7 @@ impl IROperation for Print {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            DEFAULT_WRITE,
+            MEFF_DEFAULT_WRITE,
         ]
     }
 
@@ -937,7 +937,7 @@ impl IROperation for TransferRead {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -982,7 +982,7 @@ impl IROperation for TransferWrite {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 

@@ -25,8 +25,8 @@ pub enum SideEffectResource {
 #[derive(Clone,Copy,Default,PartialEq)]
 pub struct MemoryEffect(MemoryEffectType, SideEffectResource);
 
-pub const DEFAULT_WRITE: &MemoryEffect = &MemoryEffect::default_write();
-pub const NO_MEMORY_EFFECT: &MemoryEffect = &MemoryEffect::no_memory_effect();
+pub const MEFF_DEFAULT_WRITE: &MemoryEffect = &MemoryEffect::default_write();
+pub const MEFF_NO_MEMORY_EFFECT: &MemoryEffect = &MemoryEffect::no_memory_effect();
 
 impl MemoryEffect {
     #[inline]

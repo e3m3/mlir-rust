@@ -29,7 +29,7 @@ use attributes::specialized::NamedInteger;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
-use effects::NO_MEMORY_EFFECT;
+use effects::MEFF_NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -1211,7 +1211,7 @@ impl IROperation for AddF {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1261,7 +1261,7 @@ impl IROperation for AddI {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1312,7 +1312,7 @@ impl IROperation for AddUIExtended {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1383,7 +1383,7 @@ impl IROperation for Constant {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1428,7 +1428,7 @@ impl IROperation for DivF {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1477,7 +1477,7 @@ impl IROperation for DivSI {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1525,7 +1525,7 @@ impl IROperation for DivUI {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1627,7 +1627,7 @@ impl IROperation for MulF {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1678,7 +1678,7 @@ impl IROperation for MulI {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1730,7 +1730,7 @@ impl IROperation for MulSIExtended {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1778,7 +1778,7 @@ impl IROperation for MulUIExtended {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1826,7 +1826,7 @@ impl IROperation for SubF {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
@@ -1875,7 +1875,7 @@ impl IROperation for SubI {
 
     fn get_effects(&self) -> MemoryEffectList {
         &[
-            NO_MEMORY_EFFECT,
+            MEFF_NO_MEMORY_EFFECT,
         ]
     }
 
