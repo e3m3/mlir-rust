@@ -36,6 +36,7 @@ pub mod func;
 //pub mod spirv;
 //pub mod tensor;
 //pub mod ub;
+pub mod vector;
 
 ///////////////////////////////
 //  Traits
