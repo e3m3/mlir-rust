@@ -195,7 +195,7 @@ impl NonTemporal {
 
 impl Punctuation {
     pub fn new(context: &Context, k: PunctuationKind) -> Self {
-        const WIDTH: c_uint = 8;
+        const WIDTH: c_uint = 32;
         <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 
@@ -208,7 +208,7 @@ impl Punctuation {
     }
 
     pub fn get_kind(&self) -> PunctuationKind {
-        PunctuationKind::from_i64(self.get_value())
+        PunctuationKind::from_i32(self.get_value() as i32)
     }
 }
 
@@ -293,7 +293,7 @@ impl Op {
 }
 
 impl PunctuationKind {
-    pub fn from_i64(n: i64) -> Self {
+    pub fn from_i32(n: i32) -> Self {
         match n {
             0   => PunctuationKind::NoPunctuation,
             1   => PunctuationKind::NewLine,
@@ -890,15 +890,15 @@ impl IRAttribute for Punctuation {
 
 impl IRAttributeNamed for Punctuation {
     fn get_name() -> &'static str {
-        "punctuation"
+        "vector.punctuation"
     }
 }
 
 impl NamedInteger for Punctuation {}
 
-impl From<i64> for PunctuationKind {
-    fn from(n: i64) -> Self {
-        PunctuationKind::from_i64(n)
+impl From<i32> for PunctuationKind {
+    fn from(n: i32) -> Self {
+        PunctuationKind::from_i32(n)
     }
 }
 
