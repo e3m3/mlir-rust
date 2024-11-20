@@ -15,9 +15,11 @@ pub enum Interface {
     CallableOpInterface,
     CastOpInterface,
     ConditionallySpeculatable,
+    DestinationStyleOpInterface,
     FunctionOpInterface,
     InferIntRangeInterface,
     InferTypeOpInterface,
+    MaskableOpInterface,
     MemoryEffect(MemoryEffectOpInterface),
     OpAsmOpInterface,
     RegionBranchTerminatorOpInterface,
@@ -25,6 +27,7 @@ pub enum Interface {
     ShapedDimOpInterface,
     Symbol,
     SymbolUserOpInterface,
+    VectorTransferOpInterface,
     VectorUnrollOpInterface,
 }
 
@@ -32,6 +35,7 @@ pub enum Interface {
 pub enum MemoryEffectOpInterface {
     NoMemoryEffect,
     MemoryEffect,
+    UndefinedMemoryEffect,
 }
 
 impl fmt::Display for Interface {
@@ -45,9 +49,11 @@ impl fmt::Display for Interface {
             Interface::CallableOpInterface                  => "callable_op_interface".to_string(),
             Interface::CastOpInterface                      => "cast_op_interface".to_string(),
             Interface::ConditionallySpeculatable            => "conditionally_speculatable".to_string(),
+            Interface::DestinationStyleOpInterface          => "destination_style_op_interface".to_string(),
             Interface::FunctionOpInterface                  => "function_op_interface".to_string(),
             Interface::InferIntRangeInterface               => "infer_int_range_interface".to_string(),
             Interface::InferTypeOpInterface                 => "infer_type_op_interface".to_string(),
+            Interface::MaskableOpInterface                  => "maskable_op_interface".to_string(),
             Interface::MemoryEffect(e)                      => format!("memory_effect_op_interface({})", e),
             Interface::OpAsmOpInterface                     => "op_asm_op_interface".to_string(),
             Interface::RegionBranchTerminatorOpInterface    => {
@@ -59,6 +65,7 @@ impl fmt::Display for Interface {
             Interface::ShapedDimOpInterface                 => "shaped_dim_op_interface".to_string(),
             Interface::Symbol                               => "symbol".to_string(),
             Interface::SymbolUserOpInterface                => "symbol_user_op_interface".to_string(),
+            Interface::VectorTransferOpInterface            => "vector_transfer_op_interface".to_string(),
             Interface::VectorUnrollOpInterface              => "vector_unroll_op_interface".to_string(),
         })
     }
@@ -67,8 +74,9 @@ impl fmt::Display for Interface {
 impl fmt::Display for MemoryEffectOpInterface {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            MemoryEffectOpInterface::NoMemoryEffect => "no_memory_effect",
-            MemoryEffectOpInterface::MemoryEffect   => "memory_effect",
+            MemoryEffectOpInterface::NoMemoryEffect         => "no_memory_effect",
+            MemoryEffectOpInterface::MemoryEffect           => "memory_effect",
+            MemoryEffectOpInterface::UndefinedMemoryEffect  => "undefined_memory_effect",
         })
     }
 }
