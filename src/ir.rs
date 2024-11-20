@@ -326,6 +326,9 @@ pub struct RegionIter<'a>(&'a Region, Option<Block>);
 pub struct Registry(MlirDialectRegistry);
 
 #[derive(Clone)]
+pub struct ShapeImpl<T: Clone + Sized>(T);
+
+#[derive(Clone)]
 pub struct StringCallback(MlirStringCallback);
 pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
@@ -1661,6 +1664,36 @@ impl Destroy for Registry {
 impl cmp::PartialEq for dyn Shape {
     fn eq(&self, rhs: &Self) -> bool {
         self.unpack() == rhs.unpack()
+    }
+}
+
+impl ShapeImpl<Vec<i64>> {
+    pub fn get(&self) -> &[i64] {
+        self.0.as_slice()
+    }
+
+    pub fn get_mut(&mut self) -> &mut [i64] {
+        self.0.as_mut()
+    }
+}
+
+impl From<Vec<i64>> for ShapeImpl<Vec<i64>> {
+    fn from(v: Vec<i64>) -> Self {
+        ShapeImpl(v)
+    }
+}
+
+impl Shape for ShapeImpl<Vec<i64>> {
+    fn rank(&self) -> isize {
+        self.get().len() as isize
+    }
+
+    fn get(&self, i: isize) -> i64 {
+        if i < 0 || i >= self.rank() {
+            eprintln!("Index out of bounds for shape implementation");
+            exit(ExitCode::IRError);
+        }
+        *self.get().get(i as usize).unwrap()
     }
 }
 
