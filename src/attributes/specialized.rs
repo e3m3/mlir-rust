@@ -7,15 +7,17 @@ extern crate mlir_sys as mlir;
 
 use mlir::MlirAttribute;
 
+use std::ffi::c_int;
 use std::ffi::c_uint;
-use std::hint::black_box;
 
 use crate::attributes;
+use crate::dialects;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
 use attributes::array::Array;
+use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
 use attributes::dense_array::Layout as DenseArrayLayout;
 use attributes::dictionary::Dictionary;
@@ -27,6 +29,7 @@ use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
 use attributes::unit::Unit;
+use dialects::affine::Map as AffineMap;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
@@ -39,6 +42,37 @@ use types::IRType;
 ///////////////////////////////
 //  Specialized Traits
 ///////////////////////////////
+
+pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, elements: &[BoolAttr]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::from(*attr.get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let args = Self::from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of dictionary attributes for array of bools");
+            exit(ExitCode::IRError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_bool()) {
+            eprintln!("Expected array of dictionary attributes for array of bools");
+            exit(ExitCode::IRError);
+        }
+        args
+    }
+
+    fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    fn as_bools(&self) -> Vec<BoolAttr> {
+        let args = self.as_array();
+        (0..args.num_elements()).map(|i| BoolAttr::from(*args.get_element(i).get())).collect()
+    }
+}
 
 pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, elements: &[Dictionary]) -> Self {
@@ -99,7 +133,10 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        let _ = black_box(attr_.as_array()); // Don't use the dense array, but check it.
+        if !attr_.as_attribute().is_array() {
+            eprintln!("Expected array attribute");
+            exit(ExitCode::IRError);
+        }
         attr_
     }
 
@@ -110,6 +147,29 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
     fn as_integer_arrays(&self) -> Vec<Array> {
         let args = self.as_array();
         (0..args.num_elements()).map(|i| Array::from(*args.get_element(i).get())).collect()
+    }
+}
+
+pub trait NamedBool: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, value: c_int) -> Self {
+        Self::from(*BoolAttr::new(context, value).get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_bool() {
+            eprintln!("Expected bool attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_bool(&self) -> BoolAttr {
+        BoolAttr::from(*self.get())
+    }
+
+    fn get_value(&self) -> bool {
+        self.as_bool().get_value()
     }
 }
 
@@ -188,7 +248,10 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        let _ = black_box(attr_.as_dense_array()); // Don't use the dense array, but check it.
+        if !attr_.as_attribute().is_dense_array_i64() {
+            eprintln!("Expected dense array of 64-bit integers attribute");
+            exit(ExitCode::IRError);
+        }
         attr_
     }
 
@@ -205,7 +268,10 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        let _ = black_box(attr_.as_integer()); // Don't use the integer, but check it.
+        if !attr_.as_attribute().is_integer() {
+            eprintln!("Expected integer attribute");
+            exit(ExitCode::IRError);
+        }
         attr_
     }
 
@@ -218,6 +284,26 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
+pub trait NamedPermutation: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, permutation: &mut [c_uint]) -> Self {
+        let map = AffineMap::new_permutation(context, permutation);
+        Self::from(*map.as_attribute().get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_affine_map() {
+            eprintln!("Expected affine map attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_affine_map(&self) -> AffineMap {
+        AffineMap::from_attribute(&Attribute::from(*self.get()))
+    }
+}
+
 pub trait NamedString: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, s: &StringRef) -> Self {
         let s_ = StringAttr::new(context, s);
@@ -226,7 +312,10 @@ pub trait NamedString: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        let _ = black_box(attr_.as_string()); // Don't use the string, but check it.
+        if !attr_.as_attribute().is_string() {
+            eprintln!("Expected string attribute");
+            exit(ExitCode::IRError);
+        }
         attr_
     }
 
@@ -272,7 +361,10 @@ pub trait NamedUnit: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        let _ = black_box(attr_.as_unit()); // Don't use the unit, but check it.
+        if !attr_.as_attribute().is_unit() {
+            eprintln!("Expected unit attribute");
+            exit(ExitCode::IRError);
+        }
         attr_
     }
 
