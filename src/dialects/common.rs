@@ -40,9 +40,6 @@ pub struct SymbolName(MlirAttribute);
 #[derive(Clone)]
 pub struct SymbolVisibility(MlirAttribute);
 
-#[derive(Clone)]
-pub struct Type(MlirAttribute);
-
 ///////////////////////////////
 //  Enums
 ///////////////////////////////
@@ -109,16 +106,6 @@ impl SymbolVisibility {
         }
     }
 
-    pub fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl Type {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }

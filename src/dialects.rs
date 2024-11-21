@@ -42,6 +42,11 @@ pub mod vector;
 //  Traits
 ///////////////////////////////
 
+/// Interface for printable opcode.
+pub trait IROp: fmt::Display {
+    fn get_name(&self) -> &'static str;
+}
+
 /// Interface for dialect operations with trait and interface semantics.
 pub trait IROperation {
     fn get(&self) -> &MlirOperation;
@@ -58,9 +63,10 @@ pub trait IROperation {
     }
 }
 
-/// Interface for printable opcode.
-pub trait IROp: fmt::Display {
-    fn get_name(&self) -> &'static str;
+impl cmp::PartialEq for dyn IROp {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.to_string() == rhs.to_string()
+    }
 }
 
 impl Destroy for dyn IROperation {
@@ -72,11 +78,5 @@ impl Destroy for dyn IROperation {
 impl cmp::PartialEq for dyn IROperation {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl cmp::PartialEq for dyn IROp {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.to_string() == rhs.to_string()
     }
 }
