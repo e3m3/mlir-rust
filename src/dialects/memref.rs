@@ -1037,6 +1037,20 @@ impl Transpose {
             eprintln!("Expected ranked memory reference type for source operand of transpose operation");
             exit(ExitCode::DialectError);
         }
+        let t_source = MemRef::from(*source.get_type().get());
+        if t.as_shaped().get_element_type() != t_source.as_shaped().get_element_type() {
+            eprintln!("Expected matching element types for source operand and \
+                result memory reference types of transpose operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let n = t.get_affine_map().num_dims();
+        if n != p.as_affine_map().num_dims() || n != t_source.get_affine_map().num_dims() {
+            eprintln!("Expected matching number of dimensions for result, source, and permutation \
+                of transpose operation"
+            );
+            exit(ExitCode::DialectError);
+        }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
         let name = StringBacked::from_string(&format!(
