@@ -31,7 +31,7 @@ pub mod func;
 //pub mod index;
 //pub mod linalg;
 //pub mod llvm;
-//pub mod memref;
+pub mod memref;
 //pub mod scf;
 //pub mod spirv;
 //pub mod tensor;

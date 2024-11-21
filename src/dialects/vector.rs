@@ -25,7 +25,6 @@ use attributes::bool::Bool as BoolAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfBools;
-use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedPermutation;
@@ -62,9 +61,6 @@ use types::vector::Vector;
 
 #[derive(Clone)]
 pub struct InBounds(MlirAttribute);
-
-#[derive(Clone)]
-pub struct NonTemporal(MlirAttribute);
 
 #[derive(Clone)]
 pub struct PermutationMap(MlirAttribute);
@@ -174,16 +170,6 @@ impl InBounds {
         <Self as NamedArrayOfBools>::new(context, &attrs)
     }
 
-    pub fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl NonTemporal {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -779,30 +765,6 @@ impl IRAttributeNamed for InBounds {
 }
 
 impl NamedArrayOfBools for InBounds {}
-
-impl From<MlirAttribute> for NonTemporal {
-    fn from(attr: MlirAttribute) -> Self {
-        NonTemporal(attr)
-    }
-}
-
-impl IRAttribute for NonTemporal {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IRAttributeNamed for NonTemporal {
-    fn get_name() -> &'static str {
-        "nontemporal"
-    }
-}
-
-impl NamedBool for NonTemporal {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {

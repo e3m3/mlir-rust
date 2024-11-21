@@ -79,6 +79,7 @@ use mlir::mlirGetDialectHandle__func__;
 use mlir::mlirGetDialectHandle__gpu__;
 use mlir::mlirGetDialectHandle__linalg__;
 use mlir::mlirGetDialectHandle__llvm__;
+use mlir::mlirGetDialectHandle__memref__;
 use mlir::mlirGetDialectHandle__shape__;
 use mlir::mlirGetDialectHandle__spirv__;
 use mlir::mlirGetDialectHandle__tensor__;
@@ -743,6 +744,13 @@ impl Context {
     pub fn get_dialect_llvm(&self) -> Dialect {
         Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
             mlirGetDialectHandle__llvm__(),
+            self.0
+        )))
+    }
+
+    pub fn get_dialect_memref(&self) -> Dialect {
+        Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
+            mlirGetDialectHandle__memref__(),
             self.0
         )))
     }
@@ -1630,6 +1638,10 @@ impl Registry {
 
     pub fn register_llvm(&mut self) -> () {
         do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__llvm__(), *self.get_mut()))
+    }
+
+    pub fn register_memref(&mut self) -> () {
+        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__memref__(), *self.get_mut()))
     }
 
     pub fn register_shape(&mut self) -> () {

@@ -8,6 +8,7 @@ extern crate mlir_sys as mlir;
 use mlir::mlirUnrankedMemRefTypeGet;
 use mlir::mlirUnrankedMemRefTypeGetChecked;
 use mlir::mlirUnrankedMemRefTypeGetTypeID;
+use mlir::mlirUnrankedMemrefGetMemorySpace;
 use mlir::MlirType;
 
 use crate::do_unsafe;
@@ -22,6 +23,7 @@ use ir::Location;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
+use types::shaped::Shaped;
 
 #[derive(Clone)]
 pub struct UnrankedMemRef(MlirType);
@@ -33,6 +35,10 @@ impl UnrankedMemRef {
 
     pub fn new_checked(t: &Type, memory_space: &Attribute, loc: &Location) -> Self {
         Self::from(do_unsafe!(mlirUnrankedMemRefTypeGetChecked(*loc.get(), *t.get(), *memory_space.get())))
+    }
+
+    pub fn as_shaped(&self) -> Shaped {
+        Shaped::from(self.0)
     }
 
     pub fn from(t: MlirType) -> Self {
@@ -51,6 +57,11 @@ impl UnrankedMemRef {
 
     pub fn get(&self) -> &MlirType {
         &self.0
+    }
+
+    pub fn get_memory_space(&self) -> Attribute {
+        // Why is this capitalized differently?
+        Attribute::from(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(self.0)))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {

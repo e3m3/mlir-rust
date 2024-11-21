@@ -10,7 +10,6 @@ use mlir::MlirOperation;
 
 use std::cmp;
 use std::fmt;
-use std::str::FromStr;
 
 use crate::attributes;
 use crate::dialects;
@@ -34,6 +33,9 @@ use dialects::IROp;
 use dialects::IROperation;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::ResultSegmentSizes;
+use dialects::common::SymbolName;
+use dialects::common::SymbolVisibility;
+use dialects::common::SymbolVisibilityKind;
 use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use exit_code::exit;
@@ -73,12 +75,6 @@ pub struct Referee(MlirAttribute);
 #[derive(Clone)]
 pub struct Results(MlirAttribute);
 
-#[derive(Clone)]
-pub struct SymbolName(MlirAttribute);
-
-#[derive(Clone)]
-pub struct SymbolVisibility(MlirAttribute);
-
 ///////////////////////////////
 //  Enums
 ///////////////////////////////
@@ -90,13 +86,6 @@ pub enum Op {
     Constant,
     Func,
     Return,
-}
-
-#[derive(Clone,Copy,Default,PartialEq)]
-pub enum SymbolVisibilityKind {
-    #[default]
-    None,
-    Private,
 }
 
 ///////////////////////////////
@@ -163,36 +152,6 @@ impl Referee {
 }
 
 impl Results {
-    pub fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl SymbolName {
-    pub fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl SymbolVisibility {
-    pub fn new(context: &Context, k: SymbolVisibilityKind) -> Option<Self> {
-        match k {
-            SymbolVisibilityKind::None      => None,
-            SymbolVisibilityKind::Private   => {
-                let s = StringBacked::from_string(&k.to_string());
-                Some(<Self as NamedString>::new(context, &s.as_string_ref()))
-            },
-        }
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -868,66 +827,6 @@ impl cmp::PartialEq for Return {
     }
 }
 
-impl From<MlirAttribute> for SymbolName {
-    fn from(attr: MlirAttribute) -> Self {
-        SymbolName(attr)
-    }
-}
-
-impl IRAttribute for SymbolName {
-    fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl IRAttributeNamed for SymbolName {
-    fn get_name() -> &'static str {
-        "sym_name"
-    }
-}
-
-impl NamedString for SymbolName {}
-
-impl From<MlirAttribute> for SymbolVisibility {
-    fn from(attr: MlirAttribute) -> Self {
-        SymbolVisibility(attr)
-    }
-}
-
-impl IRAttribute for SymbolVisibility {
-    fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl IRAttributeNamed for SymbolVisibility {
-    fn get_name() -> &'static str {
-        "sym_visibility"
-    }
-}
-
-impl NamedString for SymbolVisibility {}
-
-impl FromStr for SymbolVisibilityKind {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            ""          => Ok(SymbolVisibilityKind::None),
-            "private"   => Ok(SymbolVisibilityKind::Private),
-            _           => Err(format!("Invalid symbol visibility kind: {}", s)),
-        }
-    }
-}
-
 ///////////////////////////////
 //  Display
 ///////////////////////////////
@@ -940,15 +839,6 @@ impl fmt::Display for Op {
             Op::Constant        => "ConstantOp",
             Op::Func            => "FuncOp",
             Op::Return          => "ReturnOp",
-        })
-    }
-}
-
-impl fmt::Display for SymbolVisibilityKind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match self {
-            SymbolVisibilityKind::None      => "none",
-            SymbolVisibilityKind::Private   => "private",
         })
     }
 }

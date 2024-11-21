@@ -21,6 +21,7 @@ use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
 use attributes::dense_array::Layout as DenseArrayLayout;
 use attributes::dictionary::Dictionary;
+use attributes::elements::Elements;
 use attributes::float::Float as FloatAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
@@ -35,9 +36,11 @@ use exit_code::ExitCode;
 use ir::Attribute;
 use ir::Context;
 use ir::StringRef;
+use ir::Type;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
 use types::IRType;
+use types::mem_ref::MemRef;
 
 ///////////////////////////////
 //  Specialized Traits
@@ -260,6 +263,32 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
+pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
+    }
+
+    fn new_elements(elements: &Elements) -> Self {
+        Self::new(&elements.as_attribute())
+    }
+
+    fn new_uninitialized(context: &Context) -> Self {
+        Self::new(&Unit::new(context).as_attribute())
+    }
+
+    fn get_elements(&self) -> Option<Elements> {
+        if self.is_initialized() && self.as_attribute().is_elements() {
+            Some(Elements::from(*self.get()))
+        } else {
+            None
+        }
+    }
+
+    fn is_initialized(&self) -> bool {
+        !self.as_attribute().is_unit()
+    }
+}
+
 pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new_signless(context, width);
@@ -281,6 +310,30 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn get_value(&self) -> i64 {
         self.as_integer().get_int()
+    }
+}
+
+pub trait NamedMemRef: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(t: &MemRef) -> Self {
+        Self::from(*TypeAttr::new(&t.as_type()).get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_type() {
+            eprintln!("Expected type attribute");
+            exit(ExitCode::IRError);
+        }
+        let attr_typed = TypeAttr::from(attr);
+        if !attr_typed.get_type().is_mem_ref() {
+            eprintln!("Expected memory reference type attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_type(&self) -> TypeAttr {
+        TypeAttr::from(*self.get())
     }
 }
 
@@ -351,6 +404,25 @@ pub trait NamedSymbolRef: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_symbol_ref(&self) -> SymbolRef {
         SymbolRef::from(*self.get())
+    }
+}
+
+pub trait NamedType: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(t: &Type) -> Self {
+        Self::from(*TypeAttr::new(t).get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_type() {
+            eprintln!("Expected type attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_type(&self) -> TypeAttr {
+        TypeAttr::from(*self.get())
     }
 }
 

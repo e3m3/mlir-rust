@@ -16,6 +16,8 @@ use mlir::mlirMemRefTypeGetStridesAndOffset;
 use mlir::mlirMemRefTypeGetTypeID;
 use mlir::MlirType;
 
+use std::cmp;
+
 use crate::dialects;
 use crate::do_unsafe;
 use crate::exit_code;
@@ -190,5 +192,11 @@ impl StridesAndOffset {
 
     pub fn len(&self) -> usize {
         self.strides.len()
+    }
+}
+
+impl cmp::PartialEq for StridesAndOffset {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.get_offset() == rhs.get_offset() && self.get_strides() == rhs.get_strides()
     }
 }

@@ -1242,7 +1242,7 @@ impl IROperation for AddF {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::Commutative,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1293,7 +1293,7 @@ impl IROperation for AddI {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::Commutative,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1458,7 +1458,7 @@ impl IROperation for DivF {
         &[
             Trait::AlwaysSpeculatableImplTrait,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1506,7 +1506,7 @@ impl IROperation for DivSI {
     fn get_traits(&self) -> &'static [Trait] {
         &[
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1554,7 +1554,7 @@ impl IROperation for DivUI {
     fn get_traits(&self) -> &'static [Trait] {
         &[
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1658,7 +1658,7 @@ impl IROperation for MulF {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::Commutative,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1711,7 +1711,7 @@ impl IROperation for MulI {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::Commutative,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1856,7 +1856,7 @@ impl IROperation for SubF {
         &[
             Trait::AlwaysSpeculatableImplTrait,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -1906,7 +1906,7 @@ impl IROperation for SubI {
         &[
             Trait::AlwaysSpeculatableImplTrait,
             Trait::ElementWise,
-            Trait::SameOperandAndResultType,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,

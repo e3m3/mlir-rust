@@ -15,13 +15,16 @@ pub enum Interface {
     CallableOpInterface,
     CastOpInterface,
     ConditionallySpeculatable,
+    CopyOpInterface,
     DestinationStyleOpInterface,
+    DestructurableAllocationOpInterface,
     FunctionOpInterface,
     InferIntRangeInterface,
     InferTypeOpInterface,
     MaskableOpInterface,
     MemoryEffect(MemoryEffectOpInterface),
     OpAsmOpInterface,
+    PromotableAllocationOpInterface,
     RegionBranchTerminatorOpInterface,
     ReifyRankedShapeTypeOpInterface,
     ShapedDimOpInterface,
@@ -29,6 +32,7 @@ pub enum Interface {
     SymbolUserOpInterface,
     VectorTransferOpInterface,
     VectorUnrollOpInterface,
+    ViewLikeOpInterface,
 }
 
 #[derive(Clone,Copy,PartialEq)]
@@ -49,13 +53,20 @@ impl fmt::Display for Interface {
             Interface::CallableOpInterface                  => "callable_op_interface".to_string(),
             Interface::CastOpInterface                      => "cast_op_interface".to_string(),
             Interface::ConditionallySpeculatable            => "conditionally_speculatable".to_string(),
+            Interface::CopyOpInterface                      => "copy_op_interface".to_string(),
             Interface::DestinationStyleOpInterface          => "destination_style_op_interface".to_string(),
+            Interface::DestructurableAllocationOpInterface  => {
+                "destructurable_allocation_op_interface".to_string()
+            },
             Interface::FunctionOpInterface                  => "function_op_interface".to_string(),
             Interface::InferIntRangeInterface               => "infer_int_range_interface".to_string(),
             Interface::InferTypeOpInterface                 => "infer_type_op_interface".to_string(),
             Interface::MaskableOpInterface                  => "maskable_op_interface".to_string(),
             Interface::MemoryEffect(e)                      => format!("memory_effect_op_interface({})", e),
             Interface::OpAsmOpInterface                     => "op_asm_op_interface".to_string(),
+            Interface::PromotableAllocationOpInterface      => {
+                "promotable_allocation_op_interface".to_string()
+            },
             Interface::RegionBranchTerminatorOpInterface    => {
                 "region_branch_terminator_op_interface".to_string()
             },
@@ -67,6 +78,7 @@ impl fmt::Display for Interface {
             Interface::SymbolUserOpInterface                => "symbol_user_op_interface".to_string(),
             Interface::VectorTransferOpInterface            => "vector_transfer_op_interface".to_string(),
             Interface::VectorUnrollOpInterface              => "vector_unroll_op_interface".to_string(),
+            Interface::ViewLikeOpInterface                  => "view_like_op_interface".to_string(),
         })
     }
 }
