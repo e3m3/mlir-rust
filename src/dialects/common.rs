@@ -35,6 +35,15 @@ pub struct OperandSegmentSizes(MlirAttribute);
 pub struct ResultSegmentSizes(MlirAttribute);
 
 #[derive(Clone)]
+pub struct StaticOffsets(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticSizes(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticStrides(MlirAttribute);
+
+#[derive(Clone)]
 pub struct SymbolName(MlirAttribute);
 
 #[derive(Clone)]
@@ -81,6 +90,36 @@ impl ResultSegmentSizes {
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticOffsets {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticSizes {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticStrides {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0
     }
 }
@@ -190,6 +229,78 @@ impl IRAttributeNamed for ResultSegmentSizes {
 }
 
 impl NamedI64DenseArray for ResultSegmentSizes {}
+
+impl From<MlirAttribute> for StaticOffsets {
+    fn from(attr: MlirAttribute) -> Self {
+        StaticOffsets(attr)
+    }
+}
+
+impl IRAttribute for StaticOffsets {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for StaticOffsets {
+    fn get_name() -> &'static str {
+        "static_offsets"
+    }
+}
+
+impl NamedI64DenseArray for StaticOffsets {}
+
+impl From<MlirAttribute> for StaticSizes {
+    fn from(attr: MlirAttribute) -> Self {
+        StaticSizes(attr)
+    }
+}
+
+impl IRAttribute for StaticSizes {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for StaticSizes {
+    fn get_name() -> &'static str {
+        "static_sizes"
+    }
+}
+
+impl NamedI64DenseArray for StaticSizes {}
+
+impl From<MlirAttribute> for StaticStrides {
+    fn from(attr: MlirAttribute) -> Self {
+        StaticStrides(attr)
+    }
+}
+
+impl IRAttribute for StaticStrides {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for StaticStrides {
+    fn get_name() -> &'static str {
+        "static_strides"
+    }
+}
+
+impl NamedI64DenseArray for StaticStrides {}
 
 impl From<MlirAttribute> for SymbolName {
     fn from(attr: MlirAttribute) -> Self {

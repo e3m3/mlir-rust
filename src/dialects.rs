@@ -34,7 +34,7 @@ pub mod func;
 pub mod memref;
 //pub mod scf;
 //pub mod spirv;
-//pub mod tensor;
+pub mod tensor;
 //pub mod ub;
 pub mod vector;
 

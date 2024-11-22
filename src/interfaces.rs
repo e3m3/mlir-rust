@@ -23,6 +23,7 @@ pub enum Interface {
     InferTypeOpInterface,
     MaskableOpInterface,
     MemoryEffect(MemoryEffectOpInterface),
+    OffsetSizeAndStrideOpInterface,
     OpAsmOpInterface,
     PromotableAllocationOpInterface,
     RegionBranchTerminatorOpInterface,
@@ -63,6 +64,9 @@ impl fmt::Display for Interface {
             Interface::InferTypeOpInterface                 => "infer_type_op_interface".to_string(),
             Interface::MaskableOpInterface                  => "maskable_op_interface".to_string(),
             Interface::MemoryEffect(e)                      => format!("memory_effect_op_interface({})", e),
+            Interface::OffsetSizeAndStrideOpInterface       => {
+                "offset_size_and_stride_op_interface".to_string()
+            },
             Interface::OpAsmOpInterface                     => "op_asm_op_interface".to_string(),
             Interface::PromotableAllocationOpInterface      => {
                 "promotable_allocation_op_interface".to_string()
