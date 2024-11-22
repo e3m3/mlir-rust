@@ -12,6 +12,7 @@ use std::cmp;
 
 use crate::do_unsafe;
 use crate::ir;
+use ir::Context;
 use ir::Type;
 
 pub mod complex;
@@ -36,6 +37,10 @@ pub trait IRType {
 
     fn as_type(&self) -> Type {
         Type::from(*self.get())
+    }
+
+    fn get_context(&self) -> Context {
+        self.as_type().get_context()
     }
 }
 
