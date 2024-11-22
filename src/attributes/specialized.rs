@@ -75,6 +75,10 @@ pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
         let args = self.as_array();
         (0..args.num_elements()).map(|i| BoolAttr::from(*args.get_element(i).get())).collect()
     }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
+    }
 }
 
 pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Sized {
@@ -105,6 +109,10 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Siz
     fn as_dictionaries(&self) -> Vec<Dictionary> {
         let args = self.as_array();
         (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
     }
 }
 
@@ -150,6 +158,15 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
     fn as_integer_arrays(&self) -> Vec<Array> {
         let args = self.as_array();
         (0..args.num_elements()).map(|i| Array::from(*args.get_element(i).get())).collect()
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
+    }
+
+    fn num_elements_flattened(&self) -> isize {
+        let v = self.as_integer_arrays();
+        v.iter().fold(0, |acc,a| acc + a.num_elements())
     }
 }
 
@@ -260,6 +277,10 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_dense_array(&self) -> DenseArray {
         DenseArray::from(*self.get(), DenseArrayLayout::I64)
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_dense_array().num_elements()
     }
 }
 
