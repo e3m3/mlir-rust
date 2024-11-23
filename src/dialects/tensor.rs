@@ -292,9 +292,11 @@ impl StaticOutputShape {
 
     pub fn num_dynamic_dims(&self) -> isize {
         let a = self.as_dense_array();
-        (0..a.num_elements()).fold(0, |acc,i| {
-            acc + if a.get_element_i64(i) == Shaped::dynamic_size() { 1 } else { 0 }
-        })
+        (0..a.num_elements()).filter(|&i| a.get_element_i64(i) == Shaped::dynamic_size()).count() as isize
+    }
+
+    pub fn num_static_dims(&self) -> isize {
+        self.as_dense_array().num_elements() - self.num_dynamic_dims()
     }
 }
 

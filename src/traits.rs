@@ -22,6 +22,7 @@ pub enum Trait {
     ConstantLike,
     ElementWise,
     HasParent(StaticOpList),
+    InferTypeOpAdaptor,
     IsolatedFromAbove,
     MemRefsNormalizable,
     RecursiveMemoryEffects,
@@ -51,6 +52,7 @@ impl fmt::Display for Trait {
                 let s = static_op_list_to_string(ops);
                 format!("has_parent<{}>", s)
             },
+            Trait::InferTypeOpAdaptor                   => "infer_type_op_adaptor".to_string(),
             Trait::IsolatedFromAbove                    => "isolated_from_above".to_string(),
             Trait::MemRefsNormalizable                  => "mem_refs_normalizable".to_string(),
             Trait::RecursiveMemoryEffects               => "recursive_memory_effects".to_string(),

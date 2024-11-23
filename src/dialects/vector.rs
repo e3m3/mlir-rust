@@ -25,10 +25,12 @@ use attributes::bool::Bool as BoolAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfBools;
+use attributes::specialized::NamedArrayOfIntegers;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedPermutation;
 use attributes::specialized::NamedString;
+use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::ResultSegmentSizes;
 use dialects::IROp;
@@ -63,10 +65,22 @@ use types::vector::Vector;
 pub struct InBounds(MlirAttribute);
 
 #[derive(Clone)]
+pub struct Offsets(MlirAttribute);
+
+#[derive(Clone)]
 pub struct PermutationMap(MlirAttribute);
 
 #[derive(Clone)]
 pub struct Punctuation(MlirAttribute);
+
+#[derive(Clone)]
+pub struct Sizes(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticPosition(MlirAttribute);
+
+#[derive(Clone)]
+pub struct Strides(MlirAttribute);
 
 #[derive(Clone)]
 pub struct StringLiteral(MlirAttribute);
@@ -139,10 +153,22 @@ pub enum PunctuationKind {
 ///////////////////////////////
 
 #[derive(Clone)]
+pub struct Extract(MlirOperation);
+
+#[derive(Clone)]
+pub struct ExtractElement(MlirOperation);
+
+#[derive(Clone)]
 pub struct FromElements(MlirOperation);
 
 #[derive(Clone)]
+pub struct Load(MlirOperation);
+
+#[derive(Clone)]
 pub struct Print(MlirOperation);
+
+#[derive(Clone)]
+pub struct Store(MlirOperation);
 
 #[derive(Clone)]
 pub struct TransferRead(MlirOperation);
@@ -179,6 +205,16 @@ impl InBounds {
     }
 }
 
+impl Offsets {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
 impl Punctuation {
     pub fn new(context: &Context, k: PunctuationKind) -> Self {
         const WIDTH: c_uint = 32;
@@ -204,6 +240,50 @@ impl PermutationMap {
         <Self as NamedPermutation>::new(context, &mut values)
     }
 
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl Sizes {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticPosition {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+
+    pub fn num_static(&self) -> isize {
+        self.as_dense_array().num_elements() - self.num_symbolic()
+    }
+
+    pub fn num_symbolic(&self) -> isize {
+        let a = self.as_dense_array();
+        (0..a.num_elements()).filter(|&i| a.get_element_i64(i) == Self::symbolic_pos()).count() as isize
+    }
+
+    #[inline]
+    pub const fn symbolic_pos() -> i64 {
+        i64::MIN
+    }
+}
+
+impl Strides {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -316,6 +396,175 @@ impl VectorMaskShape {
 //  Operation Implemention
 ///////////////////////////////
 
+impl Extract {
+    pub fn new(
+        t: &Type,
+        source: &Value,
+        pos: &[Value],
+        static_pos: &StaticPosition,
+        loc: &Location,
+    ) -> Self {
+        if !source.get_type().is_vector() {
+            eprintln!("Expected vector type for source operand of extract operation");
+            exit(ExitCode::DialectError);
+        }
+        if pos.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for dynamic position operand(s) of extract operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_source = Shaped::from(*t.get());
+        let n_result = s_source.rank().unwrap_or(-1) - static_pos.num_elements() as i64;
+        if !t.is_vector() && n_result != 0 {
+            eprintln!("Expected element type result for source vector operand with rank \
+                equal to the arity of the dynamic position operand of extract operation"
+            );
+            exit(ExitCode::DialectError);
+        } else if !t.is_vector() && *t != s_source.get_element_type() {
+            eprintln!("Expected matching element type for source operand and result type \
+                of extract operation"
+            );
+            exit(ExitCode::DialectError);
+        } else if t.is_vector() {
+            let s = Shaped::from(*t.get());
+            if s.get_element_type() != s_source.get_element_type() {
+                eprintln!("Expected matching element type for source operand and result type \
+                    of extract operation"
+                );
+                exit(ExitCode::DialectError);
+            }
+            if s.rank().unwrap_or(-1) != n_result {
+                eprintln!("Expected rank of vector type result to be equal to the difference \
+                    of the rank of the source vector type and the arity of the \
+                    dynamic position operand for extract operation"
+                );
+                exit(ExitCode::DialectError);
+            }
+        } else {
+            eprintln!("Expected vector type or element type of source operand for result type \
+                of extract operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let context = t.get_context();
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::Extract.get_name(),
+        ));
+        let mut args = vec![source.clone()];
+        args.append(&mut pos.to_vec());
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, pos.len() as i64]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute(), static_pos.as_named_attribute()]);
+        op_state.add_operands(&args);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn from(op: MlirOperation) -> Self {
+        Extract(op)
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+}
+
+impl ExtractElement {
+    pub fn new(t: &Type, source: Value, pos: &Value, loc: &Location) -> Self {
+        let t_source = source.get_type();
+        let t_pos = pos.get_type();
+        if !t_source.is_vector() {
+            eprintln!("Expected vector type for source operand of extract element operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_pos.is_index() && (!t_pos.is_integer() || !IntegerType::from(*t_pos.get()).is_signless()) {
+            eprintln!("Expected index or signless integer type for position operand \
+                of extract element operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let s_source = Shaped::from(*t.get());
+        if *t != s_source.get_element_type() {
+            eprintln!("Expected matching element type for source operand and result type \
+                of extract element operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if s_source.rank().unwrap_or(-1) != 1 {
+            eprintln!("Expected matching 1-D vector for source operand of extract element operation");
+            exit(ExitCode::DialectError);
+        }
+        let context = t.get_context();
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::ExtractElement.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[source.clone(), pos.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new_0_d(t: &Type, source: Value, loc: &Location) -> Self {
+        let t_source = source.get_type();
+        if !t_source.is_vector() {
+            eprintln!("Expected vector type for source operand of extract element operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_source = Shaped::from(*t.get());
+        if *t != s_source.get_element_type() {
+            eprintln!("Expected matching element type for source operand and result type \
+                of extract element operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if s_source.rank().unwrap_or(-1) != 0 {
+            eprintln!("Expected matching 0-D vector for source operand of extract element operation");
+            exit(ExitCode::DialectError);
+        }
+        let context = t.get_context();
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::ExtractElement.get_name(),
+        ));
+        let pos = Value::new_null();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[source.clone(), pos]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn from(op: MlirOperation) -> Self {
+        ExtractElement(op)
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+}
+
 impl FromElements {
     pub fn new(t: &Vector, args: &[Value], loc: &Location) -> Self {
         let s = t.as_shaped();
@@ -333,7 +582,7 @@ impl FromElements {
             eprintln!("Expected matching number of result and argument types for from elements");
             exit(ExitCode::DialectError);
         }
-        let context = t.as_type().get_context();
+        let context = t.get_context();
         let dialect = context.get_dialect_vector();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
@@ -359,6 +608,71 @@ impl FromElements {
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+}
+
+impl Load {
+    pub fn new(
+        t: &Vector,
+        base: &Value,
+        indices: &[Value],
+        is_nt: &NonTemporal,
+        loc: &Location,
+    ) -> Self {
+        if !base.get_type().is_mem_ref() {
+            eprintln!("Expected memory reference type for base operand of load operation");
+            exit(ExitCode::DialectError);
+        }
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for indices operand(s) of load operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_base = Shaped::from(*base.get_type().get());
+        if t.as_type() != s_base.get_element_type() {
+            eprintln!("Expected matching types for element type of base operand and result type \
+                of load operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if s_base.rank().unwrap_or(-1) != indices.len() as i64 {
+            eprintln!("Expected number of indices to match rank of base operand of load operation");
+            exit(ExitCode::DialectError);
+        }
+        let context = t.get_context();
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::Load.get_name(),
+        ));
+        let mut args = vec![base.clone()];
+        args.append(&mut indices.to_vec());
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i64]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_operands(&args);
+        op_state.add_results(&[t.as_type()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn from(op: MlirOperation) -> Self {
+        Load(op)
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
     }
 }
 
@@ -430,6 +744,77 @@ impl Print {
         } else {
             None
         }
+    }
+}
+
+impl Store {
+    pub fn new(
+        context: &Context,
+        value: &Value,
+        base: &Value,
+        indices: &[Value],
+        is_nt: &NonTemporal,
+        loc: &Location,
+    ) -> Self {
+        if !value.get_type().is_vector() {
+            eprintln!("Expected vector type for value operand of store operation");
+            exit(ExitCode::DialectError);
+        }
+        if !base.get_type().is_mem_ref() {
+            eprintln!("Expected memory reference type for base operand of store operation");
+            exit(ExitCode::DialectError);
+        }
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for indices operand(s) of store operation");
+            exit(ExitCode::DialectError);
+        }
+        let s = Shaped::from(*value.get_type().get());
+        let s_base = Shaped::from(*base.get_type().get());
+        if s.get_element_type() != s_base.get_element_type() {
+            eprintln!("Expected matching element type of base operand and value operand type \
+                of store operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let rank_base = s_base.rank().unwrap_or(-1);
+        if rank_base < s.rank().unwrap_or(-1) {
+            eprintln!("Expected rank of base operand to be greater than or equal to rank \
+                of value operand of store operation");
+            exit(ExitCode::DialectError);
+        }
+        if rank_base != indices.len() as i64 {
+            eprintln!("Expected number of indices to match rank of base operand of store operation");
+            exit(ExitCode::DialectError);
+        }
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::Store.get_name(),
+        ));
+        let mut args = vec![value.clone(), base.clone()];
+        args.append(&mut indices.to_vec());
+        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i64]);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_operands(&args);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn from(op: MlirOperation) -> Self {
+        Store(op)
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
     }
 }
 
@@ -527,7 +912,7 @@ impl TransferRead {
         PermutationMap::from(*attr.get())
     }
 
-    pub fn get_value(&self) -> Value {
+    pub fn get_result(&self) -> Value {
         self.as_operation().get_result(0)
     }
 }
@@ -631,7 +1016,7 @@ impl TransferWrite {
         PermutationMap::from(*attr.get())
     }
 
-    pub fn get_value(&self) -> Value {
+    pub fn get_result(&self) -> Value {
         self.as_operation().get_result(0)
     }
 }
@@ -674,7 +1059,7 @@ impl VectorMask {
         Vector::new(&shape, &t.as_type())
     }
 
-    pub fn get_value(&self) -> Value {
+    pub fn get_result(&self) -> Value {
         self.as_operation().get_result(0)
     }
 
@@ -700,6 +1085,93 @@ impl VectorMask {
 ///////////////////////////////
 //  Trait Implemention
 ///////////////////////////////
+
+impl IROperation for Extract {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_vector()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            MEFF_NO_MEMORY_EFFECT,
+        ]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Extract.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IROp {
+        &Op::Extract
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::InferTypeOpAdaptor,
+        ]
+    }
+}
+
+impl IROperation for ExtractElement {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_vector()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            MEFF_NO_MEMORY_EFFECT,
+        ]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ExtractElement.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IROp {
+        &Op::ExtractElement
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+        ]
+    }
+}
 
 impl IROperation for FromElements {
     fn get(&self) -> &MlirOperation {
@@ -742,6 +1214,40 @@ impl IROperation for FromElements {
     }
 }
 
+impl IROperation for Load {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_vector()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Load.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IROp {
+        &Op::Load
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[]
+    }
+}
+
 impl From<MlirAttribute> for InBounds {
     fn from(attr: MlirAttribute) -> Self {
         InBounds(attr)
@@ -765,6 +1271,30 @@ impl IRAttributeNamed for InBounds {
 }
 
 impl NamedArrayOfBools for InBounds {}
+
+impl From<MlirAttribute> for Offsets {
+    fn from(attr: MlirAttribute) -> Self {
+        Offsets(attr)
+    }
+}
+
+impl IRAttribute for Offsets {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for Offsets {
+    fn get_name() -> &'static str {
+        "offsets"
+    }
+}
+
+impl NamedArrayOfIntegers for Offsets {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
@@ -863,6 +1393,112 @@ impl From<i32> for PunctuationKind {
         PunctuationKind::from_i32(n)
     }
 }
+
+impl From<MlirAttribute> for Sizes {
+    fn from(attr: MlirAttribute) -> Self {
+        Sizes(attr)
+    }
+}
+
+impl IRAttribute for Sizes {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for Sizes {
+    fn get_name() -> &'static str {
+        "sizes"
+    }
+}
+
+impl NamedArrayOfIntegers for Sizes {}
+
+impl IROperation for Store {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_vector()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Store.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IROp {
+        &Op::Store
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[]
+    }
+}
+
+impl From<MlirAttribute> for Strides {
+    fn from(attr: MlirAttribute) -> Self {
+        Strides(attr)
+    }
+}
+
+impl IRAttribute for Strides {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for Strides {
+    fn get_name() -> &'static str {
+        "strides"
+    }
+}
+
+impl NamedArrayOfIntegers for Strides {}
+
+impl From<MlirAttribute> for StaticPosition {
+    fn from(attr: MlirAttribute) -> Self {
+        StaticPosition(attr)
+    }
+}
+
+impl IRAttribute for StaticPosition {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for StaticPosition {
+    fn get_name() -> &'static str {
+        "static_position"
+    }
+}
+
+impl NamedI64DenseArray for StaticPosition {}
 
 impl From<MlirAttribute> for StringLiteral {
     fn from(attr: MlirAttribute) -> Self {

@@ -116,6 +116,41 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Siz
     }
 }
 
+pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, elements: &[IntegerAttr]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::from(*attr.get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let args = Self::from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of dictionary attributes for array of integers");
+            exit(ExitCode::IRError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_integer()) {
+            eprintln!("Expected array of dictionary attributes for array of integers");
+            exit(ExitCode::IRError);
+        }
+        args
+    }
+
+    fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    fn as_integers(&self) -> Vec<IntegerAttr> {
+        let args = self.as_array();
+        (0..args.num_elements()).map(|i| IntegerAttr::from(*args.get_element(i).get())).collect()
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
+    }
+}
+
 pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, values: &[Array], width: c_uint) -> Self {
         for value in values.iter() {
