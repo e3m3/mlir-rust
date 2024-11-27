@@ -7,6 +7,7 @@ extern crate mlir_sys as mlir;
 
 use mlir::MlirAttribute;
 
+use std::ffi::c_uint;
 use std::fmt;
 use std::str::FromStr;
 
@@ -17,6 +18,7 @@ use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI64DenseArray;
+use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedString;
 use ir::Context;
 use ir::StringBacked;
@@ -24,6 +26,9 @@ use ir::StringBacked;
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
+
+#[derive(Clone)]
+pub struct Dimension(MlirAttribute);
 
 #[derive(Clone)]
 pub struct NonTemporal(MlirAttribute);
@@ -63,6 +68,21 @@ pub enum SymbolVisibilityKind {
 ///////////////////////////////
 //  Attribute Implementation
 ///////////////////////////////
+
+impl Dimension {
+    pub fn new(context: &Context, n: i64) -> Self {
+        const WIDTH: c_uint = 64;
+        <Self as NamedInteger>::new(context, n, WIDTH)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
 
 impl NonTemporal {
     pub fn get(&self) -> &MlirAttribute {
@@ -157,6 +177,30 @@ impl SymbolVisibility {
 ///////////////////////////////
 //  Trait Implementation
 ///////////////////////////////
+
+impl From<MlirAttribute> for Dimension {
+    fn from(attr: MlirAttribute) -> Self {
+        Dimension(attr)
+    }
+}
+
+impl IRAttribute for Dimension {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for Dimension {
+    fn get_name() -> &'static str {
+        "dim"
+    }
+}
+
+impl NamedInteger for Dimension {}
 
 impl From<MlirAttribute> for NonTemporal {
     fn from(attr: MlirAttribute) -> Self {

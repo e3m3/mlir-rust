@@ -381,10 +381,6 @@ impl Map {
         Self::from(do_unsafe!(mlirAffineMapZeroResultGet(*context.get(), num_dims, num_syms)))
     }
 
-    pub fn from(map: MlirAffineMap) -> Self {
-        Map(map)
-    }
-
     pub fn from_attribute(attr: &Attribute) -> Self {
         if !attr.is_affine_map() {
             eprint!("Attribute cannot be coerced to an affine map: ");
@@ -577,6 +573,12 @@ impl AffineExpr for Symbol {
 impl cmp::PartialEq for dyn AffineExpr {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirAffineExprEqual(*self.get(), *rhs.get()))
+    }
+}
+
+impl From<MlirAffineMap> for Map {
+    fn from(attr: MlirAffineMap) -> Self {
+        Self(attr)
     }
 }
 

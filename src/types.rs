@@ -12,8 +12,12 @@ use std::cmp;
 
 use crate::do_unsafe;
 use crate::ir;
+
 use ir::Context;
 use ir::Type;
+
+use float::Float as FloatType;
+use integer::Integer as IntegerType;
 
 pub mod complex;
 pub mod float;
@@ -44,8 +48,30 @@ pub trait IRType {
     }
 }
 
+pub trait IsPromotableTo<T> {
+    fn is_promotable_to(&self, other: &T) -> bool;
+}
+
 impl cmp::PartialEq for dyn IRType {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirTypeEqual(*self.get(), *rhs.get()))
+    }
+}
+
+impl <T: IRType> IsPromotableTo<T> for dyn IRType {
+    fn is_promotable_to(&self, other: &T) -> bool {
+        let t = self.as_type();
+        let t_other = other.as_type();
+        if t.is_integer() && t_other.is_integer() {
+            let t_int = IntegerType::from(*t.get());
+            let t_int_other = IntegerType::from(*t_other.get());
+            t_int.is_promotable_to(&t_int_other)
+        } else if t.is_float() && t_other.is_float() {
+            let t_float = FloatType::from(*t.get());
+            let t_float_other = FloatType::from(*t_other.get());
+            t_float.is_promotable_to(&t_float_other)
+        } else {
+            false
+        }
     }
 }

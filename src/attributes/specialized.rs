@@ -46,6 +46,41 @@ use types::mem_ref::MemRef;
 //  Specialized Traits
 ///////////////////////////////
 
+pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, elements: &[AffineMap]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::from(*attr.get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let args = Self::from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of affine map attributes for array of affine maps");
+            exit(ExitCode::IRError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_affine_map()) {
+            eprintln!("Expected array of affine map attributes for array of affine maps");
+            exit(ExitCode::IRError);
+        }
+        args
+    }
+
+    fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    fn as_affine_maps(&self) -> Vec<AffineMap> {
+        let args = self.as_array();
+        (0..args.num_elements()).map(|i| AffineMap::from(*args.get_element(i).get())).collect()
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
+    }
+}
+
 pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, elements: &[BoolAttr]) -> Self {
         let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();

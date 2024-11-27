@@ -21,6 +21,8 @@ pub enum Interface {
     FunctionOpInterface,
     InferIntRangeInterface,
     InferTypeOpInterface,
+    LinalgContractionOpInterface,
+    LinalgStructuredInterface,
     MaskableOpInterface,
     MemoryEffect(MemoryEffectOpInterface),
     OffsetSizeAndStrideOpInterface,
@@ -40,6 +42,7 @@ pub enum Interface {
 pub enum MemoryEffectOpInterface {
     NoMemoryEffect,
     MemoryEffect,
+    RecursiveMemoryEffects,
     UndefinedMemoryEffect,
 }
 
@@ -62,6 +65,10 @@ impl fmt::Display for Interface {
             Interface::FunctionOpInterface                  => "function_op_interface".to_string(),
             Interface::InferIntRangeInterface               => "infer_int_range_interface".to_string(),
             Interface::InferTypeOpInterface                 => "infer_type_op_interface".to_string(),
+            Interface::LinalgContractionOpInterface         => {
+                "linalg_contraction_op_interface".to_string()
+            },
+            Interface::LinalgStructuredInterface            => "linalg_structured_interface".to_string(),
             Interface::MaskableOpInterface                  => "maskable_op_interface".to_string(),
             Interface::MemoryEffect(e)                      => format!("memory_effect_op_interface({})", e),
             Interface::OffsetSizeAndStrideOpInterface       => {
@@ -92,6 +99,7 @@ impl fmt::Display for MemoryEffectOpInterface {
         write!(f, "{}", match self {
             MemoryEffectOpInterface::NoMemoryEffect         => "no_memory_effect",
             MemoryEffectOpInterface::MemoryEffect           => "memory_effect",
+            MemoryEffectOpInterface::RecursiveMemoryEffects => "recursive_memory_effects",
             MemoryEffectOpInterface::UndefinedMemoryEffect  => "undefined_memory_effect",
         })
     }

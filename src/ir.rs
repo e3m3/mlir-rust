@@ -254,6 +254,7 @@ use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
 use types::IRType;
+use types::IsPromotableTo;
 use types::unit::Unit;
 
 pub trait Destroy {
@@ -272,10 +273,19 @@ pub trait Shape {
         }
     }
 
-    fn unpack(&self) -> (isize, Vec<i64>) {
+    fn to_vec_transpose(&self) -> Vec<i64> {
+        self.to_vec().into_iter().rev().collect()
+    }
+
+    fn unpack(&self) -> ShapeUnpacked {
         (self.rank(), self.to_vec())
     }
+
+    fn unpack_transpose(&self) -> ShapeUnpacked {
+        (self.rank(), self.to_vec_transpose())
+    }
 }
+pub type ShapeUnpacked = (isize, Vec<i64>);
 
 #[derive(Clone)]
 pub struct Attribute(MlirAttribute);
@@ -2062,6 +2072,12 @@ impl IRType for Type {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl IsPromotableTo<Self> for Type {
+    fn is_promotable_to(&self, other: &Self) -> bool {
+        <dyn IRType>::is_promotable_to(self, other)
     }
 }
 

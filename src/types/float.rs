@@ -55,6 +55,7 @@ use ir::Context;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
+use types::IsPromotableTo;
 
 #[derive(Clone)]
 pub struct Float(MlirType, Layout);
@@ -235,6 +236,12 @@ impl IRType for Float {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl IsPromotableTo<Float> for Float {
+    fn is_promotable_to(&self, other: &Self) -> bool {
+        self.get_width() <= other.get_width()
     }
 }
 

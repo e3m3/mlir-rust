@@ -28,6 +28,7 @@ use ir::Context;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;
+use types::IsPromotableTo;
 
 #[derive(Clone)]
 pub struct Integer(MlirType);
@@ -107,5 +108,11 @@ impl IRType for Integer {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl IsPromotableTo<Integer> for Integer {
+    fn is_promotable_to(&self, other: &Self) -> bool {
+        self.get_width() <= other.get_width()
     }
 }

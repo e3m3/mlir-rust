@@ -28,6 +28,7 @@ use attributes::specialized::NamedArrayOfIntegerArrays;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedUnit;
+use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::StaticOffsets;
 use dialects::common::StaticSizes;
@@ -59,9 +60,6 @@ use types::shaped::Shaped;
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
-
-#[derive(Clone)]
-pub struct Dimension(MlirAttribute);
 
 #[derive(Clone)]
 pub struct GatherDimensions(MlirAttribute);
@@ -180,21 +178,6 @@ pub struct Yield(MlirOperation, MlirOperation, Op);
 ///////////////////////////////
 //  Attribute Implementation
 ///////////////////////////////
-
-impl Dimension {
-    pub fn new(context: &Context, n: i64) -> Self {
-        const WIDTH: c_uint = 64;
-        <Self as NamedInteger>::new(context, n, WIDTH)
-    }
-
-    pub fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
 
 impl GatherDimensions {
     pub fn get(&self) -> &MlirAttribute {
@@ -1570,30 +1553,6 @@ impl IROperation for Dim {
         &[]
     }
 }
-
-impl From<MlirAttribute> for Dimension {
-    fn from(attr: MlirAttribute) -> Self {
-        Dimension(attr)
-    }
-}
-
-impl IRAttribute for Dimension {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IRAttributeNamed for Dimension {
-    fn get_name() -> &'static str {
-        "dim"
-    }
-}
-
-impl NamedInteger for Dimension {}
 
 impl IROperation for Empty {
     fn get(&self) -> &MlirOperation {
