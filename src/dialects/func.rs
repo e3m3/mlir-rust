@@ -331,8 +331,8 @@ impl Func {
         t: &FunctionType,
         f_name: &StringRef,
         visibility: SymbolVisibilityKind,
-        attr_args: &Arguments,
-        attr_results: &Results,
+        attr_args: Option<&Arguments>,
+        attr_results: Option<&Results>,
         loc: &Location,
     ) -> Self {
         let context = t.as_type().get_context();
@@ -360,8 +360,12 @@ impl Func {
                 op_state.add_regions(&[region]);
             },
         };
-        attrs.push(attr_args.as_named_attribute());
-        attrs.push(attr_results.as_named_attribute());
+        if let Some(attr_args_) = attr_args {
+            attrs.push(attr_args_.as_named_attribute());
+        }
+        if let Some(attr_results_) = attr_results {
+            attrs.push(attr_results_.as_named_attribute());
+        }
         op_state.add_attributes(&attrs);
         Self::from(*op_state.create_operation().get())
     }
@@ -374,10 +378,16 @@ impl Func {
         &self.0
     }
 
-    pub fn get_arguments(&self) -> Arguments {
+    pub fn get_arguments(&self) -> Option<Arguments> {
+        let op = self.as_operation();
         let attr_name = StringBacked::from_string(&Arguments::get_name().to_string());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Arguments::from(*attr.get())
+        let s_ref = attr_name.as_string_ref();
+        if op.has_attribute_inherent(&s_ref) {
+            let attr = op.get_attribute_inherent(&s_ref);
+            Some(Arguments::from(*attr.get()))
+        } else {
+            None
+        }
     }
 
     pub fn get_context(&self) -> Context {
@@ -408,10 +418,16 @@ impl Func {
         SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
     }
 
-    pub fn get_result_attributes(&self) -> Results {
+    pub fn get_result_attributes(&self) -> Option<Results> {
+        let op = self.as_operation();
         let attr_name = StringBacked::from_string(&Results::get_name().to_string());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Results::from(*attr.get())
+        let s_ref = attr_name.as_string_ref();
+        if op.has_attribute_inherent(&s_ref) {
+            let attr = op.get_attribute_inherent(&s_ref);
+            Some(Results::from(*attr.get()))
+        } else {
+            None
+        }
     }
 
     pub fn get_visibility(&self) -> Option<SymbolVisibility> {
