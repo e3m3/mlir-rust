@@ -546,13 +546,13 @@ impl Concat {
                 size != s_values.iter().fold(0, |acc,s_| acc + s_.dim_size(i as isize)) {
                 eprintln!(
                     "Expected result dimension to equal sum of operand sizes \
-                    along the concatenated dimension",
+                    along the concatenated dimension"
                 );
                 exit(ExitCode::DialectError);
             } else if !do_concat && s_values.iter().any(|s_| size != s_.dim_size(i as isize)) {
                 eprintln!(
                     "Expected matching dimension size for result and operands along \
-                    the non-concatenated dimensions",
+                    the non-concatenated dimensions"
                 );
                 exit(ExitCode::DialectError);
             }
@@ -644,12 +644,14 @@ impl Dim {
 
 impl Empty {
     pub fn new(t: &RankedTensor, sizes: &[Value], loc: &Location) -> Self {
-        if t.as_shaped().rank().unwrap_or(-1) != sizes.len() as i64 {
-            eprintln!("Expected matching size length for rank of empty tensor");
+        if t.as_shaped().num_dynamic_dims().unwrap_or(-1) != sizes.len() as i64 {
+            eprintln!("Expected matching arity of dynamic sizes and number of dynamic dimensions for \
+                tensor type of empty tensor operation"
+            );
             exit(ExitCode::DialectError);
         }
         if !sizes.iter().all(|v| v.get_type().is_index()) {
-            eprintln!("Expected indices for size operands to empty tensor");
+            eprintln!("Expected index type for dynamic size operands to empty tensor");
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
