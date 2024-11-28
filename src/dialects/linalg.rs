@@ -382,7 +382,7 @@ pub trait ElementwiseBinaryOperation:
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, lhs, rhs, output);
-        let dialect = context.get_dialect_memref();
+        let dialect = context.get_dialect_linalg();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -410,7 +410,7 @@ pub trait ElementwiseBinaryOperation:
         Self::__check_operands(op, lhs, rhs, output);
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
-        let dialect = context.get_dialect_memref();
+        let dialect = context.get_dialect_linalg();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -443,7 +443,7 @@ pub trait ElementwiseUnaryOperation:
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, input, output);
-        let dialect = context.get_dialect_memref();
+        let dialect = context.get_dialect_linalg();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -470,7 +470,7 @@ pub trait ElementwiseUnaryOperation:
         Self::__check_operands(op, input, output);
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
-        let dialect = context.get_dialect_memref();
+        let dialect = context.get_dialect_linalg();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -1733,7 +1733,7 @@ impl Floor {
 
 impl Index {
     pub fn new(context: &Context, dim: &Dimension, loc: &Location) -> Self {
-        let dialect = context.get_dialect_memref();
+        let dialect = context.get_dialect_linalg();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -2537,7 +2537,7 @@ impl IROperation for Abs {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2590,7 +2590,7 @@ impl IROperation for Add {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2703,7 +2703,7 @@ impl IROperation for Ceil {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2756,7 +2756,7 @@ impl IROperation for Copy {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2809,7 +2809,7 @@ impl IROperation for Div {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2862,7 +2862,7 @@ impl IROperation for DivUnsigned {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2915,7 +2915,7 @@ impl IROperation for Dot {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -2969,7 +2969,7 @@ impl IROperation for ElementwiseBinary {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3022,7 +3022,7 @@ impl IROperation for ElementwiseUnary {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3075,7 +3075,7 @@ impl IROperation for Erf {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3128,7 +3128,7 @@ impl IROperation for Exp {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3181,7 +3181,7 @@ impl IROperation for Floor {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3232,7 +3232,7 @@ impl IROperation for Index {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3334,7 +3334,7 @@ impl IROperation for Log {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3387,7 +3387,7 @@ impl IROperation for Matmul {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3441,7 +3441,7 @@ impl IROperation for MatmulTransposeA {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3495,7 +3495,7 @@ impl IROperation for MatmulTransposeB {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3549,7 +3549,7 @@ impl IROperation for Matvec {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3603,7 +3603,7 @@ impl IROperation for Max {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3656,7 +3656,7 @@ impl IROperation for Min {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3709,7 +3709,7 @@ impl IROperation for Mul {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3762,7 +3762,7 @@ impl IROperation for NegF {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3883,7 +3883,7 @@ impl IROperation for Reciprocal {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3936,7 +3936,7 @@ impl IROperation for Round {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -3989,7 +3989,7 @@ impl IROperation for Rsqrt {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4042,7 +4042,7 @@ impl IROperation for Sqrt {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4095,7 +4095,7 @@ impl IROperation for Square {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4148,7 +4148,7 @@ impl IROperation for Sub {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4201,7 +4201,7 @@ impl IROperation for Tanh {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4254,7 +4254,7 @@ impl IROperation for Transpose {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
@@ -4337,7 +4337,7 @@ impl IROperation for Vecmat {
     }
 
     fn get_dialect(&self) -> Dialect {
-        self.as_operation().get_context().get_dialect_memref()
+        self.as_operation().get_context().get_dialect_linalg()
     }
 
     fn get_effects(&self) -> MemoryEffectList {
