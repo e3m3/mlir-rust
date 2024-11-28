@@ -30,7 +30,13 @@ use types::shaped::Shaped;
 pub struct RankedTensor(MlirType);
 
 impl RankedTensor {
-    pub fn new(shape: &dyn Shape, t: &Type, encoding: &Attribute) -> Self {
+    pub fn new(shape: &dyn Shape, t: &Type) -> Self {
+        let (r, s) = shape.unpack();
+        let encoding = Attribute::new();
+        Self::from(do_unsafe!(mlirRankedTensorTypeGet(r, s.as_ptr(), *t.get(), *encoding.get())))
+    }
+
+    pub fn new_encoded(shape: &dyn Shape, t: &Type, encoding: &Attribute) -> Self {
         let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirRankedTensorTypeGet(r, s.as_ptr(), *t.get(), *encoding.get())))
     }
@@ -78,7 +84,7 @@ impl RankedTensor {
         s.get_matching_suffix(&s_other).map(|s_suffix| {
             let t = s.get_element_type();
             let e = self.get_encoding();
-            Self::new(&s_suffix, &t, &e)
+            Self::new_encoded(&s_suffix, &t, &e)
         })
     }
 
