@@ -1086,6 +1086,10 @@ impl Module {
         Block::from(do_unsafe!(mlirModuleGetBody(self.0)))
     }
 
+    pub fn get_context(&self) -> Context {
+        self.as_operation().get_context()
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirModule {
         &mut self.0
     }
@@ -1094,7 +1098,7 @@ impl Module {
         self.get().ptr.is_null()
     }
 
-    pub fn take_body(&self, block: &mut Block) -> () {
+    pub fn take_body(&mut self, block: &mut Block) -> () {
         let mut region = self.as_operation().get_region(0);
         let mut region_temp = Region::new();
         if !block.get_parent().is_null() {
@@ -1703,6 +1707,12 @@ impl ShapeImpl<Vec<i64>> {
 impl From<Vec<i64>> for ShapeImpl<Vec<i64>> {
     fn from(v: Vec<i64>) -> Self {
         ShapeImpl(v)
+    }
+}
+
+impl From<&Vec<i64>> for ShapeImpl<Vec<i64>> {
+    fn from(v: &Vec<i64>) -> Self {
+        ShapeImpl(v.clone())
     }
 }
 
