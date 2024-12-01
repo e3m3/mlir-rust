@@ -370,8 +370,8 @@ impl Attribute {
     }
 
     /// This is the only mention of DisctinctAttr.
-    /// Also, why is it mispelled?
-    pub fn new_disctinct(attr: &Attribute) -> Self {
+    /// Also, why is it mispelled in the C API?
+    pub fn new_distinct(attr: &Attribute) -> Self {
         Self::from(do_unsafe!(mlirDisctinctAttrCreate(*attr.get())))
     }
 
