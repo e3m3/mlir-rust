@@ -9,6 +9,7 @@ use mlir::MlirAttribute;
 
 use std::ffi::c_int;
 use std::ffi::c_uint;
+use std::str::FromStr;
 
 use crate::attributes;
 use crate::dialects;
@@ -26,6 +27,7 @@ use attributes::float::Float as FloatAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::integer::Integer as IntegerAttr;
+use attributes::opaque::Opaque;
 use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
@@ -35,12 +37,23 @@ use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
 use ir::Context;
+use ir::StringBacked;
 use ir::StringRef;
 use ir::Type;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
 use types::IRType;
 use types::mem_ref::MemRef;
+
+///////////////////////////////
+//  Support
+///////////////////////////////
+
+pub struct CustomAttributeData {
+    name: String,
+    namespace: String,
+    data: Vec<String>,
+}
 
 ///////////////////////////////
 //  Specialized Traits
@@ -331,9 +344,32 @@ pub trait NamedFunction: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
+pub trait NamedI32DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, values: &[i32]) -> Self {
+        Self::from(*DenseArray::new_i32(context, values).get_mut())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_dense_array_i32() {
+            eprintln!("Expected dense array of 32-bit integers attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_dense_array(&self) -> DenseArray {
+        DenseArray::from(*self.get(), DenseArrayLayout::I32)
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_dense_array().num_elements()
+    }
+}
+
 pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, values: &[i64]) -> Self {
-        Self::from(*DenseArray::new_i64(context, values).get())
+        Self::from(*DenseArray::new_i64(context, values).get_mut())
     }
 
     fn from_checked(attr: MlirAttribute) -> Self {
@@ -382,7 +418,22 @@ pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
 
 pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, n: i64, width: c_uint) -> Self {
+        let t = IntegerType::new(context, width);
+        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+    }
+
+    fn new_signed(context: &Context, n: i64, width: c_uint) -> Self {
+        let t = IntegerType::new_signed(context, width);
+        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+    }
+
+    fn new_signless(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new_signless(context, width);
+        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+    }
+
+    fn new_unsigned(context: &Context, n: i64, width: c_uint) -> Self {
+        let t = IntegerType::new_unsigned(context, width);
         Self::from(*IntegerAttr::new(&t.as_type(), n).get())
     }
 
@@ -425,6 +476,31 @@ pub trait NamedMemRef: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_type(&self) -> TypeAttr {
         TypeAttr::from(*self.get())
+    }
+}
+
+pub trait NamedOpaque: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(t: &Type, namespace: &StringRef, data: &StringRef) -> Self {
+        Self::from(*Opaque::new(t, namespace, data).get())
+    }
+
+    fn new_custom(t: &Type, cad: &CustomAttributeData) -> Self {
+        let namespace = StringBacked::from_string(cad.get_namespace());
+        let data = StringBacked::from_string(&format!("{}<{}>", cad.name, cad.data.join(",")));
+        Self::new(t, &namespace.as_string_ref(), &data.as_string_ref())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_opaque() {
+            eprintln!("Expected opqaue attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_opaque(&self) -> Opaque {
+        Opaque::from(*self.get())
     }
 }
 
@@ -533,5 +609,89 @@ pub trait NamedUnit: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_unit(&self) -> Unit {
         Unit::from(*self.get())
+    }
+}
+
+///////////////////////////////
+//  Support Implementation
+///////////////////////////////
+
+impl CustomAttributeData {
+    pub fn new(name: String, namespace: String, data: Vec<String>) -> Self {
+        Self{name, namespace, data}
+    }
+
+    pub fn get_data(&self) -> &[String] {
+        &self.data
+    }
+
+    pub fn get_name(&self) -> &String {
+        &self.name
+    }
+
+    pub fn get_namespace(&self) -> &String {
+        &self.namespace
+    }
+
+    fn is_angle_bracket(c: char) -> bool {
+        matches!(c, '<' | '>')
+    }
+
+    fn is_prefix(s: &str) -> bool {
+        let chars: Vec<char> = s.chars().collect();
+        !chars.is_empty() && chars[0] == '#' && !chars.iter().any(|&c| Self::is_angle_bracket(c))
+    }
+
+    fn split_prefix(s: &str) -> Result<(String, String), &'static str> {
+        let s_ = &s[1..];
+        let parts: Vec<&str> = s_.split('.').collect();
+        if parts.len() == 2 {
+            Ok((parts[0].to_string(), parts[1].to_string()))
+        } else {
+            Err("Expected prefix of form '#namespace.name'")
+        }
+    }
+}
+
+impl From<String> for CustomAttributeData {
+    fn from(s: String) -> Self {
+        Self::from(&s)
+    }
+}
+
+impl From<&String> for CustomAttributeData {
+    fn from(s: &String) -> Self {
+        match Self::from_str(s.as_str()) {
+            Ok(cad)     => cad,
+            Err(msg)    => {
+                eprintln!("{}", msg);
+                exit(ExitCode::IRError);
+            },
+        }
+    }
+}
+
+impl From<StringRef> for CustomAttributeData {
+    fn from(s_ref: StringRef) -> Self {
+        Self::from(&s_ref.to_string())
+    }
+}
+
+impl From<&StringRef> for CustomAttributeData {
+    fn from(s_ref: &StringRef) -> Self {
+        Self::from(s_ref.to_string())
+    }
+}
+
+impl FromStr for CustomAttributeData {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.split(Self::is_angle_bracket).collect();
+        if parts.is_empty() || !Self::is_prefix(parts[0]) {
+            Err("Expected prefix (e.g., #namespace.name) for custom attribute data")?
+        }
+        let (namespace, name) = Self::split_prefix(parts[0])?;
+        Ok(Self::new(namespace, name, parts[0..1].iter().map(|s_| s_.to_string()).collect()))
     }
 }
