@@ -22,7 +22,7 @@ use crate::types;
 
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
-use attributes::specialized::NamedI64DenseArray;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedInitialization;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedPermutation;
@@ -332,7 +332,7 @@ impl Alloc {
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i64, syms.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
         let mut attrs = vec![opseg_attr.as_named_attribute()];
         if let Some(align_attr) = align {
             attrs.push(align_attr.as_named_attribute());
@@ -419,7 +419,7 @@ impl Alloca {
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i64, syms.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
         let mut attrs = vec![opseg_attr.as_named_attribute()];
         if let Some(align_attr) = align {
             attrs.push(align_attr.as_named_attribute());
@@ -903,7 +903,7 @@ impl Load {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -1011,7 +1011,7 @@ impl Store {
         ));
         let mut args = vec![value.clone(), target.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -1132,7 +1132,7 @@ impl View {
         ));
         let mut args = vec![source.clone(), byte_shift.clone()];
         args.append(&mut sizes.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1, sizes.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1, sizes.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&args);

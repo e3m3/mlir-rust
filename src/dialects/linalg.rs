@@ -23,11 +23,11 @@ use crate::types;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfAffineMaps;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
-use dialects::common::ResultSegmentSizes;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
@@ -39,6 +39,8 @@ use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
+use ir::Block;
+use ir::Region;
 use ir::Shape;
 use ir::ShapeUnpacked;
 use ir::StringBacked;
@@ -388,10 +390,13 @@ pub trait ElementwiseBinaryOperation:
             dialect.get_namespace(),
             op.get_name(),
         ));
+        let mut region = Region::new();
+        region.append_block(&mut Block::new_empty());
         let opseg_attr = OperandSegmentSizes::new(context, &[2, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone(), output.clone()]);
+        op_state.add_regions(&[region]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -416,11 +421,13 @@ pub trait ElementwiseBinaryOperation:
             dialect.get_namespace(),
             op.get_name(),
         ));
+        let mut region = Region::new();
+        region.append_block(&mut Block::new_empty());
         let opseg_attr = OperandSegmentSizes::new(&context, &[2, 1]);
-        let result_attr = ResultSegmentSizes::new(&context, &[1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone(), output.clone()]);
+        op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
     }
@@ -449,10 +456,13 @@ pub trait ElementwiseUnaryOperation:
             dialect.get_namespace(),
             op.get_name(),
         ));
+        let mut region = Region::new();
+        region.append_block(&mut Block::new_empty());
         let opseg_attr = OperandSegmentSizes::new(context, &[1, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[input.clone(), output.clone()]);
+        op_state.add_regions(&[region]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -476,11 +486,13 @@ pub trait ElementwiseUnaryOperation:
             dialect.get_namespace(),
             op.get_name(),
         ));
+        let mut region = Region::new();
+        region.append_block(&mut Block::new_empty());
         let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1]);
-        let result_attr = ResultSegmentSizes::new(&context, &[1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
+        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[input.clone(), output.clone()]);
+        op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
     }

@@ -25,6 +25,7 @@ use attributes::array::Array;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfIntegerArrays;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedUnit;
@@ -564,7 +565,7 @@ impl Concat {
             dialect.get_namespace(),
             Op::Concat.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[values.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[values.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), dim.as_named_attribute()]);
         op_state.add_operands(values);
@@ -661,9 +662,7 @@ impl Empty {
             dialect.get_namespace(),
             Op::Empty.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[sizes.len() as i64]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(sizes);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -757,7 +756,7 @@ impl ExpandShape {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut shape.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, shape.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, shape.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[
             opseg_attr.as_named_attribute(),
@@ -830,7 +829,7 @@ impl Extract {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -905,9 +904,9 @@ impl ExtractSlice {
         args.append(&mut strides.to_vec());
         let opseg_attr = OperandSegmentSizes::new(&context, &[
             1,
-            offsets.len() as i64,
-            sizes.len() as i64,
-            strides.len() as i64,
+            offsets.len() as i32,
+            sizes.len() as i32,
+            strides.len() as i32,
         ]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[
@@ -985,7 +984,7 @@ impl FromElements {
             dialect.get_namespace(),
             Op::FromElements.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[elements.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[elements.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(elements);
@@ -1036,7 +1035,7 @@ impl Generate {
         let mut region = Region::new();
         let mut block = Block::new(0, &[], &[]);
         region.append_block(&mut block); // Add empty starter block
-        let opseg_attr = OperandSegmentSizes::new(&context, &[extents.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[extents.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(extents);
@@ -1121,8 +1120,8 @@ impl Pad {
         ));
         let opseg_attr = OperandSegmentSizes::new(&context, &[
             1,
-            values_low.len() as i64,
-            values_high.len() as i64,
+            values_low.len() as i32,
+            values_high.len() as i32,
         ]);
         let mut attrs = vec![
             opseg_attr.as_named_attribute(),

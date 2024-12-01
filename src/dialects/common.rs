@@ -17,6 +17,7 @@ use crate::ir;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedBool;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedString;
@@ -244,11 +245,11 @@ impl IRAttribute for OperandSegmentSizes {
 
 impl IRAttributeNamed for OperandSegmentSizes {
     fn get_name() -> &'static str {
-        "operand_segment_sizes"
+        "operandSegmentSizes"
     }
 }
 
-impl NamedI64DenseArray for OperandSegmentSizes {}
+impl NamedI32DenseArray for OperandSegmentSizes {}
 
 impl From<MlirAttribute> for ResultSegmentSizes {
     fn from(attr: MlirAttribute) -> Self {
@@ -268,11 +269,11 @@ impl IRAttribute for ResultSegmentSizes {
 
 impl IRAttributeNamed for ResultSegmentSizes {
     fn get_name() -> &'static str {
-        "result_segment_sizes"
+        "resultSegmentSizes"
     }
 }
 
-impl NamedI64DenseArray for ResultSegmentSizes {}
+impl NamedI32DenseArray for ResultSegmentSizes {}
 
 impl From<MlirAttribute> for StaticOffsets {
     fn from(attr: MlirAttribute) -> Self {

@@ -24,7 +24,7 @@ use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfDictionaries;
 use attributes::specialized::NamedFunction;
-use attributes::specialized::NamedI64DenseArray;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
 use attributes::named::Named;
@@ -190,8 +190,8 @@ impl Call {
             dialect.get_namespace(),
             Op::Call.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i64]);
-        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i32]);
+        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[
             callee.as_named_attribute(),
@@ -253,8 +253,8 @@ impl CallIndirect {
             dialect.get_namespace(),
             Op::CallIndirect.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, args.len() as i64]);
-        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, args.len() as i32]);
+        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
         op_state.add_operands(&args_);
@@ -469,9 +469,7 @@ impl Return {
             dialect.get_namespace(),
             Op::Return.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i64]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(args);
         Self::from(*op_state.create_operation().get(), symbol_ref)
     }

@@ -26,6 +26,7 @@ use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfBools;
 use attributes::specialized::NamedArrayOfIntegers;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedPermutation;
@@ -454,7 +455,7 @@ impl Extract {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut pos.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, pos.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, pos.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), static_pos.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -589,8 +590,8 @@ impl FromElements {
             dialect.get_namespace(),
             Op::FromElements.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i64]);
-        let result_attr = ResultSegmentSizes::new(&context, &[n]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i32]);
+        let result_attr = ResultSegmentSizes::new(&context, &[n as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
         op_state.add_operands(args);
@@ -651,7 +652,7 @@ impl Load {
         ));
         let mut args = vec![base.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -794,7 +795,7 @@ impl Store {
         ));
         let mut args = vec![value.clone(), base.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i64]);
+        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
@@ -865,11 +866,11 @@ impl TransferRead {
             Op::TransferRead.get_name(),
         ));
         let mut args: Vec<Value> = Vec::new();
-        let mut opseg_sizes: Vec<i64> = Vec::new();
+        let mut opseg_sizes: Vec<i32> = Vec::new();
         args.push(source.clone());
         opseg_sizes.push(1);
         args.append(&mut indices.to_vec());
-        opseg_sizes.push(indices.len() as i64);
+        opseg_sizes.push(indices.len() as i32);
         if mask.is_some() {
             args.push(mask.cloned().unwrap());
             opseg_sizes.push(1);
@@ -969,13 +970,13 @@ impl TransferWrite {
             Op::TransferWrite.get_name(),
         ));
         let mut args: Vec<Value> = Vec::new();
-        let mut opseg_sizes: Vec<i64> = Vec::new();
+        let mut opseg_sizes: Vec<i32> = Vec::new();
         args.push(vector.clone());
         opseg_sizes.push(1);
         args.push(source.clone());
         opseg_sizes.push(1);
         args.append(&mut indices.to_vec());
-        opseg_sizes.push(indices.len() as i64);
+        opseg_sizes.push(indices.len() as i32);
         if mask.is_some() {
             args.push(mask.cloned().unwrap());
             opseg_sizes.push(1);
