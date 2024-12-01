@@ -25,7 +25,7 @@ use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedFloatOrInteger;
-use attributes::specialized::NamedInteger;
+use attributes::specialized::NamedOpaque;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
@@ -39,6 +39,7 @@ use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
+use ir::StringRef;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
@@ -262,39 +263,45 @@ impl ArithValue {
 
 impl FastMath {
     pub fn new(context: &Context, flags: FastMathFlags) -> Self {
-        const WIDTH: c_uint = 8; // Hardcode width to 8 bits; Attribute only accepts i64 though.
-        NamedInteger::new(context, flags as i64, WIDTH)
+        const WIDTH: c_uint = 32;
+        let t = IntegerType::new_signless(context, WIDTH).as_type();
+        let namespace = context.get_dialect_arith().get_namespace();
+        let data = StringBacked::from_string(&format!("{}<{}>", Self::get_name(), flags));
+        NamedOpaque::new(&t, &namespace, &data.as_string_ref())
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+    pub fn get_data(&self) -> StringRef {
+        self.as_opaque().get_data()
     }
 
-    pub fn get_flags(&self) -> FastMathFlags {
-        FastMathFlags::from_i64(self.as_integer().get_int())
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
 impl IntegerOverflow {
     pub fn new(context: &Context, flags: IntegerOverflowFlags) -> Self {
-        const WIDTH: c_uint = 8; // Hardcode width to 8 bits; Attribute only accepts i64 though.
-        NamedInteger::new(context, flags as i64, WIDTH)
+        const WIDTH: c_uint = 32;
+        let t = IntegerType::new_signless(context, WIDTH).as_type();
+        let namespace = context.get_dialect_arith().get_namespace();
+        let data = StringBacked::from_string(&format!("{}<{}>", Self::get_name(), flags));
+        NamedOpaque::new(&t, &namespace, &data.as_string_ref())
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
 
-    pub fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+    pub fn get_data(&self) -> StringRef {
+        self.as_opaque().get_data()
     }
 
-    pub fn get_flags(&self) -> IntegerOverflowFlags {
-        IntegerOverflowFlags::from_i64(self.as_integer().get_int())
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
     }
 }
 
@@ -617,7 +624,7 @@ impl AddUIExtended {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
-        op_state.add_results(&[t.clone(), IntegerType::new_bool(&context).as_type()]);
+        op_state.add_results(&[t.clone(), IntegerType::new_signless(&context, 1 as c_uint).as_type()]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -738,7 +745,7 @@ impl DivF {
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
-        Self::from(*op_state.create_operation().get()) 
+        Self::from(*op_state.create_operation().get())
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -1584,7 +1591,7 @@ impl IRAttributeNamed for FastMath {
     }
 }
 
-impl NamedInteger for FastMath {}
+impl NamedOpaque for FastMath {}
 
 impl From<MlirAttribute> for IntegerOverflow {
     fn from(attr: MlirAttribute) -> Self {
@@ -1604,11 +1611,11 @@ impl IRAttribute for IntegerOverflow {
 
 impl IRAttributeNamed for IntegerOverflow {
     fn get_name() -> &'static str {
-        "overflow"
+        "overflowFlags"
     }
 }
 
-impl NamedInteger for IntegerOverflow {}
+impl NamedOpaque for IntegerOverflow {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
