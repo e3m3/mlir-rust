@@ -1,0 +1,38 @@
+// RUN: %O/arith_mului_extended_1 2>&1 | @mlir-opt | @filecheck %M/arith_mului_extended_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::dialects::arith::MulUIExtended;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::ir::Block;
+use mlir::types::IRType;
+use mlir::types::integer::Integer as IntegerType;
+
+use std::ffi::c_uint;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = IntegerType::new_signless(&context, 8 as c_uint).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone(), t.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_mul = MulUIExtended::new(
+        &t,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_mul.get_result(0), op_mul.get_result(1)], &loc).as_operation();
+    f_block.append_operation(&mut op_mul);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}

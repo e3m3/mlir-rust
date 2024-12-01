@@ -1,0 +1,76 @@
+[package]
+name = "lit-tests-rust"
+edition = "2021"
+authors = ["Giordano Salvador <73959795+e3m3@users.noreply.github.com>"]
+description = "Lit tests for rust bindings over the MLIR C API bindings from mlir-sys"
+readme = "README.md"
+license-file = "LICENSE"
+
+[dependencies]
+mlir = { path = "../../" }
+
+[lints.clippy]
+unused_unit = "allow"
+
+
+#   LIT TEST SECTION
+
+[[bin]]
+name = "arith_addf_1"
+path = "src/arith_addf_1.lit-rs"
+
+[[bin]]
+name = "arith_addi_1"
+path = "src/arith_addi_1.lit-rs"
+
+[[bin]]
+name = "arith_addui_extended_1"
+path = "src/arith_addui_extended_1.lit-rs"
+
+[[bin]]
+name = "arith_constant_1"
+path = "src/arith_constant_1.lit-rs"
+
+[[bin]]
+name = "arith_divf_1"
+path = "src/arith_divf_1.lit-rs"
+
+[[bin]]
+name = "arith_divsi_1"
+path = "src/arith_divsi_1.lit-rs"
+
+[[bin]]
+name = "arith_divui_1"
+path = "src/arith_divui_1.lit-rs"
+
+[[bin]]
+name = "arith_mulf_1"
+path = "src/arith_mulf_1.lit-rs"
+
+[[bin]]
+name = "arith_muli_1"
+path = "src/arith_muli_1.lit-rs"
+
+[[bin]]
+name = "arith_mulsi_extended_1"
+path = "src/arith_mulsi_extended_1.lit-rs"
+
+[[bin]]
+name = "arith_mului_extended_1"
+path = "src/arith_mului_extended_1.lit-rs"
+
+[[bin]]
+name = "arith_subf_1"
+path = "src/arith_subf_1.lit-rs"
+
+[[bin]]
+name = "arith_subi_1"
+path = "src/arith_subi_1.lit-rs"
+
+[[bin]]
+name = "module_empty"
+path = "src/module_empty.lit-rs"
+
+[[bin]]
+name = "linalg_add_1"
+path = "src/linalg_add_1.lit-rs"

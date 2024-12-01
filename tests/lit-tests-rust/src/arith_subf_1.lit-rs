@@ -1,0 +1,47 @@
+// RUN: %O/arith_subf_1 2>&1 | @mlir-opt | @filecheck %M/arith_subf_1.mlir --check-prefix=CHECK_CAN
+
+// COM: Currently, the fastmath flag attribute is broken.
+// COM: Naming the attribute `fastmath` causes the attribute to be ignored despite this being the
+// COM: accepted name when specifying the attribute in the mlir (see `arith_subf_1.mlir`).
+// COM: Changing the arribute name to be prefixed (`arith.fastmath`) causes the attribute to be
+// COM: accepted, but it is not correct and will not be canicalized by `mlir-opt`.
+// COM: To allow the test to pass for now, the flag is included as an optional regex in the test.
+
+extern crate mlir;
+
+use mlir::dialects::arith::SubF;
+use mlir::dialects::arith::FastMathFlags;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::ir::Block;
+use mlir::types::IRType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F8E5M2).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_sub = SubF::new(
+        &t,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        FastMathFlags::Fast,
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_sub.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_sub);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
+
