@@ -17,6 +17,8 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 
 *   llvm-19, clang-19, and mlir-sys (or llvm version matching mlir-sys)
 
+*   libxml2 and libz headers (for testing)
+
 *   [docker|podman] (for testing/containerization)
 
     *   A [Fedora][5] [[5]] image can be built using `containers/Containerfile.fedora*`.
