@@ -676,7 +676,7 @@ impl Default for Block {
     }
 }
 
-impl <'a> Iterator for BlockIter<'a> {
+impl Iterator for BlockIter<'_> {
     type Item = Operation;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1355,7 +1355,7 @@ impl cmp::PartialEq for Operation {
     }
 }
 
-impl <'a> Iterator for OperationIter<'a> {
+impl Iterator for OperationIter<'_> {
     type Item = Region;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -1583,7 +1583,7 @@ impl cmp::PartialEq for Region {
     }
 }
 
-impl <'a> Iterator for RegionIter<'a> {
+impl Iterator for RegionIter<'_> {
     type Item = Block;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -2234,7 +2234,7 @@ impl cmp::PartialEq for Value {
     }
 }
 
-impl <'a> Iterator for ValueIter<'a> {
+impl Iterator for ValueIter<'_> {
     type Item = OpOperand;
 
     fn next(&mut self) -> Option<Self::Item> {
