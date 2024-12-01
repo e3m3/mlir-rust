@@ -184,12 +184,14 @@ mod tests{
             format!("--path={}", env_path_str).as_str(),
         ].join(" ");
 
-        println!("Clearing lit test binaries in '{}':", lit_dir_rust_output_dir_str);
-        for entry in lit_dir_rust_output_dir.read_dir().expect("Failed to read directory") {
-            if let Ok(entry_) = entry {
-                let path = entry_.path();
-                if is_executable(&path) {
-                    assert!(fs::remove_file(path).is_ok());
+        if lit_dir_rust_output_dir.exists() {
+            println!("Clearing lit test binaries in '{}':", lit_dir_rust_output_dir_str);
+            for entry in lit_dir_rust_output_dir.read_dir().expect("Failed to read directory") {
+                if let Ok(entry_) = entry {
+                    let path = entry_.path();
+                    if is_executable(&path) {
+                        assert!(fs::remove_file(path).is_ok());
+                    }
                 }
             }
         }
