@@ -20,7 +20,6 @@ use attributes::IRAttribute;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
-use ir::Context;
 use ir::StringRef;
 use ir::Type;
 use ir::TypeID;
@@ -29,7 +28,8 @@ use ir::TypeID;
 pub struct Opaque(MlirAttribute);
 
 impl Opaque {
-    pub fn new(context: &Context, namespace: &StringRef, data: &StringRef, t: &Type) -> Self {
+    pub fn new(t: &Type, namespace: &StringRef, data: &StringRef) -> Self {
+        let context = t.get_context();
         Self::from(do_unsafe!(mlirOpaqueAttrGet(
             *context.get(),
             *namespace.get(),
