@@ -836,9 +836,9 @@ impl Context {
     }
 
     /// Load a registered dialect with name
-    pub fn load_dialect(&mut self, name: &str) -> Option<Dialect> {
+    pub fn load_dialect(&self, name: &str) -> Option<Dialect> {
         let string = StringBacked::from_str(name).unwrap();
-        let dialect = do_unsafe!(mlirContextGetOrLoadDialect(*self.get_mut(), *string.get()));
+        let dialect = do_unsafe!(mlirContextGetOrLoadDialect(*self.get(), *string.get()));
         if dialect.ptr.is_null() {
             None 
         } else {

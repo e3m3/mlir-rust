@@ -91,3 +91,7 @@ path = "src/module_empty.lit-rs"
 [[bin]]
 name = "linalg_add_1"
 path = "src/linalg_add_1.lit-rs"
+
+[[bin]]
+name = "ub_poison_1"
+path = "src/ub_poison_1.lit-rs"

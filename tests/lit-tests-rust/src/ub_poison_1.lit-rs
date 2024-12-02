@@ -1,0 +1,36 @@
+// RUN: %O/ub_poison_1 2>&1 | @mlir-opt | @filecheck %M/ub_poison_1.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for ub is exposed, so make sure to load all available dialects before
+// COM: constructing the poison operation from the ub dialect namespace.
+
+extern crate mlir;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::ub::Poison;
+use mlir::dialects::IROperation;
+use mlir::ir::Block;
+use mlir::types::IRType;
+use mlir::types::integer::Integer as IntegerType;
+
+use std::ffi::c_uint;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t = IntegerType::new(&context, 32 as c_uint).as_type();
+    let f = get_empty_test_fn(&context, &[], &[t.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_poison = Poison::new(&context, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_poison.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_poison);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
