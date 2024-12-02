@@ -6,7 +6,9 @@
 extern crate mlir;
 
 use mlir::dialects::common::SymbolVisibilityKind;
+use mlir::dialects::func::Arguments;
 use mlir::dialects::func::Func;
+use mlir::dialects::func::Results;
 use mlir::ir::Context;
 use mlir::ir::Module;
 use mlir::ir::Pass;
@@ -33,6 +35,27 @@ pub fn get_module(registry: &Registry) -> Module {
     Pass::register_all_passes();
     let context = Context::from_registry(registry);
     Module::new(&context.get_unknown_location())
+}
+
+pub fn get_private_fn(
+    context: &Context,
+    name: &str,
+    inputs: &[Type],
+    results: &[Type],
+    input_attrs: Option<&Arguments>,
+    result_attrs: Option<&Results>,
+) -> Func {
+    let name = StringBacked::from_string(&name.to_string());
+    let loc = context.get_unknown_location();
+    let t_f = FunctionType::new(context, inputs, results);
+    Func::new(
+        &t_f,
+        &name.as_string_ref(),
+        SymbolVisibilityKind::Private,
+        input_attrs,
+        result_attrs,
+        &loc,
+    )
 }
 
 pub fn get_registry() -> Registry {
