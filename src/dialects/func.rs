@@ -24,15 +24,12 @@ use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
 use attributes::specialized::NamedArrayOfDictionaries;
 use attributes::specialized::NamedFunction;
-use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
 use attributes::named::Named;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IROp;
 use dialects::IROperation;
-use dialects::common::OperandSegmentSizes;
-use dialects::common::ResultSegmentSizes;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
 use dialects::common::SymbolVisibilityKind;
@@ -190,14 +187,8 @@ impl Call {
             dialect.get_namespace(),
             Op::Call.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i32]);
-        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[
-            callee.as_named_attribute(),
-            opseg_attr.as_named_attribute(),
-            result_attr.as_named_attribute(),
-        ]);
+        op_state.add_attributes(&[callee.as_named_attribute()]);
         op_state.add_operands(args);
         op_state.add_results(t);
         Self::from(*op_state.create_operation().get())
@@ -253,10 +244,7 @@ impl CallIndirect {
             dialect.get_namespace(),
             Op::CallIndirect.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, args.len() as i32]);
-        let result_attr = ResultSegmentSizes::new(&context, &[t.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
         op_state.add_operands(&args_);
         op_state.add_results(&t);
         Self::from(*op_state.create_operation().get())
@@ -352,21 +340,20 @@ impl Func {
         let mut attrs: Vec<Named> = Vec::new();
         attrs.push(sym_name_attr.as_named_attribute());
         attrs.push(function_type_attr.as_named_attribute());
-        match SymbolVisibility::new(&context, visibility) {
-            Some(sym)   => attrs.push(sym.as_named_attribute()),
-            None        => {
-                let mut region = Region::new();
-                region.append_block(&mut block);
-                op_state.add_regions(&[region]);
-            },
-        };
         if let Some(attr_args_) = attr_args {
             attrs.push(attr_args_.as_named_attribute());
         }
         if let Some(attr_results_) = attr_results {
             attrs.push(attr_results_.as_named_attribute());
         }
+        let mut region = Region::new();
+        if let Some(sym) = SymbolVisibility::new(&context, visibility) {
+            attrs.push(sym.as_named_attribute());
+        } else {
+            region.append_block(&mut block);
+        }
         op_state.add_attributes(&attrs);
+        op_state.add_regions(&[region]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -503,11 +490,11 @@ impl From<MlirAttribute> for Arguments {
 
 impl IRAttribute for Arguments {
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+        self.get_mut()
     }
 }
 
@@ -568,11 +555,11 @@ impl From<MlirAttribute> for Callee {
 
 impl IRAttribute for Callee {
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+        self.get_mut()
     }
 }
 
@@ -719,11 +706,11 @@ impl From<MlirAttribute> for FunctionAttr {
 
 impl IRAttribute for FunctionAttr {
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+        self.get_mut()
     }
 }
 
@@ -749,11 +736,11 @@ impl From<MlirAttribute> for Referee {
 
 impl IRAttribute for Referee {
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+        self.get_mut()
     }
 }
 
@@ -773,11 +760,11 @@ impl From<MlirAttribute> for Results {
 
 impl IRAttribute for Results {
     fn get(&self) -> &MlirAttribute {
-        &self.0
+        self.get()
     }
 
     fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
+        self.get_mut()
     }
 }
 
