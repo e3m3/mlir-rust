@@ -8,6 +8,7 @@ license-file = "LICENSE"
 
 [dependencies]
 mlir = { path = "../../" }
+mlir-sys = { version = "=0.3.0" }
 
 [lints.clippy]
 unused_unit = "allow"
@@ -66,6 +67,22 @@ path = "src/arith_subf_1.lit-rs"
 [[bin]]
 name = "arith_subi_1"
 path = "src/arith_subi_1.lit-rs"
+
+[[bin]]
+name = "func_call_1"
+path = "src/func_call_1.lit-rs"
+
+[[bin]]
+name = "func_call_indirect_1"
+path = "src/func_call_indirect_1.lit-rs"
+
+[[bin]]
+name = "func_constant_1"
+path = "src/func_constant_1.lit-rs"
+
+[[bin]]
+name = "func_func_1"
+path = "src/func_func_1.lit-rs"
 
 [[bin]]
 name = "module_empty"

@@ -1,0 +1,146 @@
+// RUN: %O/func_func_1 2>&1 | @mlir-opt --allow-unregistered-dialect | @filecheck %M/func_func_1.mlir --check-prefix=CHECK_CAN
+// COM: The flag for allowing unregistered dialects is needed both in the IR generation and
+// COM: the call to `mlir-opt`.
+
+extern crate mlir;
+extern crate mlir_sys;
+
+use mlir_sys::MlirAttribute;
+
+use mlir::attributes::dictionary::Dictionary;
+use mlir::attributes::IRAttribute;
+use mlir::attributes::IRAttributeNamed;
+use mlir::attributes::specialized::CustomAttributeData;
+use mlir::attributes::specialized::NamedArrayOfDictionaries;
+use mlir::attributes::specialized::NamedInteger;
+use mlir::attributes::specialized::NamedOpaque;
+use mlir::dialects::func::Arguments;
+use mlir::dialects::func::Results;
+use mlir::dialects::IROperation;
+use mlir::ir::Block;
+use mlir::ir::Context;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::IRType;
+
+use std::ffi::c_uint;
+
+mod common;
+use crate::common::*;
+
+#[derive(Clone)]
+pub struct ClassNameAttribute(MlirAttribute);
+
+#[derive(Clone)]
+pub struct GenericIntegerAttribute(MlirAttribute);
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.set_allow_unregistered_dialects(true);
+    let t_float = FloatType::new(&context, FloatLayout::F64).as_type();
+    let t_int = IntegerType::new(&context, 32 as c_uint).as_type();
+    let class_attr = ClassNameAttribute::new(&context, "className");
+    let int_attr = GenericIntegerAttribute::new(&context, 1);
+    let arg_attrs = Arguments::new(&context, &[
+        Dictionary::new(&context, &[class_attr.as_named_attribute()]),
+        Dictionary::new(&context, &[]),
+        Dictionary::new(&context, &[]),
+    ]);
+    let result_attrs = Results::new(&context, &[
+        Dictionary::new(&context, &[int_attr.as_named_attribute()]),
+    ]);
+    let f = get_private_fn(
+        &context,
+        "test",
+        &[t_int.clone(), t_float.clone(), t_float.clone()],
+        &[t_float.clone()],
+        Some(&arg_attrs),
+        Some(&result_attrs),
+    );
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
+
+impl ClassNameAttribute {
+    pub fn new(context: &Context, name: &str) -> Self {
+        let t = Index::new(context).as_type();
+        let cad = CustomAttributeData::new("class".to_string(), "lang".to_string(), vec![name.to_string()]);
+        <Self as NamedOpaque>::new_custom(&t, &cad)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl GenericIntegerAttribute {
+    pub fn new(context: &Context, value: i32) -> Self {
+        const WIDTH: c_uint = 32;
+        <Self as NamedInteger>::new(context, value as i64, WIDTH)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl From<MlirAttribute> for ClassNameAttribute {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IRAttribute for ClassNameAttribute {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for ClassNameAttribute {
+    fn get_name() -> &'static str {
+        "lang.self"
+    }
+}
+
+impl NamedOpaque for ClassNameAttribute {}
+
+impl From<MlirAttribute> for GenericIntegerAttribute {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IRAttribute for GenericIntegerAttribute {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for GenericIntegerAttribute {
+    fn get_name() -> &'static str {
+        "dialectName.attrName"
+    }
+}
+
+impl NamedInteger for GenericIntegerAttribute {}

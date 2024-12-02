@@ -17,6 +17,8 @@ from the `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 
 *   mlir-rust crate library (as parent cargo project)
 
+*   llvm-19, clang-19, and mlir-sys (or llvm version matching mlir-sys)
+
 ##  Setup
 
 *   To run the full suite of tests, run the following command from the parent cargo project:
