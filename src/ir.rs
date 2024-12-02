@@ -62,10 +62,19 @@ use mlir::mlirBlockInsertArgument;
 use mlir::mlirBlockInsertOwnedOperation;
 use mlir::mlirBlockInsertOwnedOperationAfter;
 use mlir::mlirBlockInsertOwnedOperationBefore;
+use mlir::mlirContextAppendDialectRegistry;
 use mlir::mlirContextCreate;
 use mlir::mlirContextCreateWithRegistry;
+use mlir::mlirContextCreateWithThreading;
 use mlir::mlirContextDestroy;
+use mlir::mlirContextEnableMultithreading;
+use mlir::mlirContextGetAllowUnregisteredDialects;
+use mlir::mlirContextGetNumLoadedDialects;
+use mlir::mlirContextGetNumRegisteredDialects;
 use mlir::mlirContextGetOrLoadDialect;
+use mlir::mlirContextIsRegisteredOperation;
+use mlir::mlirContextLoadAllAvailableDialects;
+use mlir::mlirContextSetAllowUnregisteredDialects;
 use mlir::mlirDialectEqual;
 use mlir::mlirDialectGetContext;
 use mlir::mlirDialectGetNamespace;
@@ -712,12 +721,20 @@ impl Context {
         Self::from(do_unsafe!(mlirContextCreate()))
     }
 
+    pub fn new_with_threading_enabled(allow_threading: bool) -> Self {
+        Self::from(do_unsafe!(mlirContextCreateWithThreading(allow_threading)))
+    }
+
     pub fn from(context: MlirContext) -> Self {
         Context(context)
     }
 
     pub fn from_registry(registry: &Registry) -> Self {
         Self::from(do_unsafe!(mlirContextCreateWithRegistry(*registry.get(), false)))
+    }
+
+    pub fn append_regsitry(&mut self, registry: &Registry) -> () {
+        do_unsafe!(mlirContextAppendDialectRegistry(*self.get_mut(), *registry.get()))
     }
 
     pub fn get(&self) -> &MlirContext {
@@ -802,19 +819,47 @@ impl Context {
         Location::new_unknown(self)
     }
 
+    pub fn is_allowed_unregistered_dialects(&self) -> bool {
+        do_unsafe!(mlirContextGetAllowUnregisteredDialects(*self.get()))
+    }
+
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
     }
 
+    pub fn is_registered_operation(&self, s: &StringRef) -> bool {
+        do_unsafe!(mlirContextIsRegisteredOperation(*self.get(), *s.get()))
+    }
+
+    pub fn load_all_available_dialects(&mut self) -> () {
+        do_unsafe!(mlirContextLoadAllAvailableDialects(*self.get_mut()))
+    }
+
     /// Load a registered dialect with name
-    pub fn load_dialect(&self, name: &str) -> Option<Dialect> {
+    pub fn load_dialect(&mut self, name: &str) -> Option<Dialect> {
         let string = StringBacked::from_str(name).unwrap();
-        let dialect = do_unsafe!(mlirContextGetOrLoadDialect(self.0, *string.get()));
+        let dialect = do_unsafe!(mlirContextGetOrLoadDialect(*self.get_mut(), *string.get()));
         if dialect.ptr.is_null() {
             None 
         } else {
             Some(Dialect::from(dialect))
         }
+    }
+
+    pub fn num_loaded_dialects(&self) -> isize {
+        do_unsafe!(mlirContextGetNumLoadedDialects(*self.get()))
+    }
+
+    pub fn num_registered_dialects(&self) -> isize {
+        do_unsafe!(mlirContextGetNumRegisteredDialects(*self.get()))
+    }
+
+    pub fn set_allow_unregistered_dialects(&mut self, allow: bool) -> () {
+        do_unsafe!(mlirContextSetAllowUnregisteredDialects(*self.get_mut(), allow))
+    }
+
+    pub fn set_enable_multithreading(&mut self, allow: bool) -> () {
+        do_unsafe!(mlirContextEnableMultithreading(*self.get_mut(), allow))
     }
 }
 
