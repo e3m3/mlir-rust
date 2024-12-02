@@ -69,12 +69,12 @@ pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized
     fn from_checked(attr: MlirAttribute) -> Self {
         let args = Self::from(attr);
         if !args.as_attribute().is_array() {
-            eprintln!("Expected array of affine map attributes for array of affine maps");
+            eprintln!("Expected array of affine map attributes");
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
         if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_affine_map()) {
-            eprintln!("Expected array of affine map attributes for array of affine maps");
+            eprintln!("Expected array of affine map attributes");
             exit(ExitCode::IRError);
         }
         args
@@ -104,12 +104,12 @@ pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn from_checked(attr: MlirAttribute) -> Self {
         let args = Self::from(attr);
         if !args.as_attribute().is_array() {
-            eprintln!("Expected array of dictionary attributes for array of bools");
+            eprintln!("Expected array of bool attributes");
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
         if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_bool()) {
-            eprintln!("Expected array of dictionary attributes for array of bools");
+            eprintln!("Expected array of bool attributes");
             exit(ExitCode::IRError);
         }
         args
@@ -139,12 +139,12 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Siz
     fn from_checked(attr: MlirAttribute) -> Self {
         let args = Self::from(attr);
         if !args.as_attribute().is_array() {
-            eprintln!("Expected array of dictionary attributes for array of dictionaries");
+            eprintln!("Expected array of dictionary attributes");
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
         if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
-            eprintln!("Expected array of dictionary attributes for array of dictionaries");
+            eprintln!("Expected array of dictionary attributes");
             exit(ExitCode::IRError);
         }
         args
@@ -174,12 +174,12 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn from_checked(attr: MlirAttribute) -> Self {
         let args = Self::from(attr);
         if !args.as_attribute().is_array() {
-            eprintln!("Expected array of dictionary attributes for array of integers");
+            eprintln!("Expected array of integer attributes");
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
         if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_integer()) {
-            eprintln!("Expected array of dictionary attributes for array of integers");
+            eprintln!("Expected array of integer attributes");
             exit(ExitCode::IRError);
         }
         args
@@ -557,6 +557,10 @@ pub trait NamedSymbolRef: From<MlirAttribute> + IRAttributeNamed + Sized {
             exit(ExitCode::DialectError);
         }
         attr_
+    }
+
+    fn from_symbol_ref(s_ref: &SymbolRef) -> Self {
+        Self::from_checked(*s_ref.get())
     }
 
     fn as_string_ref(&self) -> StringRef {
