@@ -24,14 +24,14 @@ pub mod float;
 pub mod function;
 pub mod index;
 pub mod integer;
-pub mod mem_ref;
+pub mod memref;
 pub mod none;
 pub mod opaque;
 pub mod ranked_tensor;
 pub mod shaped;
 pub mod tuple;
 pub mod unit;
-pub mod unranked_mem_ref;
+pub mod unranked_memref;
 pub mod unranked_tensor;
 pub mod vector;
 
