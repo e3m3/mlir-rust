@@ -3,6 +3,8 @@
 
 #[cfg(test)]
 mod tests{
+    extern crate num_cpus;
+
     use std::env;
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
@@ -24,6 +26,10 @@ mod tests{
             path.pop();
             path
         }).unwrap()
+    }
+
+    fn get_num_jobs() -> usize {
+        num_cpus::get()
     }
 
     fn get_tests_dir() -> PathBuf {
@@ -176,7 +182,7 @@ mod tests{
             "--config-prefix=lit",
             "--order=lexical",
             "--show-all",
-            "--workers=4",
+            format!("--workers={}", get_num_jobs()).as_str(),
             format!("--param=ARCH={}", arch).as_str(),
             format!("--param=OS_NAME={}", os_name).as_str(),
             format!("--param=CARGO_OUTDIR={}", lit_dir_rust_output_dir_str).as_str(),
@@ -199,7 +205,7 @@ mod tests{
         println!("Building lit test binaries from tests in '{}':", lit_dir_rust_tests_dir_str);
         let output_cargo = Command::new(&shell)
             .arg("-c")
-            .arg(format!("cargo build --manifest-path {}", lit_dir_rust_manifest_str))
+            .arg(format!("cargo build --manifest-path {} -j {}", lit_dir_rust_manifest_str, get_num_jobs()))
             .output()
             .expect("Failed building downstream rust project for lit tests");
         let stderr_cargo: &[u8] = output_cargo.stderr.as_slice();
