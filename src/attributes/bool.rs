@@ -26,8 +26,8 @@ use ir::Context;
 pub struct Bool(MlirAttribute);
 
 impl Bool {
-    pub fn new(context: &Context, value: c_int) -> Self {
-        Self::from(do_unsafe!(mlirBoolAttrGet(*context.get(), value)))
+    pub fn new(context: &Context, value: bool) -> Self {
+        Self::from(do_unsafe!(mlirBoolAttrGet(*context.get(), value as c_int)))
     }
 
     pub fn from(attr: MlirAttribute) -> Self {
