@@ -490,7 +490,7 @@ impl Map {
         do_unsafe!(mlirAffineMapGetNumSymbols(self.0))
     }
 
-    pub fn replace_expr(&self, old: &Expr, new: &Expr, num_dims: isize, num_syms: isize) -> Self {
+    pub fn replace_expr(&mut self, old: &Expr, new: &Expr, num_dims: isize, num_syms: isize) -> Self {
         Self::from(do_unsafe!(mlirAffineMapReplace(self.0, *old.get(), *new.get(), num_dims, num_syms)))
     }
 }
