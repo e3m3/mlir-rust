@@ -8,9 +8,9 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
-use std::ffi::c_int;
 use std::ffi::c_uint;
 use std::fmt;
+use std::str::FromStr;
 
 use crate::attributes;
 use crate::dialects;
@@ -24,16 +24,16 @@ use crate::types;
 use attributes::bool::Bool as BoolAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::specialized::CustomAttributeData;
+use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedArrayOfBools;
 use attributes::specialized::NamedArrayOfIntegers;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
-use attributes::specialized::NamedInteger;
-use attributes::specialized::NamedPermutation;
+use attributes::specialized::NamedParsed;
 use attributes::specialized::NamedString;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
-use dialects::common::ResultSegmentSizes;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
@@ -193,7 +193,7 @@ pub struct VectorMaskShape(usize);
 
 impl InBounds {
     pub fn new(context: &Context, elements: &[bool]) -> Self {
-        let attrs: Vec<BoolAttr> = elements.iter().map(|&b| BoolAttr::new(context, b as c_int)).collect();
+        let attrs: Vec<BoolAttr> = elements.iter().map(|&b| BoolAttr::new(context, b)).collect();
         <Self as NamedArrayOfBools>::new(context, &attrs)
     }
 
@@ -203,6 +203,10 @@ impl InBounds {
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
         &mut self.0
+    }
+
+    pub fn has_out_of_bounds(&self) -> bool {
+        self.as_bools().iter().any(|b| b.get_value())
     }
 }
 
@@ -218,8 +222,12 @@ impl Offsets {
 
 impl Punctuation {
     pub fn new(context: &Context, k: PunctuationKind) -> Self {
-        const WIDTH: c_uint = 32;
-        <Self as NamedInteger>::new(context, k as i64, WIDTH)
+        let cad = CustomAttributeData::new(
+            Self::get_name().to_string(),
+            context.get_dialect_vector().get_namespace().to_string(),
+            vec![k.get_name().to_string()],
+        );
+        <Self as NamedParsed>::new_custom(context, &cad)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -231,16 +239,12 @@ impl Punctuation {
     }
 
     pub fn get_kind(&self) -> PunctuationKind {
-        PunctuationKind::from_i32(self.get_value() as i32)
+        eprintln!("get_kind for PunctuationKind unimplemented");
+        exit(ExitCode::DialectError);
     }
 }
 
 impl PermutationMap {
-    pub fn new(context: &Context, permutation: &[usize]) -> Self {
-        let mut values: Vec<c_uint> = permutation.iter().map(|&v| v as c_uint).collect();
-        <Self as NamedPermutation>::new(context, &mut values)
-    }
-
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -373,6 +377,16 @@ impl PunctuationKind {
             },
         }
     }
+
+    pub fn get_name(&self) -> &'static str {
+        match self {
+            PunctuationKind::NoPunctuation  => "no_punctuation",
+            PunctuationKind::NewLine        => "newline",
+            PunctuationKind::Comma          => "comma",
+            PunctuationKind::Open           => "open",
+            PunctuationKind::Close          => "close",
+        }
+    }
 }
 
 ///////////////////////////////
@@ -405,7 +419,8 @@ impl Extract {
         static_pos: &StaticPosition,
         loc: &Location,
     ) -> Self {
-        if !source.get_type().is_vector() {
+        let t_source = source.get_type();
+        if !t_source.is_vector() {
             eprintln!("Expected vector type for source operand of extract operation");
             exit(ExitCode::DialectError);
         }
@@ -413,11 +428,15 @@ impl Extract {
             eprintln!("Expected index type for dynamic position operand(s) of extract operation");
             exit(ExitCode::DialectError);
         }
-        let s_source = Shaped::from(*t.get());
-        let n_result = s_source.rank().unwrap_or(-1) - static_pos.num_elements() as i64;
+        let s_source = Shaped::from(*t_source.get());
+        let s_source_rank = s_source.rank().unwrap_or(-1);
+        let n_static = static_pos.num_elements() as i64;
+        let n_result = s_source_rank - n_static;
         if !t.is_vector() && n_result != 0 {
-            eprintln!("Expected element type result for source vector operand with rank \
-                equal to the arity of the dynamic position operand of extract operation"
+            eprintln!("Expected element type result for source vector operand with rank ({}) \
+                equal to the arity of the static position attribute ({}) of extract operation",
+                s_source_rank,
+                n_static,
             );
             exit(ExitCode::DialectError);
         } else if !t.is_vector() && *t != s_source.get_element_type() {
@@ -433,10 +452,15 @@ impl Extract {
                 );
                 exit(ExitCode::DialectError);
             }
-            if s.rank().unwrap_or(-1) != n_result {
-                eprintln!("Expected rank of vector type result to be equal to the difference \
-                    of the rank of the source vector type and the arity of the \
-                    dynamic position operand for extract operation"
+            let s_rank = s.rank().unwrap_or(-1);
+            if s_rank != n_result {
+                eprintln!("Expected rank of vector type result ({}) to be equal to the difference ({}) \
+                    of the rank of the source vector type ({}) and the arity of the \
+                    static position attribute ({}) for extract operation",
+                    s_rank,
+                    n_result,
+                    s_source_rank,
+                    n_static,
                 );
                 exit(ExitCode::DialectError);
             }
@@ -455,9 +479,8 @@ impl Extract {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut pos.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, pos.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), static_pos.as_named_attribute()]);
+        op_state.add_attributes(&[static_pos.as_named_attribute()]);
         op_state.add_operands(&args);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -481,7 +504,7 @@ impl Extract {
 }
 
 impl ExtractElement {
-    pub fn new(t: &Type, source: Value, pos: &Value, loc: &Location) -> Self {
+    pub fn new(t: &Type, source: &Value, pos: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let t_pos = pos.get_type();
         if !t_source.is_vector() {
@@ -494,7 +517,7 @@ impl ExtractElement {
             );
             exit(ExitCode::DialectError);
         }
-        let s_source = Shaped::from(*t.get());
+        let s_source = Shaped::from(*t_source.get());
         if *t != s_source.get_element_type() {
             eprintln!("Expected matching element type for source operand and result type \
                 of extract element operation"
@@ -518,13 +541,13 @@ impl ExtractElement {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn new_0_d(t: &Type, source: Value, loc: &Location) -> Self {
+    pub fn new_0_d(t: &Type, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         if !t_source.is_vector() {
             eprintln!("Expected vector type for source operand of extract element operation");
             exit(ExitCode::DialectError);
         }
-        let s_source = Shaped::from(*t.get());
+        let s_source = Shaped::from(*t_source.get());
         if *t != s_source.get_element_type() {
             eprintln!("Expected matching element type for source operand and result type \
                 of extract element operation"
@@ -542,9 +565,8 @@ impl ExtractElement {
             dialect.get_namespace(),
             Op::ExtractElement.get_name(),
         ));
-        let pos = Value::new_null();
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_operands(&[source.clone(), pos]);
+        op_state.add_operands(&[source.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
     }
@@ -590,10 +612,7 @@ impl FromElements {
             dialect.get_namespace(),
             Op::FromElements.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[args.len() as i32]);
-        let result_attr = ResultSegmentSizes::new(&context, &[n as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), result_attr.as_named_attribute()]);
         op_state.add_operands(args);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -632,15 +651,23 @@ impl Load {
             eprintln!("Expected index type for indices operand(s) of load operation");
             exit(ExitCode::DialectError);
         }
+        let s = t.as_shaped();
         let s_base = Shaped::from(*base.get_type().get());
-        if t.as_type() != s_base.get_element_type() {
+        let t_base_elem = s_base.get_element_type();
+        if s.get_element_type() != t_base_elem && t.as_type() != t_base_elem {
             eprintln!("Expected matching types for element type of base operand and result type \
                 of load operation"
             );
             exit(ExitCode::DialectError);
         }
-        if s_base.rank().unwrap_or(-1) != indices.len() as i64 {
-            eprintln!("Expected number of indices to match rank of base operand of load operation");
+        let s_rank_base = s_base.rank().unwrap_or(-1);
+        let n_indices = indices.len() as i64 ;
+        if s_rank_base != n_indices {
+            eprintln!("Expected number of indices ({}) to match rank of base operand ({}) \
+                of load operation",
+                n_indices,
+                s_rank_base,
+            );
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -652,9 +679,8 @@ impl Load {
         ));
         let mut args = vec![base.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_attributes(&[is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -699,9 +725,8 @@ impl Print {
             dialect.get_namespace(),
             Op::Print.get_name(),
         ));
-        let punc_attr = Punctuation::new(context, PunctuationKind::NewLine);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[punc_attr.as_named_attribute(), s.as_named_attribute()]);
+        op_state.add_attributes(&[s.as_named_attribute()]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -769,22 +794,33 @@ impl Store {
             eprintln!("Expected index type for indices operand(s) of store operation");
             exit(ExitCode::DialectError);
         }
-        let s = Shaped::from(*value.get_type().get());
+        let t = value.get_type();
+        let s = Shaped::from(*t.get());
         let s_base = Shaped::from(*base.get_type().get());
-        if s.get_element_type() != s_base.get_element_type() {
+        let t_base_elem = s_base.get_element_type();
+        if s.get_element_type() != t_base_elem && t != t_base_elem {
             eprintln!("Expected matching element type of base operand and value operand type \
                 of store operation"
             );
             exit(ExitCode::DialectError);
         }
+        let rank_value = s.rank().unwrap_or(-1);
         let rank_base = s_base.rank().unwrap_or(-1);
-        if rank_base < s.rank().unwrap_or(-1) {
-            eprintln!("Expected rank of base operand to be greater than or equal to rank \
-                of value operand of store operation");
+        if rank_base < rank_value {
+            eprintln!("Expected rank of base operand ({}) to be greater than or equal to rank \
+                of value operand ({}) of store operation",
+                rank_base,
+                rank_value,
+            );
             exit(ExitCode::DialectError);
         }
-        if rank_base != indices.len() as i64 {
-            eprintln!("Expected number of indices to match rank of base operand of store operation");
+        let n_indices = indices.len() as i64;
+        if rank_base != n_indices {
+            eprintln!("Expected number of indices ({}) to match rank of base operand ({}) \
+                of store operation",
+                n_indices,
+                rank_base,
+            );
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_vector();
@@ -795,9 +831,8 @@ impl Store {
         ));
         let mut args = vec![value.clone(), base.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_attributes(&[is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
         Self::from(*op_state.create_operation().get())
     }
@@ -821,7 +856,6 @@ impl Store {
 
 impl TransferRead {
     #[allow(clippy::too_many_arguments)]
-    /// TODO: Check type suffixes
     pub fn new(
         t: &Vector,
         bounds_attr: &InBounds,
@@ -840,13 +874,33 @@ impl TransferRead {
             eprintln!("Expected indices for transfer read operation");
             exit(ExitCode::DialectError);
         }
-        if mask.is_some() && !VectorMask::is_mask_type(&mask.unwrap().get_type()) {
-            eprintln!("Expected vector mask type for transfer read operation");
-            exit(ExitCode::DialectError);
+        if let Some(mask_) = mask {
+            if !VectorMask::is_mask_type(&mask_.get_type()) {
+                eprintln!("Expected vector mask type for transfer read operation");
+                exit(ExitCode::DialectError);
+            }
         }
         let s = t.as_shaped();
         let s_source = Shaped::from(*source.get_type().get());
-        if s.get_element_type() != s_source.get_element_type() {
+        let t_source_elem = s_source.get_element_type();
+        // Check for matching source and result element type or if source element type is a suffix
+        // of the result type.
+        if t_source_elem.is_vector() {
+            let s_source_elem = Vector::from(*t_source_elem.get()).as_shaped();
+            if let Some(s_suffix) = s.get_matching_suffix(&s_source_elem) {
+                if s_suffix.unpack() != s_source_elem.unpack() {
+                    eprintln!("Expected matching source element type and result type suffix \
+                        for transfer read operation"
+                    );
+                    exit(ExitCode::DialectError);
+                }
+            } else {
+                eprintln!("Expected matching source element type and result type suffix \
+                    for transfer read operation"
+                );
+                exit(ExitCode::DialectError);
+            }
+        } else if t.as_type() != t_source_elem && s.get_element_type() != t_source_elem {
             eprintln!("Expected matching source element type and result element type \
                 for transfer read operation"
             );
@@ -871,12 +925,14 @@ impl TransferRead {
         opseg_sizes.push(1);
         args.append(&mut indices.to_vec());
         opseg_sizes.push(indices.len() as i32);
-        if mask.is_some() {
-            args.push(mask.cloned().unwrap());
-            opseg_sizes.push(1);
-        }
         args.push(padding.clone());
         opseg_sizes.push(1);
+        if let Some(mask_) = mask.cloned() {
+            args.push(mask_);
+            opseg_sizes.push(1);
+        } else {
+            opseg_sizes.push(0);
+        }
         let opseg_attr = OperandSegmentSizes::new(&context, &opseg_sizes);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[
@@ -920,49 +976,20 @@ impl TransferRead {
 
 impl TransferWrite {
     #[allow(clippy::too_many_arguments)]
-    /// TODO: Check type suffixes
-    pub fn new(
-        t: &RankedTensor,
+    pub fn new_memref(
+        context: &Context,
         bounds_attr: &InBounds,
         perm_attr: &PermutationMap,
-        vector: &Value,
+        value: &Value,
         source: &Value,
         indices: &[Value],
         mask: Option<&Value>,
         loc: &Location,
     ) -> Self {
-        if !vector.get_type().is_vector() {
-            eprintln!("Expected vector operand for transfer write operation");
+        if let Err(msg) = Self::check_types(None, value, source, indices, mask) {
+            eprintln!("{}", msg);
             exit(ExitCode::DialectError);
         }
-        if !source.get_type().is_shaped() {
-            eprintln!("Expected shaped source operand for transfer write operation");
-            exit(ExitCode::DialectError);
-        }
-        if indices.iter().any(|v| !v.get_type().is_index()) {
-            eprintln!("Expected indices for transfer write operation");
-            exit(ExitCode::DialectError);
-        }
-        if mask.is_some() && !VectorMask::is_mask_type(&mask.unwrap().get_type()) {
-            eprintln!("Expected vector mask type for transfer write operation");
-            exit(ExitCode::DialectError);
-        }
-        let s = t.as_shaped();
-        let s_vector = Shaped::from(*vector.get_type().get());
-        let s_source = Shaped::from(*source.get_type().get());
-        if s.get_element_type() != s_vector.get_element_type() {
-            eprintln!("Expected matching vector element type and result element type \
-                for transfer write operation"
-            );
-            exit(ExitCode::DialectError);
-        }
-        if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching source element type and result element type \
-                for transfer write operation"
-            );
-            exit(ExitCode::DialectError);
-        }
-        let context = t.as_type().get_context();
         let dialect = context.get_dialect_vector();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
@@ -971,15 +998,64 @@ impl TransferWrite {
         ));
         let mut args: Vec<Value> = Vec::new();
         let mut opseg_sizes: Vec<i32> = Vec::new();
-        args.push(vector.clone());
+        args.push(value.clone());
         opseg_sizes.push(1);
         args.push(source.clone());
         opseg_sizes.push(1);
         args.append(&mut indices.to_vec());
         opseg_sizes.push(indices.len() as i32);
-        if mask.is_some() {
-            args.push(mask.cloned().unwrap());
+        if let Some(mask_) = mask.cloned() {
+            args.push(mask_);
             opseg_sizes.push(1);
+        } else {
+            opseg_sizes.push(0);
+        }
+        let opseg_attr = OperandSegmentSizes::new(context, &opseg_sizes);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[
+            opseg_attr.as_named_attribute(),
+            bounds_attr.as_named_attribute(),
+            perm_attr.as_named_attribute(),
+        ]);
+        op_state.add_operands(&args);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_tensor(
+        t: &RankedTensor,
+        bounds_attr: &InBounds,
+        perm_attr: &PermutationMap,
+        value: &Value,
+        source: &Value,
+        indices: &[Value],
+        mask: Option<&Value>,
+        loc: &Location,
+    ) -> Self {
+        if let Err(msg) = Self::check_types(Some(t), value, source, indices, mask) {
+            eprintln!("{}", msg);
+            exit(ExitCode::DialectError);
+        }
+        let context = t.get_context();
+        let dialect = context.get_dialect_vector();
+        let name = StringBacked::from_string(&format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::TransferWrite.get_name(),
+        ));
+        let mut args: Vec<Value> = Vec::new();
+        let mut opseg_sizes: Vec<i32> = Vec::new();
+        args.push(value.clone());
+        opseg_sizes.push(1);
+        args.push(source.clone());
+        opseg_sizes.push(1);
+        args.append(&mut indices.to_vec());
+        opseg_sizes.push(indices.len() as i32);
+        if let Some(mask_) = mask.cloned() {
+            args.push(mask_);
+            opseg_sizes.push(1);
+        } else {
+            opseg_sizes.push(0);
         }
         let opseg_attr = OperandSegmentSizes::new(&context, &opseg_sizes);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -995,6 +1071,77 @@ impl TransferWrite {
 
     pub fn from(op: MlirOperation) -> Self {
         TransferWrite(op)
+    }
+
+    fn check_types(
+        result: Option<&RankedTensor>,
+        value: &Value,
+        source: &Value,
+        indices: &[Value],
+        mask: Option<&Value>,
+    ) -> Result<(), String> {
+        if !value.get_type().is_vector() {
+            Err("Expected vector for value operand of transfer write operation".to_string())?
+        }
+        if !source.get_type().is_shaped() {
+            Err("Expected shaped type for source operand of transfer write operation".to_string())?
+        }
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            Err("Expected indices for transfer write operation".to_string())?
+        }
+        if let Some(mask_) = mask {
+            if !VectorMask::is_mask_type(&mask_.get_type()) {
+                Err("Expected vector mask type for transfer write operation".to_string())?
+            }
+        }
+        let t_value = value.get_type();
+        let t_source = source.get_type();
+        let s_value = Shaped::from(*t_value.get());
+        let s_source = Shaped::from(*t_source.get());
+        let t_source_elem = s_source.get_element_type();
+        if let Some(t_) = result {
+            if t_.as_type() != t_source {
+                return Err("Expected matching source operand type and result type for \
+                    transfer write operation".to_string()
+                );
+            }
+        }
+        if t_source_elem.is_vector() {
+            let s_source_elem = Vector::from(*t_source_elem.get()).as_shaped();
+            if let Some(s_suffix) = s_value.get_matching_suffix(&s_source_elem) {
+                return if s_suffix.unpack() != s_source_elem.unpack() {
+                    Err("Expected matching source element type and result type suffix \
+                        for transfer write operation".to_string()
+                    )
+                } else {
+                    Ok(())
+                };
+            } else {
+                return Err("Expected matching source element type and result type suffix \
+                    for transfer write operation".to_string()
+                );
+            }
+        }
+        if s_value.get_element_type() != s_source.get_element_type() {
+            return Err("Expected matching element types for source operand and value operand \
+                of transfer write operation".to_string()
+            );
+        }
+        let rank_value = s_value.rank().unwrap_or(-1);
+        let rank_source = s_source.rank().unwrap_or(-1);
+        if rank_source == 0 && rank_value == 1 {
+            // Rank 1 vector matches Rank 0 Tensor (i.e., write vector<1xt> into tensor<t>)
+            Ok(())
+        } else if rank_value > rank_source {
+            Err(format!(
+                "Expected rank for source operand type ({}) to be greater than or equal to \
+                the rank of the value operand type ({}) of transfer write operation",
+                rank_source,
+                rank_value,
+            ))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -1251,7 +1398,7 @@ impl IROperation for Load {
 
 impl From<MlirAttribute> for InBounds {
     fn from(attr: MlirAttribute) -> Self {
-        InBounds(attr)
+        Self(attr)
     }
 }
 
@@ -1275,7 +1422,7 @@ impl NamedArrayOfBools for InBounds {}
 
 impl From<MlirAttribute> for Offsets {
     fn from(attr: MlirAttribute) -> Self {
-        Offsets(attr)
+        Self(attr)
     }
 }
 
@@ -1343,7 +1490,7 @@ impl IROperation for Print {
 
 impl From<MlirAttribute> for PermutationMap {
     fn from(attr: MlirAttribute) -> Self {
-        PermutationMap(attr)
+        Self(attr)
     }
 }
 
@@ -1363,11 +1510,11 @@ impl IRAttributeNamed for PermutationMap {
     }
 }
 
-impl NamedPermutation for PermutationMap {}
+impl NamedAffineMap for PermutationMap {}
 
 impl From<MlirAttribute> for Punctuation {
     fn from(attr: MlirAttribute) -> Self {
-        Punctuation(attr)
+        Self(attr)
     }
 }
 
@@ -1383,11 +1530,11 @@ impl IRAttribute for Punctuation {
 
 impl IRAttributeNamed for Punctuation {
     fn get_name() -> &'static str {
-        "vector.punctuation"
+        "punctuation"
     }
 }
 
-impl NamedInteger for Punctuation {}
+impl NamedParsed for Punctuation {}
 
 impl From<i32> for PunctuationKind {
     fn from(n: i32) -> Self {
@@ -1395,9 +1542,44 @@ impl From<i32> for PunctuationKind {
     }
 }
 
+impl From<String> for PunctuationKind {
+    fn from(s: String) -> Self {
+        PunctuationKind::from(&s)
+    }
+}
+
+impl From<&String> for PunctuationKind {
+    fn from(s: &String) -> Self {
+        match PunctuationKind::from_str(s.as_str()) {
+            Ok(k)       => k,
+            Err(msg)    => {
+                eprintln!("{}", msg);
+                exit(ExitCode::DialectError);
+            },
+        }
+    }
+}
+
+impl FromStr for PunctuationKind {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "no_punctuation"    => Ok(PunctuationKind::NoPunctuation),
+            "newline"           => Ok(PunctuationKind::NewLine),
+            "comma"             => Ok(PunctuationKind::Comma),
+            "open"              => Ok(PunctuationKind::Open),
+            "close"             => Ok(PunctuationKind::Close),
+            _   => {
+                Err(format!("Invalid value '{}' for punctuation kind", s))
+            },
+        }
+    }
+}
+
 impl From<MlirAttribute> for Sizes {
     fn from(attr: MlirAttribute) -> Self {
-        Sizes(attr)
+        Self(attr)
     }
 }
 
@@ -1455,7 +1637,7 @@ impl IROperation for Store {
 
 impl From<MlirAttribute> for Strides {
     fn from(attr: MlirAttribute) -> Self {
-        Strides(attr)
+        Self(attr)
     }
 }
 
@@ -1479,7 +1661,7 @@ impl NamedArrayOfIntegers for Strides {}
 
 impl From<MlirAttribute> for StaticPosition {
     fn from(attr: MlirAttribute) -> Self {
-        StaticPosition(attr)
+        Self(attr)
     }
 }
 
@@ -1503,7 +1685,7 @@ impl NamedI64DenseArray for StaticPosition {}
 
 impl From<MlirAttribute> for StringLiteral {
     fn from(attr: MlirAttribute) -> Self {
-        StringLiteral(attr)
+        Self(attr)
     }
 }
 
