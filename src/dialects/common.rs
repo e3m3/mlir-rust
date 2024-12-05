@@ -7,11 +7,13 @@ extern crate mlir_sys as mlir;
 
 use mlir::MlirAttribute;
 
+use std::cmp;
 use std::ffi::c_uint;
 use std::fmt;
 use std::str::FromStr;
 
 use crate::attributes;
+use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
@@ -20,13 +22,19 @@ use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
+use attributes::specialized::NamedMemorySpace;
 use attributes::specialized::NamedString;
+use exit_code::exit;
+use exit_code::ExitCode;
 use ir::Context;
 use ir::StringBacked;
 
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
+
+#[derive(Clone)]
+pub struct DefaultMemorySpace(MlirAttribute);
 
 #[derive(Clone)]
 pub struct Dimension(MlirAttribute);
@@ -69,6 +77,20 @@ pub enum SymbolVisibilityKind {
 ///////////////////////////////
 //  Attribute Implementation
 ///////////////////////////////
+
+impl DefaultMemorySpace {
+    pub fn new() -> Self {
+        <Self as NamedMemorySpace>::new_none()
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
 
 impl Dimension {
     pub fn new(context: &Context, n: i64) -> Self {
@@ -179,9 +201,54 @@ impl SymbolVisibility {
 //  Trait Implementation
 ///////////////////////////////
 
+impl Default for DefaultMemorySpace {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MlirAttribute> for DefaultMemorySpace {
+    fn from(attr: MlirAttribute) -> Self {
+        DefaultMemorySpace(attr)
+    }
+}
+
+impl IRAttribute for DefaultMemorySpace {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for DefaultMemorySpace {
+    fn get_name() -> &'static str {
+        "memorySpace"
+    }
+}
+
+impl NamedMemorySpace for DefaultMemorySpace {
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.is_none() {
+            eprintln!("Expected default memory space to be none memory space type");
+            exit(ExitCode::DialectError);
+        }
+        attr_
+    }
+}
+
+impl cmp::PartialEq for DefaultMemorySpace {
+    fn eq(&self, rhs: &Self) -> bool {
+        <Self as NamedMemorySpace>::eq(self, rhs)
+    }
+}
+
 impl From<MlirAttribute> for Dimension {
     fn from(attr: MlirAttribute) -> Self {
-        Dimension(attr)
+        Self(attr)
     }
 }
 
@@ -205,7 +272,7 @@ impl NamedInteger for Dimension {}
 
 impl From<MlirAttribute> for NonTemporal {
     fn from(attr: MlirAttribute) -> Self {
-        NonTemporal(attr)
+        Self(attr)
     }
 }
 
@@ -229,7 +296,7 @@ impl NamedBool for NonTemporal {}
 
 impl From<MlirAttribute> for OperandSegmentSizes {
     fn from(attr: MlirAttribute) -> Self {
-        OperandSegmentSizes(attr)
+        Self(attr)
     }
 }
 
@@ -253,7 +320,7 @@ impl NamedI32DenseArray for OperandSegmentSizes {}
 
 impl From<MlirAttribute> for ResultSegmentSizes {
     fn from(attr: MlirAttribute) -> Self {
-        ResultSegmentSizes(attr)
+        Self(attr)
     }
 }
 
@@ -277,7 +344,7 @@ impl NamedI32DenseArray for ResultSegmentSizes {}
 
 impl From<MlirAttribute> for StaticOffsets {
     fn from(attr: MlirAttribute) -> Self {
-        StaticOffsets(attr)
+        Self(attr)
     }
 }
 
@@ -301,7 +368,7 @@ impl NamedI64DenseArray for StaticOffsets {}
 
 impl From<MlirAttribute> for StaticSizes {
     fn from(attr: MlirAttribute) -> Self {
-        StaticSizes(attr)
+        Self(attr)
     }
 }
 
@@ -325,7 +392,7 @@ impl NamedI64DenseArray for StaticSizes {}
 
 impl From<MlirAttribute> for StaticStrides {
     fn from(attr: MlirAttribute) -> Self {
-        StaticStrides(attr)
+        Self(attr)
     }
 }
 
@@ -349,7 +416,7 @@ impl NamedI64DenseArray for StaticStrides {}
 
 impl From<MlirAttribute> for SymbolName {
     fn from(attr: MlirAttribute) -> Self {
-        SymbolName(attr)
+        Self(attr)
     }
 }
 
@@ -373,7 +440,7 @@ impl NamedString for SymbolName {}
 
 impl From<MlirAttribute> for SymbolVisibility {
     fn from(attr: MlirAttribute) -> Self {
-        SymbolVisibility(attr)
+        Self(attr)
     }
 }
 
