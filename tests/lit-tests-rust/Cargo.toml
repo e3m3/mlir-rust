@@ -33,6 +33,14 @@ name = "arith_constant_1"
 path = "src/arith_constant_1.lit-rs"
 
 [[bin]]
+name = "arith_constant_2"
+path = "src/arith_constant_2.lit-rs"
+
+[[bin]]
+name = "arith_constant_3"
+path = "src/arith_constant_3.lit-rs"
+
+[[bin]]
 name = "arith_divf_1"
 path = "src/arith_divf_1.lit-rs"
 

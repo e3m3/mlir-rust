@@ -21,11 +21,13 @@ use crate::traits;
 use crate::types;
 
 use attributes::float::Float as FloatAttr;
+use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
-use attributes::specialized::NamedFloatOrInteger;
-use attributes::specialized::NamedOpaque;
+use attributes::specialized::CustomAttributeData;
+use attributes::specialized::NamedFloatOrIndexOrInteger;
+use attributes::specialized::NamedParsed;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
@@ -39,7 +41,6 @@ use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
-use ir::StringRef;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
@@ -263,19 +264,16 @@ impl ArithValue {
 
 impl FastMath {
     pub fn new(context: &Context, flags: FastMathFlags) -> Self {
-        const WIDTH: c_uint = 32;
-        let t = IntegerType::new_signless(context, WIDTH).as_type();
-        let namespace = context.get_dialect_arith().get_namespace();
-        let data = StringBacked::from_string(&format!("{}<{}>", Self::get_name(), flags));
-        NamedOpaque::new(&t, &namespace, &data.as_string_ref())
+        let cad = CustomAttributeData::new(
+            Self::get_name().to_string(),
+            context.get_dialect_arith().get_namespace().to_string(),
+            vec![flags.get_name().to_string()],
+        );
+        <Self as NamedParsed>::new_custom(context, &cad)
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
-    }
-
-    pub fn get_data(&self) -> StringRef {
-        self.as_opaque().get_data()
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -285,19 +283,16 @@ impl FastMath {
 
 impl IntegerOverflow {
     pub fn new(context: &Context, flags: IntegerOverflowFlags) -> Self {
-        const WIDTH: c_uint = 32;
-        let t = IntegerType::new_signless(context, WIDTH).as_type();
-        let namespace = context.get_dialect_arith().get_namespace();
-        let data = StringBacked::from_string(&format!("{}<{}>", Self::get_name(), flags));
-        NamedOpaque::new(&t, &namespace, &data.as_string_ref())
+        let cad = CustomAttributeData::new(
+            "overflow".to_string(),
+            context.get_dialect_arith().get_namespace().to_string(),
+            vec![flags.get_name().to_string()],
+        );
+        <Self as NamedParsed>::new_custom(context, &cad)
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
-    }
-
-    pub fn get_data(&self) -> StringRef {
-        self.as_opaque().get_data()
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -401,6 +396,20 @@ impl FastMathFlags {
             },
         }
     }
+
+    pub fn get_name(&self) -> &'static str {
+        match self {
+            FastMathFlags::None     => "none",
+            FastMathFlags::ReAssoc  => "reassoc",
+            FastMathFlags::NNaN     => "nnan",
+            FastMathFlags::NInf     => "ninf",
+            FastMathFlags::NSz      => "nsz",
+            FastMathFlags::ARcp     => "arcp",
+            FastMathFlags::Contract => "contract",
+            FastMathFlags::AFn      => "afn",
+            FastMathFlags::Fast     => "fast",
+        }
+    }
 }
 
 impl IntegerOverflowFlags {
@@ -413,6 +422,14 @@ impl IntegerOverflowFlags {
                 eprintln!("Invalid value for IntegerOverflowFlags: {}", k);
                 exit(ExitCode::DialectError);
             },
+        }
+    }
+
+    pub fn get_name(&self) -> &'static str {
+        match self {
+            IntegerOverflowFlags::None  => "none",
+            IntegerOverflowFlags::NSW   => "nsw",
+            IntegerOverflowFlags::NUW   => "nuw",
         }
     }
 }
@@ -658,7 +675,7 @@ impl AddUIExtended {
 }
 
 impl Constant {
-    fn new(attr: &ArithValue, loc: &Location) -> Self {
+    fn new(t: &Type, attr: &ArithValue, loc: &Location) -> Self {
         let context = attr.as_attribute().get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from_string(&format!(
@@ -666,26 +683,29 @@ impl Constant {
             dialect.get_namespace(),
             Op::Constant.get_name(),
         ));
-        let t = if attr.is_float() {
-            attr.as_float().unwrap().get_type()
-        } else if attr.is_integer() {
-            attr.as_integer().unwrap().get_type()
-        } else {
-            eprintln!("Expected float or integer arith value for constant");
+        if !t.is_float() && !t.is_index() && !t.is_integer() {
+            eprintln!("Expected float, index, or integer arith value for constant");
             exit(ExitCode::DialectError);
-        };
+        }
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
-        op_state.add_results(&[t]);
+        op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
     }
 
     pub fn new_float(attr: &FloatAttr, loc: &Location) -> Self {
-        Self::new(&ArithValue::new_float(attr), loc)
+        let t = attr.get_type();
+        Self::new(&t, &ArithValue::new_float(attr), loc)
+    }
+
+    pub fn new_index(attr: &IndexAttr, loc: &Location) -> Self {
+        let t = attr.get_type();
+        Self::new(&t, &ArithValue::new_index(attr), loc)
     }
 
     pub fn new_integer(attr: &IntegerAttr, loc: &Location) -> Self {
-        Self::new(&ArithValue::new_integer(attr), loc)
+        let t = attr.get_type();
+        Self::new(&t, &ArithValue::new_integer(attr), loc)
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -716,6 +736,10 @@ impl Constant {
 
     pub fn is_float(&self) -> bool {
         self.get_value().is_float()
+    }
+
+    pub fn is_index(&self) -> bool {
+        self.get_value().is_index()
     }
 
     pub fn is_integer(&self) -> bool {
@@ -1377,7 +1401,7 @@ impl IRAttributeNamed for ArithValue {
     }
 }
 
-impl NamedFloatOrInteger for ArithValue {}
+impl NamedFloatOrIndexOrInteger for ArithValue {}
 
 impl IROperation for Constant {
     fn get(&self) -> &MlirOperation {
@@ -1591,7 +1615,7 @@ impl IRAttributeNamed for FastMath {
     }
 }
 
-impl NamedOpaque for FastMath {}
+impl NamedParsed for FastMath {}
 
 impl From<MlirAttribute> for IntegerOverflow {
     fn from(attr: MlirAttribute) -> Self {
@@ -1615,7 +1639,7 @@ impl IRAttributeNamed for IntegerOverflow {
     }
 }
 
-impl NamedOpaque for IntegerOverflow {}
+impl NamedParsed for IntegerOverflow {}
 
 impl IROp for Op {
     fn get_name(&self) -> &'static str {
@@ -1989,27 +2013,13 @@ impl fmt::Display for CmpIPredicate {
 
 impl fmt::Display for FastMathFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match self {
-            FastMathFlags::None     => "none",
-            FastMathFlags::ReAssoc  => "reassoc",
-            FastMathFlags::NNaN     => "nnan",
-            FastMathFlags::NInf     => "ninf",
-            FastMathFlags::NSz      => "nsz",
-            FastMathFlags::ARcp     => "arcp",
-            FastMathFlags::Contract => "contract",
-            FastMathFlags::AFn      => "afn",
-            FastMathFlags::Fast     => "fast",
-        })
+        write!(f, "{}", self.get_name())
     }
 }
 
 impl fmt::Display for IntegerOverflowFlags {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", match self {
-            IntegerOverflowFlags::None  => "none",
-            IntegerOverflowFlags::NSW   => "nsw",
-            IntegerOverflowFlags::NUW   => "nuw",
-        })
+        write!(f, "{}", self.get_name())
     }
 }
 

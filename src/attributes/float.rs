@@ -64,6 +64,10 @@ impl Float {
         &mut self.0
     }
 
+    pub fn get_type_float(&self) -> FloatType {
+        FloatType::from(*self.as_attribute().get_type().get())
+    }
+
     pub fn get_value(&self) -> f64 {
         do_unsafe!(mlirFloatAttrGetValueDouble(self.0))
     }

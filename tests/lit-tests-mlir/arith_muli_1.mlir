@@ -16,7 +16,7 @@ module {
 
 // CHECK_CAN:   module {
 // CHECK_CAN:       func.func @test(%arg0: i32, %arg1: i32) -> i32 {
-// CHECK_CAN:           %0 = arith.muli %arg0, %arg1{{( overflow<nsw>)?}} : i32
+// CHECK_CAN:           %0 = arith.muli %arg0, %arg1 overflow<nsw> : i32
 // CHECK_CAN:           return %0 : i32
 // CHECK_CAN:       }
 // CHECK_CAN:   }

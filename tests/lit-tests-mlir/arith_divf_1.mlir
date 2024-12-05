@@ -16,7 +16,7 @@ module {
 
 // CHECK_CAN:   module {
 // CHECK_CAN:       func.func @test(%arg0: bf16, %arg1: bf16) -> bf16 {
-// CHECK_CAN:           %0 = arith.divf %arg0, %arg1{{( fastmath<fast>)?}} : bf16
+// CHECK_CAN:           %0 = arith.divf %arg0, %arg1 fastmath<fast> : bf16
 // CHECK_CAN:           return %0 : bf16
 // CHECK_CAN:       }
 // CHECK_CAN:   }

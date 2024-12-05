@@ -27,6 +27,7 @@ pub mod dense_resource_elements;
 pub mod dictionary;
 pub mod elements;
 pub mod float;
+pub mod index;
 pub mod integer;
 pub mod integer_set;
 pub mod named;

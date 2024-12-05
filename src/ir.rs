@@ -492,6 +492,10 @@ impl Attribute {
         do_unsafe!(mlirAttributeIsAFloat(self.0))
     }
 
+    pub fn is_index(&self) -> bool {
+        self.get_type().is_index()
+    }
+
     pub fn is_integer(&self) -> bool {
         do_unsafe!(mlirAttributeIsAInteger(self.0))
     }
@@ -1746,6 +1750,18 @@ impl ShapeImpl<Vec<i64>> {
 
     pub fn get_mut(&mut self) -> &mut [i64] {
         self.0.as_mut()
+    }
+}
+
+impl fmt::Display for ShapeImpl<Vec<i64>> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{}]", self
+            .get()
+            .iter()
+            .map(|d| d.to_string())
+            .collect::<Vec<String>>()
+            .join(",")
+        )
     }
 }
 

@@ -16,7 +16,7 @@ module {
 
 // CHECK_CAN:   module {
 // CHECK_CAN:       func.func @test(%arg0: tf32, %arg1: tf32) -> tf32 {
-// CHECK_CAN:           %0 = arith.mulf %arg0, %arg1{{( fastmath<fast>)?}} : tf32
+// CHECK_CAN:           %0 = arith.mulf %arg0, %arg1 fastmath<fast> : tf32
 // CHECK_CAN:           return %0 : tf32
 // CHECK_CAN:       }
 // CHECK_CAN:   }

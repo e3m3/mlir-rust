@@ -7,8 +7,9 @@ extern crate mlir_sys as mlir;
 
 use mlir::MlirAttribute;
 
-use std::ffi::c_int;
+use std::cmp;
 use std::ffi::c_uint;
+use std::fmt;
 use std::str::FromStr;
 
 use crate::attributes;
@@ -26,6 +27,7 @@ use attributes::elements::Elements;
 use attributes::float::Float as FloatAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::opaque::Opaque;
 use attributes::string::String as StringAttr;
@@ -43,7 +45,7 @@ use ir::Type;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
 use types::IRType;
-use types::mem_ref::MemRef;
+use types::memref::MemRef;
 
 ///////////////////////////////
 //  Support
@@ -58,6 +60,25 @@ pub struct CustomAttributeData {
 ///////////////////////////////
 //  Specialized Traits
 ///////////////////////////////
+
+pub trait NamedAffineMap: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(map: &AffineMap) -> Self {
+        Self::from(*map.as_attribute().get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_affine_map() {
+            eprintln!("Expected affine map attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_affine_map(&self) -> AffineMap {
+        AffineMap::from_attribute(&Attribute::from(*self.get()))
+    }
+}
 
 pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, elements: &[AffineMap]) -> Self {
@@ -254,7 +275,7 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
 }
 
 pub trait NamedBool: From<MlirAttribute> + IRAttributeNamed + Sized {
-    fn new(context: &Context, value: c_int) -> Self {
+    fn new(context: &Context, value: bool) -> Self {
         Self::from(*BoolAttr::new(context, value).get())
     }
 
@@ -276,8 +297,12 @@ pub trait NamedBool: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedFloatOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedFloatOrIndexOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new_float(attr: &FloatAttr) -> Self {
+        Self::from(*attr.as_attribute().get())
+    }
+
+    fn new_index(attr: &IndexAttr) -> Self {
         Self::from(*attr.as_attribute().get())
     }
 
@@ -287,8 +312,8 @@ pub trait NamedFloatOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
-        if !attr_.is_float() && !attr_.is_integer() {
-            eprintln!("Expected float or integer attribute");
+        if !attr_.is_float() && !attr_.is_integer() && !attr_.is_index() {
+            eprintln!("Expected float, index, or integer attribute");
             exit(ExitCode::IRError);
         }
         attr_
@@ -297,6 +322,14 @@ pub trait NamedFloatOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn as_float(&self) -> Option<FloatAttr> {
         if self.is_float() {
             Some(FloatAttr::from(*self.get()))
+        } else {
+            None
+        }
+    }
+
+    fn as_index(&self) -> Option<IndexAttr> {
+        if self.is_index() {
+            Some(IndexAttr::from(*self.get()))
         } else {
             None
         }
@@ -312,6 +345,10 @@ pub trait NamedFloatOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn is_float(&self) -> bool {
         self.as_attribute().is_float()
+    }
+
+    fn is_index(&self) -> bool {
+        self.as_attribute().is_index()
     }
 
     fn is_integer(&self) -> bool {
@@ -419,22 +456,22 @@ pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
 pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new(context, width);
-        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+        Self::from(*IntegerAttr::new(&t, n).get())
     }
 
     fn new_signed(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new_signed(context, width);
-        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+        Self::from(*IntegerAttr::new(&t, n).get())
     }
 
     fn new_signless(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new_signless(context, width);
-        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+        Self::from(*IntegerAttr::new(&t, n).get())
     }
 
     fn new_unsigned(context: &Context, n: i64, width: c_uint) -> Self {
         let t = IntegerType::new_unsigned(context, width);
-        Self::from(*IntegerAttr::new(&t.as_type(), n).get())
+        Self::from(*IntegerAttr::new(&t, n).get())
     }
 
     fn from_checked(attr: MlirAttribute) -> Self {
@@ -452,6 +489,74 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn get_value(&self) -> i64 {
         self.as_integer().get_int()
+    }
+}
+
+pub trait NamedMemorySpace: From<MlirAttribute> + IRAttributeNamed + cmp::PartialEq + Sized {
+    fn from_checked(attr: MlirAttribute) -> Self;
+
+    fn new_integer(attr: &IntegerAttr) -> Self {
+        Self::from(*attr.get())
+    }
+
+    fn new_none() -> Self {
+        Self::from(*Attribute::new().get())
+    }
+
+    fn new_opaque(attr: &Opaque) -> Self {
+        Self::from(*attr.get())
+    }
+
+    fn new_string(attr: &StringAttr) -> Self {
+        Self::from(*attr.get())
+    }
+
+    fn as_integer(&self) -> Option<IntegerAttr> {
+        match self.is_integer() {
+            false   => None,
+            true    => Some(IntegerAttr::from(*self.get())),
+        }
+    }
+
+    fn as_none(&self) -> Option<Attribute> {
+        match self.is_none() {
+            false   => None,
+            true    => Some(Attribute::from(*self.get())),
+        }
+    }
+
+    fn as_opaque(&self) -> Option<Opaque> {
+        match self.is_opaque() {
+            false   => None,
+            true    => Some(Opaque::from(*self.get())),
+        }
+    }
+
+    fn as_string(&self) -> Option<StringAttr> {
+        match self.is_string() {
+            false   => None,
+            true    => Some(StringAttr::from(*self.get())),
+        }
+    }
+
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_attribute() == rhs.as_attribute()
+    }
+
+    fn is_integer(&self) -> bool {
+        self.as_attribute().is_integer()
+    }
+
+    fn is_none(&self) -> bool {
+        self.as_attribute().is_null()
+    }
+
+    fn is_opaque(&self) -> bool {
+        self.as_attribute().is_opaque()
+    }
+
+    fn is_string(&self) -> bool {
+        self.as_attribute().is_string()
     }
 }
 
@@ -501,6 +606,17 @@ pub trait NamedOpaque: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_opaque(&self) -> Opaque {
         Opaque::from(*self.get())
+    }
+}
+
+pub trait NamedParsed: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new(context: &Context, s: &StringRef) -> Self {
+        Self::from(*Attribute::from_parse(context, s).get())
+    }
+
+    fn new_custom(context: &Context, cad: &CustomAttributeData) -> Self {
+        let s = StringBacked::from_string(&cad.to_string());
+        Self::new(context, &s.as_string_ref())
     }
 }
 
@@ -662,6 +778,12 @@ impl CustomAttributeData {
         } else {
             Err("Expected prefix of form '#namespace.name'")
         }
+    }
+}
+
+impl fmt::Display for CustomAttributeData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "#{}.{}{}", self.get_namespace(), self.get_name(), self.get_data_joined())
     }
 }
 

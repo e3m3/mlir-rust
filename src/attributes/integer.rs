@@ -12,23 +12,35 @@ use mlir::mlirIntegerAttrGetValueSInt;
 use mlir::mlirIntegerAttrGetValueUInt;
 use mlir::MlirAttribute;
 
+use std::ffi::c_uint;
+
 use crate::attributes;
 use crate::do_unsafe;
 use crate::ir;
 use crate::exit_code;
+use crate::types;
 
 use attributes::IRAttribute;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
-use ir::Type;
+use ir::Context;
 use ir::TypeID;
+use types::integer::Integer as IntegerType;
+use types::IRType;
 
 #[derive(Clone)]
 pub struct Integer(MlirAttribute);
 
 impl Integer {
-    pub fn new(t: &Type, value: i64) -> Self {
+    const WIDTH_INDEX: c_uint = 64;
+
+    pub fn new(t: &IntegerType, value: i64) -> Self {
+        Self::from(do_unsafe!(mlirIntegerAttrGet(*t.as_type().get(), value)))
+    }
+
+    pub fn new_index(context: &Context, value: i64) -> Self {
+        let t = IntegerType::new_signless(context, Self::index_width()).as_type();
         Self::from(do_unsafe!(mlirIntegerAttrGet(*t.get(), value)))
     }
 
@@ -59,12 +71,25 @@ impl Integer {
         do_unsafe!(mlirIntegerAttrGetValueSInt(self.0))
     }
 
+    pub fn get_type_integer(&self) -> IntegerType {
+        IntegerType::from(*self.as_attribute().get_type().get())
+    }
+
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirIntegerAttrGetTypeID()))
     }
 
     pub fn get_uint(&self) -> u64 {
         do_unsafe!(mlirIntegerAttrGetValueUInt(self.0))
+    }
+
+    pub fn has_index_width(&self) -> bool {
+        self.get_type_integer().get_width() == Self::index_width()
+    }
+
+    #[inline]
+    pub const fn index_width() -> c_uint {
+        Self::WIDTH_INDEX
     }
 }
 
