@@ -26,6 +26,11 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 
 *   num_cpus (for testing)
 
+*   python3-lit, FileCheck (for testing)
+
+    *   By default, `tests/lit-tests.rs` will search for the lit executable in
+        `$PYTHON_VENV_PATH/bin` (if it exists) or the system's `/usr/bin`.
+
 *   [docker|podman] (for testing/containerization)
 
     *   A [Fedora][5] [[5]] image can be built using `containers/Containerfile.fedora*`.

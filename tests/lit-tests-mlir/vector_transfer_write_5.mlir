@@ -5,7 +5,7 @@
 // COM: This test fails to verify because `mlir-opt` says that this operation cannot have
 // COM: broadcast dimensions.
 // COM: This conflicts with the 0-d tensor example in [1].
-// COM: [1]: `https://mlir.llvm.org/docs/Dialects/Vector/#vectortransfer_write-vectortransferwriteop`
+// COM: [1]: https://mlir.llvm.org/docs/Dialects/Vector/#vectortransfer_write-vectortransferwriteop
 // XFAIL: *
 
 // CHECK:       Available Dialects:

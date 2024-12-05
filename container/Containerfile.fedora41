@@ -14,7 +14,18 @@ ENV PROJECT_DIR=${HOME}/project
 ENV CARGO_ENV=${HOME}/.cargo/env
 
 RUN dnf upgrade -y
-RUN dnf install -y gcc llvm llvm-devel mlir mlir-devel clang clang-devel rustup zlib-devel libxml2-devel
+RUN dnf install -y \
+    gcc \
+    llvm \
+    llvm-devel \
+    mlir \
+    mlir-devel \
+    clang \
+    clang-devel \
+    rustup \
+    zlib-devel \
+    libxml2-devel \
+    python3-lit
 RUN dnf clean -y all
 
 ENV RUST_CHANNEL=stable
@@ -31,10 +42,11 @@ COPY rust-toolchain.toml    ${PROJECT_DIR}/
 COPY LICENSE                ${PROJECT_DIR}/
 COPY README.md              ${PROJECT_DIR}/
 COPY src                    ${PROJECT_DIR}/src/
+COPY tests                  ${PROJECT_DIR}/tests/
 
 ARG BUILD_MODE=
 
 WORKDIR ${PROJECT_DIR}
 RUN source ${CARGO_ENV}  &&  cargo build --verbose ${BUILD_MODE}
-RUN source ${CARGO_ENV}  &&  cargo clippy
-RUN source ${CARGO_ENV}  &&  cargo test -- --nocapture
+RUN source ${CARGO_ENV}  &&  cargo clippy --verbose
+RUN source ${CARGO_ENV}  &&  cargo test --verbose ${BUILD_MODE} -- --nocapture
