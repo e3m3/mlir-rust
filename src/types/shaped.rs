@@ -76,8 +76,8 @@ impl Shaped {
             return None;
         }
         let mut v: Vec<i64> = Vec::new();
-        let mut n = (self.num_elements().unwrap_or(0) - 1) as isize;
-        let mut n_other = (other.num_elements().unwrap_or(0) - 1) as isize;
+        let mut n = -1 + self.rank().unwrap_or(-1) as isize;
+        let mut n_other = -1 + other.rank().unwrap_or(-1) as isize;
         loop {
             if n < 0 || n_other < 0 {
                 break;
@@ -90,7 +90,7 @@ impl Shaped {
             n -= 1;
             n_other -= 1;
         }
-        Some(ShapeImpl::from(v))
+        Some(ShapeImpl::from(v.into_iter().rev().collect::<Vec<i64>>()))
     }
 
     pub fn has_matching_suffix(&self, other: &Self) -> bool {
@@ -100,13 +100,21 @@ impl Shaped {
         if !self.has_rank() || !other.has_rank() {
             return false;
         }
-        let n = self.num_elements().unwrap_or(0) as isize;
-        let n_other = self.num_elements().unwrap_or(0) as isize;
-        self.dim_size(n - 1) == other.dim_size(n_other - 1)
+        let n = -1 + self.rank().unwrap_or(-1) as isize;
+        let n_other = -1 + other.rank().unwrap_or(-1) as isize;
+        n >= 0 && n_other >= 0 && self.dim_size(n) == other.dim_size(n_other)
     }
 
     pub fn has_rank(&self) -> bool {
         do_unsafe!(mlirShapedTypeHasRank(self.0))
+    }
+
+    pub fn has_dynamic_dims(&self) -> bool {
+        if let Some(n) = self.num_dynamic_dims() {
+            n > 0
+        } else {
+            false
+        }
     }
 
     pub fn is_static(&self) -> bool {
@@ -133,15 +141,16 @@ impl Shaped {
         }
     }
 
-    /// Can only be computed if the shaped is statically sized.
+    /// Can only be computed if the shaped is statically sized with no dynamically sized dimensions.
     pub fn num_elements(&self) -> Option<i64> {
-        if self.is_static() {
+        if self.is_static() && !self.has_dynamic_dims() {
             self.rank().map(|rank| (0..rank).fold(0, |acc,i| acc + self.dim_size(i as isize)))
         } else {
             None
         }
     }
 
+    /// Can only be computed if the shaped is ranked.
     pub fn num_dynamic_dims(&self) -> Option<i64> {
         self.rank().map(|rank| (0..rank)
             .fold(0, |acc,i| acc + if self.is_dynamic_dim(i as isize) { 1 } else { 0 })
