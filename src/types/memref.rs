@@ -18,12 +18,14 @@ use mlir::MlirType;
 
 use std::cmp;
 
+use crate::attributes;
 use crate::dialects;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
+use attributes::specialized::NamedMemorySpace;
 use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
@@ -44,7 +46,12 @@ pub struct StridesAndOffset {
 }
 
 impl MemRef {
-    pub fn new(shape: &dyn Shape, t: &Type, layout: &Attribute, memory_space: &Attribute) -> Self {
+    pub fn new(
+        shape: &dyn Shape,
+        t: &Type,
+        layout: &Attribute,
+        memory_space: &impl NamedMemorySpace,
+    ) -> Self {
         let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeGet(
             *t.get(),
@@ -59,7 +66,7 @@ impl MemRef {
         shape: &dyn Shape,
         t: &Type,
         layout: &Attribute,
-        memory_space: &Attribute,
+        memory_space: &impl NamedMemorySpace,
         loc: &Location
     ) -> Self {
         let (r, s) = shape.unpack();
@@ -73,7 +80,7 @@ impl MemRef {
         )))
     }
 
-    pub fn new_contiguous(shape: &dyn Shape, t: &Type, memory_space: &Attribute) -> Self {
+    pub fn new_contiguous(shape: &dyn Shape, t: &Type, memory_space: &impl NamedMemorySpace) -> Self {
         let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeContiguousGet(*t.get(), r, s.as_ptr(), *memory_space.get())))
     }
@@ -81,7 +88,7 @@ impl MemRef {
     pub fn new_contiguous_checked(
         shape: &dyn Shape,
         t: &Type,
-        memory_space: &Attribute,
+        memory_space: &impl NamedMemorySpace,
         loc: &Location
     ) -> Self {
         let (r, s) = shape.unpack();
@@ -124,19 +131,19 @@ impl MemRef {
         Attribute::from(do_unsafe!(mlirMemRefTypeGetLayout(self.0)))
     }
 
-    pub fn get_matching_suffix(&self, other: &Self) -> Option<Self> {
+    pub fn get_matching_suffix<T: NamedMemorySpace>(&self, other: &Self) -> Option<Self> {
         let s = self.as_shaped();
         let s_other = other.as_shaped();
         s.get_matching_suffix(&s_other).map(|s_suffix| {
             let t = s.get_element_type();
             let l = self.get_layout();
-            let m = self.get_memory_space();
+            let m = self.get_memory_space::<T>();
             Self::new(&s_suffix, &t, &l, &m)
         })
     }
 
-    pub fn get_memory_space(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirMemRefTypeGetMemorySpace(self.0)))
+    pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
+        T::from_checked(do_unsafe!(mlirMemRefTypeGetMemorySpace(self.0)))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {

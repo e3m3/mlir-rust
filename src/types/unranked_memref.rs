@@ -11,11 +11,13 @@ use mlir::mlirUnrankedMemRefTypeGetTypeID;
 use mlir::mlirUnrankedMemrefGetMemorySpace;
 use mlir::MlirType;
 
+use crate::attributes;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
+use attributes::specialized::NamedMemorySpace;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Attribute;
@@ -59,9 +61,9 @@ impl UnrankedMemRef {
         &self.0
     }
 
-    pub fn get_memory_space(&self) -> Attribute {
+    pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
         // Why is this capitalized differently?
-        Attribute::from(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(self.0)))
+        T::from_checked(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(self.0)))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {

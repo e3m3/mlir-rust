@@ -25,8 +25,9 @@ use attributes::IRAttributeNamed;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedInitialization;
 use attributes::specialized::NamedInteger;
-use attributes::specialized::NamedPermutation;
+use attributes::specialized::NamedMemorySpace;
 use attributes::specialized::NamedMemRef;
+use attributes::specialized::NamedPermutation;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
 use attributes::specialized::NamedUnit;
@@ -55,9 +56,9 @@ use traits::Trait;
 use types::IRType;
 use types::index::Index;
 use types::integer::Integer as IntegerType;
-use types::mem_ref::MemRef;
+use types::memref::MemRef;
 use types::shaped::Shaped;
-use types::unranked_mem_ref::UnrankedMemRef;
+use types::unranked_memref::UnrankedMemRef;
 
 ///////////////////////////////
 //  Attributes
@@ -481,7 +482,7 @@ impl Cast {
     ///     2.  The individual sizes (resp. offset and strides in the case of strided memrefs)
     ///         may convert constant dimensions to dynamic dimensions and vice-versa.
     /// [1]: `https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop`
-    pub fn new_ranked(t: &MemRef, source: &Value, loc: &Location) -> Self {
+    pub fn new_ranked<T: NamedMemorySpace>(t: &MemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let is_ranked = t_source.is_mem_ref();
         let is_unranked = t_source.is_unranked_mem_ref();
@@ -499,7 +500,7 @@ impl Cast {
         }
         if is_ranked {
             let t_ranked = MemRef::from(*t_source.get());
-            if t.get_memory_space() != t_ranked.get_memory_space() {
+            if t.get_memory_space::<T>() != t_ranked.get_memory_space::<T>() {
                 eprintln!("Expected matching memory space for source and target operands \
                     of cast operation"
                 );
@@ -513,7 +514,7 @@ impl Cast {
             }
         } else {
             let t_unranked = UnrankedMemRef::from(*t_source.get());
-            if t.get_memory_space() != t_unranked.get_memory_space() {
+            if t.get_memory_space::<T>() != t_unranked.get_memory_space::<T>() {
                 eprintln!("Expected matching memory space for source and target operands \
                     of cast operation"
                 );
@@ -523,7 +524,7 @@ impl Cast {
         Self::new(&t.as_type(), source, loc)
     }
 
-    pub fn new_unranked(t: &UnrankedMemRef, source: &Value, loc: &Location) -> Self {
+    pub fn new_unranked<T: NamedMemorySpace>(t: &UnrankedMemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let is_ranked = t_source.is_mem_ref();
         let is_unranked = t_source.is_unranked_mem_ref();
@@ -541,7 +542,7 @@ impl Cast {
         }
         if is_ranked {
             let t_ranked = MemRef::from(*t_source.get());
-            if t.get_memory_space() != t_ranked.get_memory_space() {
+            if t.get_memory_space::<T>() != t_ranked.get_memory_space::<T>() {
                 eprintln!("Expected matching memory space for source and target operands \
                     of cast operation"
                 );
@@ -549,7 +550,7 @@ impl Cast {
             }
         } else {
             let t_unranked = UnrankedMemRef::from(*t_source.get());
-            if t.get_memory_space() != t_unranked.get_memory_space() {
+            if t.get_memory_space::<T>() != t_unranked.get_memory_space::<T>() {
                 eprintln!("Expected matching memory space for source and target operands \
                     of ast operation"
                 );
