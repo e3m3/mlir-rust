@@ -1,0 +1,42 @@
+// RUN: %O/vector_print_3 2>&1 | @mlir-opt | @filecheck %M/vector_print_3.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::vector::Print;
+use mlir::dialects::vector::PunctuationKind;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::IRType;
+use mlir::types::vector::Vector;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32).as_type();
+    let s = ShapeImpl::from(vec![4]);
+    let t_vec = Vector::new(&s, &t).as_type();
+    let f = get_empty_test_fn(&context, &[t_vec], &[]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_print = Print::new(
+        &context,
+        &[f_block.get_arg(0)],
+        PunctuationKind::Comma,
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_print);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}

@@ -1,0 +1,29 @@
+// RUN: %O/vector_print_2 2>&1 | @mlir-opt | @filecheck %M/vector_print_2.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::vector::Print;
+use mlir::dialects::vector::PunctuationKind;
+use mlir::ir::Block;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let f = get_empty_test_fn(&context, &[], &[]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_print = Print::new(&context, &[], PunctuationKind::NewLine, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_print);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}

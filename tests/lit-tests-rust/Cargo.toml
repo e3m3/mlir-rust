@@ -103,3 +103,143 @@ path = "src/linalg_add_1.lit-rs"
 [[bin]]
 name = "ub_poison_1"
 path = "src/ub_poison_1.lit-rs"
+
+[[bin]]
+name = "vector_extract_1"
+path = "src/vector_extract_1.lit-rs"
+
+[[bin]]
+name = "vector_extractelement_1"
+path = "src/vector_extractelement_1.lit-rs"
+
+[[bin]]
+name = "vector_extractelement_2"
+path = "src/vector_extractelement_2.lit-rs"
+
+[[bin]]
+name = "vector_from_elements_1"
+path = "src/vector_from_elements_1.lit-rs"
+
+[[bin]]
+name = "vector_load_1"
+path = "src/vector_load_1.lit-rs"
+
+[[bin]]
+name = "vector_load_2"
+path = "src/vector_load_2.lit-rs"
+
+[[bin]]
+name = "vector_load_3"
+path = "src/vector_load_3.lit-rs"
+
+[[bin]]
+name = "vector_load_4"
+path = "src/vector_load_4.lit-rs"
+
+[[bin]]
+name = "vector_load_5"
+path = "src/vector_load_5.lit-rs"
+
+[[bin]]
+name = "vector_load_6"
+path = "src/vector_load_6.lit-rs"
+
+[[bin]]
+name = "vector_load_7"
+path = "src/vector_load_7.lit-rs"
+
+[[bin]]
+name = "vector_load_8"
+path = "src/vector_load_8.lit-rs"
+
+[[bin]]
+name = "vector_print_1"
+path = "src/vector_print_1.lit-rs"
+
+[[bin]]
+name = "vector_print_2"
+path = "src/vector_print_2.lit-rs"
+
+[[bin]]
+name = "vector_print_3"
+path = "src/vector_print_3.lit-rs"
+
+[[bin]]
+name = "vector_store_1"
+path = "src/vector_store_1.lit-rs"
+
+[[bin]]
+name = "vector_store_2"
+path = "src/vector_store_2.lit-rs"
+
+[[bin]]
+name = "vector_store_3"
+path = "src/vector_store_3.lit-rs"
+
+[[bin]]
+name = "vector_store_4"
+path = "src/vector_store_4.lit-rs"
+
+[[bin]]
+name = "vector_store_5"
+path = "src/vector_store_5.lit-rs"
+
+[[bin]]
+name = "vector_store_6"
+path = "src/vector_store_6.lit-rs"
+
+[[bin]]
+name = "vector_store_7"
+path = "src/vector_store_7.lit-rs"
+
+[[bin]]
+name = "vector_store_8"
+path = "src/vector_store_8.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_1"
+path = "src/vector_transfer_read_1.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_2"
+path = "src/vector_transfer_read_2.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_3"
+path = "src/vector_transfer_read_3.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_4"
+path = "src/vector_transfer_read_4.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_5"
+path = "src/vector_transfer_read_5.lit-rs"
+
+[[bin]]
+name = "vector_transfer_read_6"
+path = "src/vector_transfer_read_6.lit-rs"
+
+[[bin]]
+name = "vector_transfer_write_1"
+path = "src/vector_transfer_write_1.lit-rs"
+
+[[bin]]
+name = "vector_transfer_write_2"
+path = "src/vector_transfer_write_2.lit-rs"
+
+[[bin]]
+name = "vector_transfer_write_3"
+path = "src/vector_transfer_write_3.lit-rs"
+
+[[bin]]
+name = "vector_transfer_write_4"
+path = "src/vector_transfer_write_4.lit-rs"
+
+[[bin]]
+name = "vector_transfer_write_5"
+path = "src/vector_transfer_write_5.lit-rs"
+
+[[bin]]
+name = "vector_vectormask_1"
+path = "src/vector_vectormask_1.lit-rs"

@@ -1,0 +1,71 @@
+// RUN: %O/vector_transfer_read_1 2>&1 | @mlir-opt | @filecheck %M/vector_transfer_read_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::attributes::specialized::NamedAffineMap;
+use mlir::dialects::affine::AffineExpr;
+use mlir::dialects::affine::Constant as AffineConstant;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::vector::InBounds;
+use mlir::dialects::vector::PermutationMap;
+use mlir::dialects::vector::TransferRead;
+use mlir::ir::Block;
+use mlir::ir::Shape;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+use mlir::types::IRType;
+use mlir::types::memref::MemRef;
+use mlir::types::shaped::Shaped;
+use mlir::types::vector::Vector;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_index = Index::new(&context).as_type();
+    let dyn_size = Shaped::dynamic_size();
+    let s_in = ShapeImpl::from(vec![dyn_size; 4]);
+    let s_out = ShapeImpl::from(vec![3, 4, 5]);
+    let t_vec_out = Vector::new(&s_out, &t);
+    let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new()).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t_mr_in.clone(), t_index.clone(), t_index.clone(), t_index.clone(), t_index.clone(), t.clone()],
+        &[t_vec_out.as_type()],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let bounds_attr = InBounds::new(&context, &[false, true, false]);
+    let affine_c0 = AffineConstant::new(&context, 0).as_expr();
+    let affine_d1 = AffineDim::new(&context, 1).as_expr();
+    let affine_d2 = AffineDim::new(&context, 2).as_expr();
+    let map = AffineMap::new_results(&context, s_in.rank(), 0, &[affine_d2, affine_c0, affine_d1]);
+    let perm_attr = PermutationMap::new(&map);
+    let mut op_read = TransferRead::new(
+        &t_vec_out,
+        &bounds_attr,
+        &perm_attr,
+        &f_block.get_arg(0),
+        &[f_block.get_arg(1), f_block.get_arg(2), f_block.get_arg(3), f_block.get_arg(4)],
+        &f_block.get_arg(5),
+        None,
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_read.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_read);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
