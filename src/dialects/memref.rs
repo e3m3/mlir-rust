@@ -26,16 +26,17 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedInitialization;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedMemorySpace;
-use attributes::specialized::NamedMemRef;
 use attributes::specialized::NamedPermutation;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
+use attributes::specialized::NamedType;
 use attributes::specialized::NamedUnit;
 use attributes::symbol_ref::SymbolRef;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
+use dialects::common::SymbolVisibilityKind;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
@@ -304,22 +305,29 @@ impl Alloc {
             exit(ExitCode::DialectError);
         }
         let s = t.as_shaped();
+        let n_dyn_inputs = dyn_sizes.len() as i64;
         if let Some(n_dyn) = s.num_dynamic_dims() {
-            if n_dyn != dyn_sizes.len() as i64 {
-                eprintln!("Expected number of dynamic sizes to match number of dynamic dimensions \
-                    of the result memory reference type for alloc operation"
+            if n_dyn != n_dyn_inputs {
+                eprintln!("Expected number of dynamic sizes ({}) to match number \
+                    of dynamic dimensions ({}) of the result memory reference type for alloc operation",
+                    n_dyn_inputs,
+                    n_dyn,
                 );
                 exit(ExitCode::DialectError);
             }
         } else if !dyn_sizes.is_empty() {
-            eprintln!("Expected number of dynamic sizes to match number of dynamic dimensions \
+            eprintln!("Expected no dynamic sizes to match number of dynamic dimensions \
                 of the result memory reference type for alloc operation"
             );
             exit(ExitCode::DialectError);
         }
-        if t.get_affine_map().num_symbols() != syms.len() as isize {
-            eprintln!("Expected number of symbols to match number of symbols in the affine map \
-                of the result memory reference type for alloc operation"
+        let n_syms = t.get_affine_map().num_symbols();
+        let n_syms_inputs = syms.len() as isize;
+        if n_syms != n_syms_inputs {
+            eprintln!("Expected number of symbols ({}) to match number of symbols in the affine map ({}) \
+                of the result memory reference type for alloc operation",
+                n_syms_inputs,
+                n_syms,
             );
             exit(ExitCode::DialectError);
         }
@@ -481,7 +489,7 @@ impl Cast {
     ///     1.  Both have the same layout or both have compatible strided layouts.
     ///     2.  The individual sizes (resp. offset and strides in the case of strided memrefs)
     ///         may convert constant dimensions to dynamic dimensions and vice-versa.
-    /// [1]: `https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop`
+    /// [1]: https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop
     pub fn new_ranked<T: NamedMemorySpace>(t: &MemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let is_ranked = t_source.is_mem_ref();
@@ -506,9 +514,13 @@ impl Cast {
                 );
                 exit(ExitCode::DialectError);
             }
-            if s.rank().unwrap_or(0) != s_source.rank().unwrap_or(0) {
-                eprintln!("Expected matching ranks for ranked memory reference source and target operands \
-                    of cast operation"
+            let rank = s.rank().unwrap_or(-1);
+            let rank_source = s_source.rank().unwrap_or(-1);
+            if rank != rank_source  {
+                eprintln!("Expected matching ranks for ranked memory reference \
+                    source ({}) and target ({}) operands of cast operation",
+                    rank_source,
+                    rank,
                 );
                 exit(ExitCode::DialectError);
             }
@@ -746,15 +758,15 @@ impl GetGlobal {
 impl Global {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        context: &Context,
-        sym_name: &SymbolName,
-        visibility: &SymbolVisibility,
         t: &GlobalType,
+        sym_name: &SymbolName,
+        visibility: SymbolVisibilityKind,
         init: Option<&InitialValue>,
         is_const: Option<&IsConstant>,
         align: Option<&Alignment>,
         loc: &Location,
     ) -> Self {
+        let context = t.get_context();
         let dialect = context.get_dialect_memref();
         let name = StringBacked::from_string(&format!(
             "{}.{}",
@@ -763,9 +775,11 @@ impl Global {
         ));
         let mut attrs = vec![
             sym_name.as_named_attribute(),
-            visibility.as_named_attribute(),
             t.as_named_attribute(),
         ];
+        if let Some(visibility_) = SymbolVisibility::new(&context, visibility) {
+            attrs.push(visibility_.as_named_attribute());
+        }
         if let Some(init_) = init {
             attrs.push(init_.as_named_attribute());
         }
@@ -818,6 +832,10 @@ impl Global {
 
     pub fn get_context(&self) -> Context {
         self.as_operation().get_context()
+    }
+
+    pub fn get_global_ref(&self, context: &Context) -> GlobalRef {
+        GlobalRef::new(context, &self.get_symbol_ref().get_value().unwrap())
     }
 
     pub fn get_initial_value(&self) -> Option<InitialValue> {
@@ -884,14 +902,18 @@ impl Load {
             eprintln!("Expected index type for index operand(s) of load operation");
             exit(ExitCode::DialectError);
         }
-        let s = Shaped::from(*source.get_type().get());
-        if *t != s.get_element_type() {
+        let s_source = Shaped::from(*source.get_type().get());
+        if *t != s_source.get_element_type() {
             eprintln!("Expected matching types for source element type and result of load operation");
             exit(ExitCode::DialectError);
         }
-        if s.rank().unwrap_or(0) != indices.len() as i64 {
-            eprintln!("Expected matching arity for source memory reference rank \
-                and indices of load operation"
+        let n_indices = indices.len() as i64;
+        let rank_source = s_source.rank().unwrap_or(0);
+        if rank_source != n_indices {
+            eprintln!("Expected matching arity of indices ({}) and source memory reference rank ({}) \
+                of load operation",
+                n_indices,
+                rank_source,
             );
             exit(ExitCode::DialectError);
         }
@@ -904,9 +926,8 @@ impl Load {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_attributes(&[is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -993,14 +1014,18 @@ impl Store {
             eprintln!("Expected index type for index operand(s) of store operation");
             exit(ExitCode::DialectError);
         }
-        let s = Shaped::from(*target.get_type().get());
-        if value.get_type() != s.get_element_type() {
+        let s_target = Shaped::from(*target.get_type().get());
+        if value.get_type() != s_target.get_element_type() {
             eprintln!("Expected matching types for target element type and result of store operation");
             exit(ExitCode::DialectError);
         }
-        if s.rank().unwrap_or(0) != indices.len() as i64 {
-            eprintln!("Expected matching arity for target memory reference rank \
-                and indices of store operation"
+        let rank_target = s_target.rank().unwrap_or(0);
+        let n_indices = indices.len() as i64;
+        if rank_target != n_indices {
+            eprintln!("Expected matching arity of indices ({}) and target memory reference rank ({}) \
+                of store operation",
+                n_indices,
+                rank_target,
             );
             exit(ExitCode::DialectError);
         }
@@ -1012,9 +1037,8 @@ impl Store {
         ));
         let mut args = vec![value.clone(), target.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(context, &[1, 1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), is_nt.as_named_attribute()]);
+        op_state.add_attributes(&[is_nt.as_named_attribute()]);
         op_state.add_operands(&args);
         Self::from(*op_state.create_operation().get())
     }
@@ -1045,10 +1069,15 @@ impl Transpose {
             );
             exit(ExitCode::DialectError);
         }
-        let n = t.get_affine_map().num_dims();
-        if n != p.as_affine_map().num_dims() || n != t_source.get_affine_map().num_dims() {
-            eprintln!("Expected matching number of dimensions for result, source, and permutation \
-                of transpose operation"
+        let n_result = t.get_affine_map().num_dims();
+        let n_perm = p.as_affine_map().num_dims();
+        let n_source = t_source.get_affine_map().num_dims();
+        if n_result != n_perm || n_result != n_source {
+            eprintln!("Expected matching number of dimensions for result ({}), source ({}), \
+                and permutation ({}) of transpose operation",
+                n_result,
+                n_source,
+                n_perm,
             );
             exit(ExitCode::DialectError);
         }
@@ -1096,23 +1125,29 @@ impl View {
             exit(ExitCode::DialectError);
         }
         let s_source = Shaped::from(*source.get_type().get());
-        if s_source.rank().unwrap_or(0) != 1 {
-            eprintln!("Expected 1-D ranked memory reference type for source operand of view operation");
+        let rank_source = s_source.rank().unwrap_or(-1);
+        if rank_source != 1 {
+            eprintln!("Expected 1-D ranked memory reference type for source operand ({}) \
+                of view operation",
+                rank_source,
+            );
             exit(ExitCode::DialectError);
         }
         let t_elem = s_source.get_element_type();
-        const WIDTH: c_uint = 8;
         if !t_elem.is_integer() {
             eprintln!("Expected integer element memory reference type for source operand \
                 of view operation"
             );
             exit(ExitCode::DialectError);
         }
+        const WIDTH: c_uint = 8;
         let t_int = IntegerType::from(*t_elem.get());
-        if !t_int.is_signless() || t_int.get_width() != WIDTH {
+        let width_elem = t_int.get_width();
+        if !t_int.is_signless() || width_elem != WIDTH {
             eprintln!("Expected signless {}-bit integer elements for memory reference type \
-                for source operand of view operation",
+                for source operand ({}-bit elements) of view operation",
                 WIDTH,
+                width_elem,
             );
             exit(ExitCode::DialectError);
         }
@@ -1133,9 +1168,7 @@ impl View {
         ));
         let mut args = vec![source.clone(), byte_shift.clone()];
         args.append(&mut sizes.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1, sizes.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&args);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -1794,7 +1827,7 @@ impl IRAttributeNamed for GlobalType {
     }
 }
 
-impl NamedMemRef for GlobalType {}
+impl NamedType for GlobalType {}
 
 impl IROperation for View {
     fn get(&self) -> &MlirOperation {
