@@ -30,6 +30,7 @@ use attributes::IRAttributeNamed;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::opaque::Opaque;
+use attributes::strided_layout::StridedLayout;
 use attributes::string::String as StringAttr;
 use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
@@ -429,7 +430,7 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
 
 pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn new(attr: &Attribute) -> Self {
-        Self::from(*attr.get())
+        Self::from_checked(*attr.get())
     }
 
     fn new_elements(elements: &Elements) -> Self {
@@ -438,6 +439,15 @@ pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn new_uninitialized(context: &Context) -> Self {
         Self::new(&Unit::new(context).as_attribute())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_unit() && !attr_.as_attribute().is_elements() {
+            eprintln!("Expected unit or elements attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
     }
 
     fn get_elements(&self) -> Option<Elements> {
@@ -489,6 +499,40 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn get_value(&self) -> i64 {
         self.as_integer().get_int()
+    }
+}
+
+pub trait NamedMemoryLayout: From<MlirAttribute> + IRAttributeNamed + Sized {
+    fn new_affine_map(attr: &AffineMap) -> Self {
+        Self::from(*attr.as_attribute().get())
+    }
+
+    fn new_strided_layout(attr: &StridedLayout) -> Self {
+        Self::from(*attr.get())
+    }
+
+    fn is_affine_map(&self) -> bool {
+        self.as_attribute().is_affine_map()
+    }
+
+    fn is_strided_layout(&self) -> bool {
+        self.as_attribute().is_strided_layout()
+    }
+
+    fn as_affine_map(&self) -> Option<AffineMap> {
+        if self.is_affine_map() {
+            Some(AffineMap::from(*self.get()))
+        } else {
+            None
+        }
+    }
+
+    fn as_strided_layout(&self) -> Option<StridedLayout> {
+        if self.is_strided_layout() {
+            Some(StridedLayout::from(*self.get()))
+        } else {
+            None
+        }
     }
 }
 
