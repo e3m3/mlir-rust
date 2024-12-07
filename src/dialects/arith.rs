@@ -8,7 +8,6 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
-use std::ffi::c_uint;
 use std::fmt;
 
 use crate::attributes;
@@ -641,7 +640,7 @@ impl AddUIExtended {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
-        op_state.add_results(&[t.clone(), IntegerType::new_signless(&context, 1 as c_uint).as_type()]);
+        op_state.add_results(&[t.clone(), IntegerType::new_signless(&context, 1).as_type()]);
         Self::from(*op_state.create_operation().get())
     }
 

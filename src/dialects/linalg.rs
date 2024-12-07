@@ -8,7 +8,6 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
-use std::ffi::c_uint;
 use std::fmt;
 
 use crate::attributes;
@@ -951,7 +950,7 @@ macro_rules! impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult {
 
 impl BinaryFunction {
     pub fn new(context: &Context, k: BinaryFunctionKind) -> Self {
-        const WIDTH: c_uint = 32;
+        const WIDTH: usize = 32;
         <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 
@@ -970,7 +969,7 @@ impl BinaryFunction {
 
 impl Cast {
     pub fn new(context: &Context, k: CastKind) -> Self {
-        const WIDTH: c_uint = 32;
+        const WIDTH: usize = 32;
         <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 
@@ -999,7 +998,7 @@ impl IndexingMaps {
 
 impl IteratorType {
     pub fn new(context: &Context, k: IteratorTypeKind) -> Self {
-        const WIDTH: c_uint = 32;
+        const WIDTH: usize = 32;
         <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 
@@ -1028,7 +1027,7 @@ impl Permutation {
 
 impl UnaryFunction {
     pub fn new(context: &Context, k: UnaryFunctionKind) -> Self {
-        const WIDTH: c_uint = 32;
+        const WIDTH: usize = 32;
         <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 

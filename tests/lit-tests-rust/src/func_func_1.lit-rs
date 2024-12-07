@@ -25,8 +25,6 @@ use mlir::types::index::Index;
 use mlir::types::integer::Integer as IntegerType;
 use mlir::types::IRType;
 
-use std::ffi::c_uint;
-
 mod common;
 use crate::common::*;
 
@@ -41,7 +39,7 @@ pub fn main() -> () {
     let mut context = module.get_context();
     context.set_allow_unregistered_dialects(true);
     let t_float = FloatType::new(&context, FloatLayout::F64).as_type();
-    let t_int = IntegerType::new(&context, 32 as c_uint).as_type();
+    let t_int = IntegerType::new(&context, 32).as_type();
     let class_attr = ClassNameAttribute::new(&context, "className");
     let int_attr = GenericIntegerAttribute::new(&context, 1);
     let arg_attrs = Arguments::new(&context, &[
@@ -84,7 +82,7 @@ impl ClassNameAttribute {
 
 impl GenericIntegerAttribute {
     pub fn new(context: &Context, value: i32) -> Self {
-        const WIDTH: c_uint = 32;
+        const WIDTH: usize = 32;
         <Self as NamedInteger>::new(context, value as i64, WIDTH)
     }
 

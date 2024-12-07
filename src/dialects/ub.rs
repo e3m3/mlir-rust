@@ -39,7 +39,6 @@ use types::integer::Integer as IntegerType;
 use types::IRType;
 use types::none::None as NoneType;
 
-use std::ffi::c_uint;
 use std::fmt;
 
 ///////////////////////////////
@@ -104,7 +103,7 @@ impl Op {
 
 impl Poison {
     pub fn new(context: &Context, loc: &Location) -> Self {
-        let t = IntegerType::new(context, 32 as c_uint);
+        let t = IntegerType::new(context, 32);
         let dialect = Self::get_dialect(context);
         let name = StringBacked::from_string(&format!(
             "{}.{}",

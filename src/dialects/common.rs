@@ -8,7 +8,6 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 
 use std::cmp;
-use std::ffi::c_uint;
 use std::fmt;
 use std::str::FromStr;
 
@@ -107,7 +106,7 @@ impl DefaultMemorySpace {
 
 impl IntegerMemorySpace {
     pub fn new(context: &Context, n: i64) -> Self {
-        const WIDTH: c_uint = 64;
+        const WIDTH: usize = 64;
         let t = IntegerType::new(context, WIDTH);
         let attr = IntegerAttr::new(&t, n);
         <Self as NamedMemorySpace>::new_integer(&attr)
@@ -124,7 +123,7 @@ impl IntegerMemorySpace {
 
 impl Dimension {
     pub fn new(context: &Context, n: i64) -> Self {
-        const WIDTH: c_uint = 64;
+        const WIDTH: usize = 64;
         <Self as NamedInteger>::new(context, n, WIDTH)
     }
 

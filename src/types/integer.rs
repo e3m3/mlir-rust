@@ -34,24 +34,24 @@ use types::IsPromotableTo;
 pub struct Integer(MlirType);
 
 impl Integer {
-    pub fn new(context: &Context, width: c_uint) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeGet(*context.get(), width)))
+    pub fn new(context: &Context, width: usize) -> Self {
+        Self::from(do_unsafe!(mlirIntegerTypeGet(*context.get(), width as c_uint)))
     }
 
     pub fn new_bool(context: &Context) -> Self {
         Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), 1)))
     }
 
-    pub fn new_signed(context: &Context, width: c_uint) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeSignedGet(*context.get(), width)))
+    pub fn new_signed(context: &Context, width: usize) -> Self {
+        Self::from(do_unsafe!(mlirIntegerTypeSignedGet(*context.get(), width as c_uint)))
     }
 
-    pub fn new_signless(context: &Context, width: c_uint) -> Self {
+    pub fn new_signless(context: &Context, width: usize) -> Self {
         Self::new(context, width)
     }
 
-    pub fn new_unsigned(context: &Context, width: c_uint) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), width)))
+    pub fn new_unsigned(context: &Context, width: usize) -> Self {
+        Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), width as c_uint)))
     }
 
     pub fn from(t: MlirType) -> Self {
@@ -76,8 +76,8 @@ impl Integer {
         &mut self.0
     }
 
-    pub fn get_width(&self) -> c_uint {
-        do_unsafe!(mlirIntegerTypeGetWidth(self.0))
+    pub fn get_width(&self) -> usize {
+        do_unsafe!(mlirIntegerTypeGetWidth(self.0)) as usize
     }
 
     pub fn get_type_id() -> TypeID {
@@ -85,7 +85,7 @@ impl Integer {
     }
 
     pub fn is_bool(&self) -> bool {
-        self.is_unsigned() && self.get_width() == 1 as c_uint
+        self.is_unsigned() && self.get_width() == 1
     }
 
     pub fn is_signed(&self) -> bool {

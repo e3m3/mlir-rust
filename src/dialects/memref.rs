@@ -173,7 +173,7 @@ pub struct View(MlirOperation);
 
 impl Alignment {
     pub fn new(context: &Context, align: usize) -> Self {
-        const WIDTH: c_uint = 64;
+        const WIDTH: usize = 64;
         <Self as NamedInteger>::new(context, align as i64, WIDTH)
     }
 
@@ -1140,7 +1140,7 @@ impl View {
             );
             exit(ExitCode::DialectError);
         }
-        const WIDTH: c_uint = 8;
+        const WIDTH: usize = 8;
         let t_int = IntegerType::from(*t_elem.get());
         let width_elem = t_int.get_width();
         if !t_int.is_signless() || width_elem != WIDTH {

@@ -8,7 +8,6 @@ extern crate mlir_sys as mlir;
 use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
-use std::ffi::c_uint;
 use std::fmt;
 use std::str::FromStr;
 
@@ -1170,7 +1169,7 @@ impl TransferWrite {
 }
 
 impl VectorMask {
-    const WIDTH: c_uint = 1;
+    const WIDTH: usize = 1;
 
     pub fn new(context: &Context, values: &[Value], loc: &Location) -> Self {
         if values.is_empty() {

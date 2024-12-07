@@ -9,7 +9,6 @@ use mlir::MlirAttribute;
 use mlir::MlirOperation;
 
 use std::cmp;
-use std::ffi::c_uint;
 use std::fmt;
 
 use crate::attributes;
@@ -222,7 +221,7 @@ impl OuterDimensionsPermutation {
 
 impl Reassociation {
     pub fn new(context: &Context, values: &[Array]) -> Self {
-        const WIDTH: c_uint = 64;
+        const WIDTH: usize = 64;
         <Self as NamedArrayOfIntegerArrays>::new(context, values, WIDTH)
     }
 

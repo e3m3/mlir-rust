@@ -222,7 +222,7 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
 }
 
 pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Sized {
-    fn new(context: &Context, values: &[Array], width: c_uint) -> Self {
+    fn new(context: &Context, values: &[Array], width: usize) -> Self {
         for value in values.iter() {
             for i in 0..value.num_elements() {
                 let element = value.get_element(i);
@@ -464,22 +464,22 @@ pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
 }
 
 pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
-    fn new(context: &Context, n: i64, width: c_uint) -> Self {
+    fn new(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
     }
 
-    fn new_signed(context: &Context, n: i64, width: c_uint) -> Self {
+    fn new_signed(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new_signed(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
     }
 
-    fn new_signless(context: &Context, n: i64, width: c_uint) -> Self {
+    fn new_signless(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new_signless(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
     }
 
-    fn new_unsigned(context: &Context, n: i64, width: c_uint) -> Self {
+    fn new_unsigned(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new_unsigned(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
     }

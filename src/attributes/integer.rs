@@ -12,8 +12,6 @@ use mlir::mlirIntegerAttrGetValueSInt;
 use mlir::mlirIntegerAttrGetValueUInt;
 use mlir::MlirAttribute;
 
-use std::ffi::c_uint;
-
 use crate::attributes;
 use crate::do_unsafe;
 use crate::ir;
@@ -33,7 +31,7 @@ use types::IRType;
 pub struct Integer(MlirAttribute);
 
 impl Integer {
-    const WIDTH_INDEX: c_uint = 64;
+    const WIDTH_INDEX: usize = 64;
 
     pub fn new(t: &IntegerType, value: i64) -> Self {
         Self::from(do_unsafe!(mlirIntegerAttrGet(*t.as_type().get(), value)))
@@ -88,7 +86,7 @@ impl Integer {
     }
 
     #[inline]
-    pub const fn index_width() -> c_uint {
+    pub const fn index_width() -> usize {
         Self::WIDTH_INDEX
     }
 }
