@@ -71,6 +71,7 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
+use attributes::elements::Elements;
 use attributes::IRAttribute;
 use exit_code::exit;
 use exit_code::ExitCode;
@@ -275,6 +276,10 @@ impl DenseElements {
         Self::from(do_unsafe!(mlirDenseElementsAttrUInt64SplatGet(*t.get(), element)), Layout::U64)
     }
 
+    pub fn as_elements(&self) -> Elements {
+        Elements::from(*self.get())
+    }
+
     pub fn from(attr: MlirAttribute, layout: Layout) -> Self {
         let attr_ = Attribute::from(attr);
         if !attr_.is_dense_elements() {
@@ -283,28 +288,29 @@ impl DenseElements {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        if match layout {
-            Layout::Bool        => false,
-            Layout::BF16        => attr_.is_dense_elements_float(),
-            Layout::F16         => attr_.is_dense_elements_float(),
-            Layout::F32         => attr_.is_dense_elements_float(),
-            Layout::F64         => attr_.is_dense_elements_float(),
-            Layout::I8          => attr_.is_dense_elements_int(),
-            Layout::I16         => attr_.is_dense_elements_int(),
-            Layout::I32         => attr_.is_dense_elements_int(),
-            Layout::I64         => attr_.is_dense_elements_int(),
-            Layout::Inferred    => false,
-            Layout::String      => false,
-            Layout::U8          => attr_.is_dense_elements_int(),
-            Layout::U16         => attr_.is_dense_elements_int(),
-            Layout::U32         => attr_.is_dense_elements_int(),
-            Layout::U64         => attr_.is_dense_elements_int(),
-        } {
-            eprint!("Cannot coerce attribute to dense elements layout '{}': ", layout);
-            attr_.dump();
-            eprintln!();
-            exit(ExitCode::IRError);
-        }
+        // TODO: Type-specific dense elements checks not working.
+        //if match layout {
+        //    Layout::Bool        => false,
+        //    Layout::BF16        => attr_.is_dense_elements_float(),
+        //    Layout::F16         => attr_.is_dense_elements_float(),
+        //    Layout::F32         => attr_.is_dense_elements_float(),
+        //    Layout::F64         => attr_.is_dense_elements_float(),
+        //    Layout::I8          => attr_.is_dense_elements_int(),
+        //    Layout::I16         => attr_.is_dense_elements_int(),
+        //    Layout::I32         => attr_.is_dense_elements_int(),
+        //    Layout::I64         => attr_.is_dense_elements_int(),
+        //    Layout::Inferred    => false,
+        //    Layout::String      => false,
+        //    Layout::U8          => attr_.is_dense_elements_int(),
+        //    Layout::U16         => attr_.is_dense_elements_int(),
+        //    Layout::U32         => attr_.is_dense_elements_int(),
+        //    Layout::U64         => attr_.is_dense_elements_int(),
+        //} {
+        //    eprint!("Cannot coerce attribute to dense elements layout '{}': ", layout);
+        //    attr_.dump();
+        //    eprintln!();
+        //    exit(ExitCode::IRError);
+        //}
         DenseElements(attr, layout)
     }
 
