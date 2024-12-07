@@ -327,6 +327,10 @@ impl Expr {
         do_unsafe!(mlirAffineExprIsPureAffine(self.0))
     }
 
+    pub fn is_semi_affine(&self) -> bool {
+        !self.is_pure()
+    }
+
     pub fn is_symbol(&self) -> bool {
         do_unsafe!(mlirAffineExprIsASymbol(self.0))
     }
