@@ -13,21 +13,28 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::attributes;
+use crate::dialects;
 use crate::exit_code;
 use crate::ir;
+use crate::types;
 
+use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::strided_layout::StridedLayout;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
+use attributes::specialized::NamedMemoryLayout;
 use attributes::specialized::NamedMemorySpace;
 use attributes::specialized::NamedString;
+use dialects::affine::Map as AffineMap;
 use exit_code::exit;
 use exit_code::ExitCode;
 use ir::Context;
 use ir::StringBacked;
+use types::integer::Integer as IntegerType;
 
 ///////////////////////////////
 //  Attributes
@@ -38,6 +45,12 @@ pub struct DefaultMemorySpace(MlirAttribute);
 
 #[derive(Clone)]
 pub struct Dimension(MlirAttribute);
+
+#[derive(Clone)]
+pub struct IntegerMemorySpace(MlirAttribute);
+
+#[derive(Clone)]
+pub struct MemoryLayout(MlirAttribute);
 
 #[derive(Clone)]
 pub struct NonTemporal(MlirAttribute);
@@ -92,12 +105,39 @@ impl DefaultMemorySpace {
     }
 }
 
+impl IntegerMemorySpace {
+    pub fn new(context: &Context, n: i64) -> Self {
+        const WIDTH: c_uint = 64;
+        let t = IntegerType::new(context, WIDTH);
+        let attr = IntegerAttr::new(&t, n);
+        <Self as NamedMemorySpace>::new_integer(&attr)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
 impl Dimension {
     pub fn new(context: &Context, n: i64) -> Self {
         const WIDTH: c_uint = 64;
         <Self as NamedInteger>::new(context, n, WIDTH)
     }
 
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl MemoryLayout {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -209,7 +249,7 @@ impl Default for DefaultMemorySpace {
 
 impl From<MlirAttribute> for DefaultMemorySpace {
     fn from(attr: MlirAttribute) -> Self {
-        DefaultMemorySpace(attr)
+        Self(attr)
     }
 }
 
@@ -246,6 +286,45 @@ impl cmp::PartialEq for DefaultMemorySpace {
     }
 }
 
+impl From<MlirAttribute> for IntegerMemorySpace {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IRAttribute for IntegerMemorySpace {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for IntegerMemorySpace {
+    fn get_name() -> &'static str {
+        "memorySpace"
+    }
+}
+
+impl NamedMemorySpace for IntegerMemorySpace {
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.is_integer() {
+            eprintln!("Expected integer memory space to be integer memory space type");
+            exit(ExitCode::DialectError);
+        }
+        attr_
+    }
+}
+
+impl cmp::PartialEq for IntegerMemorySpace {
+    fn eq(&self, rhs: &Self) -> bool {
+        <Self as NamedMemorySpace>::eq(self, rhs)
+    }
+}
+
 impl From<MlirAttribute> for Dimension {
     fn from(attr: MlirAttribute) -> Self {
         Self(attr)
@@ -269,6 +348,54 @@ impl IRAttributeNamed for Dimension {
 }
 
 impl NamedInteger for Dimension {}
+
+impl From<MlirAttribute> for MemoryLayout {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<AffineMap> for MemoryLayout {
+    fn from(map: AffineMap) -> Self {
+        Self::from(&map)
+    }
+}
+
+impl From<&AffineMap> for MemoryLayout {
+    fn from(map: &AffineMap) -> Self {
+        Self::new_affine_map(map)
+    }
+}
+
+impl From<StridedLayout> for MemoryLayout {
+    fn from(layout: StridedLayout) -> Self {
+        Self::from(&layout)
+    }
+}
+
+impl From<&StridedLayout> for MemoryLayout {
+    fn from(layout: &StridedLayout) -> Self {
+        Self::new_strided_layout(layout)
+    }
+}
+
+impl IRAttribute for MemoryLayout {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IRAttributeNamed for MemoryLayout {
+    fn get_name() -> &'static str {
+        "layout"
+    }
+}
+
+impl NamedMemoryLayout for MemoryLayout {}
 
 impl From<MlirAttribute> for NonTemporal {
     fn from(attr: MlirAttribute) -> Self {
