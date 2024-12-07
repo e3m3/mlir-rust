@@ -20,7 +20,6 @@ use crate::types;
 use attributes::specialized::NamedMemorySpace;
 use exit_code::exit;
 use exit_code::ExitCode;
-use ir::Attribute;
 use ir::Location;
 use ir::Type;
 use ir::TypeID;
@@ -31,11 +30,11 @@ use types::shaped::Shaped;
 pub struct UnrankedMemRef(MlirType);
 
 impl UnrankedMemRef {
-    pub fn new(t: &Type, memory_space: &Attribute) -> Self {
+    pub fn new(t: &Type, memory_space: &impl NamedMemorySpace) -> Self {
         Self::from(do_unsafe!(mlirUnrankedMemRefTypeGet(*t.get(), *memory_space.get())))
     }
 
-    pub fn new_checked(t: &Type, memory_space: &Attribute, loc: &Location) -> Self {
+    pub fn new_checked(t: &Type, memory_space: &impl NamedMemorySpace, loc: &Location) -> Self {
         Self::from(do_unsafe!(mlirUnrankedMemRefTypeGetChecked(*loc.get(), *t.get(), *memory_space.get())))
     }
 
