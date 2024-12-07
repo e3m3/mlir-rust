@@ -521,7 +521,7 @@ impl AddF {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::AddF.get_name(),
@@ -543,7 +543,7 @@ impl AddF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
+        let attr_name = StringBacked::from(FastMath::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -577,7 +577,7 @@ impl AddI {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::AddI.get_name(),
@@ -599,7 +599,7 @@ impl AddI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
+        let attr_name = StringBacked::from(IntegerOverflow::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
@@ -633,7 +633,7 @@ impl AddUIExtended {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::AddUIExtended.get_name(),
@@ -677,7 +677,7 @@ impl Constant {
     fn new(t: &Type, attr: &ArithValue, loc: &Location) -> Self {
         let context = attr.as_attribute().get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Constant.get_name(),
@@ -728,7 +728,7 @@ impl Constant {
     }
 
     pub fn get_value(&self) -> ArithValue {
-        let attr_name = StringBacked::from_string(&ArithValue::get_name().to_string());
+        let attr_name = StringBacked::from(ArithValue::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         ArithValue::from(*attr.get())
     }
@@ -758,7 +758,7 @@ impl DivF {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::DivF.get_name(),
@@ -780,7 +780,7 @@ impl DivF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
+        let attr_name = StringBacked::from(FastMath::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -814,7 +814,7 @@ impl DivSI {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::DivSI.get_name(),
@@ -862,7 +862,7 @@ impl DivUI {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::DivUI.get_name(),
@@ -910,7 +910,7 @@ impl MulF {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::MulF.get_name(),
@@ -932,7 +932,7 @@ impl MulF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
+        let attr_name = StringBacked::from(FastMath::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -966,7 +966,7 @@ impl MulI {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::MulI.get_name(),
@@ -988,7 +988,7 @@ impl MulI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
+        let attr_name = StringBacked::from(IntegerOverflow::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
@@ -1022,7 +1022,7 @@ impl MulSIExtended {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::MulSIExtended.get_name(),
@@ -1074,7 +1074,7 @@ impl MulUIExtended {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::MulUIExtended.get_name(),
@@ -1126,7 +1126,7 @@ impl SubF {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::SubF.get_name(),
@@ -1148,7 +1148,7 @@ impl SubF {
     }
 
     pub fn get_flags(&self) -> FastMath {
-        let attr_name = StringBacked::from_string(&FastMath::get_name().to_string());
+        let attr_name = StringBacked::from(FastMath::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
@@ -1182,7 +1182,7 @@ impl SubI {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::SubI.get_name(),
@@ -1204,7 +1204,7 @@ impl SubI {
     }
 
     pub fn get_flags(&self) -> IntegerOverflow {
-        let attr_name = StringBacked::from_string(&IntegerOverflow::get_name().to_string());
+        let attr_name = StringBacked::from(IntegerOverflow::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }

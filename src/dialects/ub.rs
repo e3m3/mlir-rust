@@ -105,7 +105,7 @@ impl Poison {
     pub fn new(context: &Context, loc: &Location) -> Self {
         let t = IntegerType::new(context, 32);
         let dialect = Self::get_dialect(context);
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Poison.get_name(),

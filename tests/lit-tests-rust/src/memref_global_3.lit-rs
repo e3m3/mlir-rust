@@ -31,7 +31,7 @@ pub fn main() -> () {
     let t_attr = GlobalType::new(&t_mr_out.as_type());
     let f = get_empty_test_fn(&context, &[], &[]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
-    let f_name_global = StringBacked::from_string(&"y".to_string());
+    let f_name_global = StringBacked::from("y");
     let sym_name = SymbolName::new(&context, &f_name_global.as_string_ref());
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_global = Global::new(

@@ -384,7 +384,7 @@ pub trait ElementwiseBinaryOperation:
         }
         Self::__check_operands(op, lhs, rhs, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             op.get_name(),
@@ -415,7 +415,7 @@ pub trait ElementwiseBinaryOperation:
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             op.get_name(),
@@ -450,7 +450,7 @@ pub trait ElementwiseUnaryOperation:
         }
         Self::__check_operands(op, input, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             op.get_name(),
@@ -480,7 +480,7 @@ pub trait ElementwiseUnaryOperation:
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             op.get_name(),
@@ -1378,7 +1378,7 @@ impl Copy {
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
@@ -1555,13 +1555,13 @@ impl ElementwiseBinary {
     }
 
     pub fn get_binary_function(&self) -> BinaryFunction {
-        let attr_name = StringBacked::from_string(&BinaryFunction::get_name().to_string());
+        let attr_name = StringBacked::from(BinaryFunction::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         BinaryFunction::from(*attr.get())
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
@@ -1618,7 +1618,7 @@ impl ElementwiseUnary {
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
@@ -1628,7 +1628,7 @@ impl ElementwiseUnary {
     }
 
     pub fn get_unary_function(&self) -> UnaryFunction {
-        let attr_name = StringBacked::from_string(&UnaryFunction::get_name().to_string());
+        let attr_name = StringBacked::from(UnaryFunction::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         UnaryFunction::from(*attr.get())
     }
@@ -1745,7 +1745,7 @@ impl Floor {
 impl Index {
     pub fn new(context: &Context, dim: &Dimension, loc: &Location) -> Self {
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Index.get_name(),
@@ -1760,7 +1760,7 @@ impl Index {
     }
 
     pub fn get_dimension(&self) -> Dimension {
-        let attr_name = StringBacked::from_string(&Dimension::get_name().to_string());
+        let attr_name = StringBacked::from(Dimension::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
@@ -1858,13 +1858,13 @@ impl Matmul {
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
-        let attr_name = StringBacked::from_string(&IndexingMaps::get_name().to_string());
+        let attr_name = StringBacked::from(IndexingMaps::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
@@ -1921,7 +1921,7 @@ impl MatmulTransposeA {
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
@@ -1978,7 +1978,7 @@ impl MatmulTransposeB {
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
-        let attr_name = StringBacked::from_string(&Cast::get_name().to_string());
+        let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
@@ -2482,7 +2482,7 @@ impl Transpose {
     }
 
     pub fn get_permutation(&self) -> Permutation {
-        let attr_name = StringBacked::from_string(&Permutation::get_name().to_string());
+        let attr_name = StringBacked::from(Permutation::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }

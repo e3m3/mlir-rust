@@ -182,7 +182,7 @@ impl Call {
     pub fn new(callee: &Callee, t: &[Type], args: &[Value], loc: &Location) -> Self {
         let context = callee.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Call.get_name(),
@@ -203,7 +203,7 @@ impl Call {
     }
 
     pub fn get_callee(&self) -> Callee {
-        let attr_name = StringBacked::from_string(&Callee::get_name().to_string());
+        let attr_name = StringBacked::from(Callee::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Callee::from(*attr.get())
     }
@@ -239,7 +239,7 @@ impl CallIndirect {
         let t: Vec<Type> = (0..t_f.num_results()).map(|i| t_f.get_result(i)).collect();
         let context = f.get_type().get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::CallIndirect.get_name(),
@@ -275,7 +275,7 @@ impl Constant {
     pub fn new(op: &Func, loc: &Location) -> Self {
         let context = op.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Constant.get_name(),
@@ -308,7 +308,7 @@ impl Constant {
     }
 
     pub fn get_value(&self) -> Referee {
-        let attr_name = StringBacked::from_string(&Referee::get_name().to_string());
+        let attr_name = StringBacked::from(Referee::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Referee::from(*attr.get())
     }
@@ -325,7 +325,7 @@ impl Func {
     ) -> Self {
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Func.get_name(),
@@ -367,7 +367,7 @@ impl Func {
 
     pub fn get_arguments(&self) -> Option<Arguments> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Arguments::get_name().to_string());
+        let attr_name = StringBacked::from(Arguments::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -386,7 +386,7 @@ impl Func {
     }
 
     pub fn get_function_attribute(&self) -> FunctionAttr {
-        let attr_name = StringBacked::from_string(&FunctionAttr::get_name().to_string());
+        let attr_name = StringBacked::from(FunctionAttr::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         FunctionAttr::from(*attr.get())
     }
@@ -396,7 +396,7 @@ impl Func {
     }
 
     pub fn get_symbol_name(&self) -> SymbolName {
-        let attr_name = StringBacked::from_string(&SymbolName::get_name().to_string());
+        let attr_name = StringBacked::from(SymbolName::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         SymbolName::from(*attr.get())
     }
@@ -407,7 +407,7 @@ impl Func {
 
     pub fn get_result_attributes(&self) -> Option<Results> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Results::get_name().to_string());
+        let attr_name = StringBacked::from(Results::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -419,7 +419,7 @@ impl Func {
 
     pub fn get_visibility(&self) -> Option<SymbolVisibility> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&SymbolVisibility::get_name().to_string());
+        let attr_name = StringBacked::from(SymbolVisibility::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -451,7 +451,7 @@ impl Return {
         }
         let context = parent.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Return.get_name(),

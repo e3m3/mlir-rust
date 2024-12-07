@@ -67,7 +67,7 @@ pub trait IRAttributeNamed: IRAttribute {
     fn as_named_attribute(&self) -> Named where Self: Sized {
         let attr = self.as_attribute();
         let context = attr.get_context();
-        let name = StringBacked::from_string(&Self::get_name().to_string());
+        let name = StringBacked::from(Self::get_name());
         let id = Identifier::new(&context, &name.as_string_ref());
         Named::new(&id, &attr.as_attribute())
     }

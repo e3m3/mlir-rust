@@ -1796,19 +1796,8 @@ impl Shape for ShapeImpl<Vec<i64>> {
 }
 
 impl StringBacked {
-    pub fn from(s: MlirStringRef) -> Self {
-        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
-        StringBacked(s, mem::take(&mut c_string))
-    }
-
-    pub fn from_string(s: &String) -> Self {
-        match Self::from_str(s) {
-            Ok(s_)      => s_,
-            Err(msg)    => {
-                eprintln!("Failed to create backed string from string '{}': {}", s, msg);
-                exit(ExitCode::IRError);
-            },
-        }
+    pub fn new(s: String) -> Self {
+        Self::from(s)
     }
 
     pub fn as_ptr(&self) -> *const c_char {
@@ -1864,7 +1853,44 @@ impl fmt::Display for StringBacked {
 
 impl Default for StringBacked {
     fn default() -> Self {
-        Self::from_string(&String::default())
+        Self::from(String::default())
+    }
+}
+
+impl From<&str> for StringBacked {
+    fn from(s: &str) -> Self {
+        match Self::from_str(s) {
+            Ok(s_)      => s_,
+            Err(msg)    => {
+                eprintln!("Failed to create backed string from string '{}': {}", s, msg);
+                exit(ExitCode::IRError);
+            },
+        }
+    }
+}
+
+impl From<MlirStringRef> for StringBacked {
+    fn from(s: MlirStringRef) -> Self {
+        Self::from(&s)
+    }
+}
+
+impl From<&MlirStringRef> for StringBacked {
+    fn from(s: &MlirStringRef) -> Self {
+        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
+        StringBacked(*s, mem::take(&mut c_string))
+    }
+}
+
+impl From<String> for StringBacked {
+    fn from(s: String) -> Self {
+        Self::from(&s)
+    }
+}
+
+impl From<&String> for StringBacked {
+    fn from(s: &String) -> Self {
+        Self::from(s.as_str())
     }
 }
 

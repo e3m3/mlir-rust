@@ -221,7 +221,7 @@ impl SymbolVisibility {
         match k {
             SymbolVisibilityKind::None      => None,
             SymbolVisibilityKind::Private   => {
-                let s = StringBacked::from_string(&k.to_string());
+                let s = StringBacked::from(k.to_string());
                 Some(<Self as NamedString>::new(context, &s.as_string_ref()))
             },
         }

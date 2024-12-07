@@ -18,7 +18,7 @@ use mlir::ir::Type;
 use mlir::types::function::Function as FunctionType;
 
 pub fn get_empty_test_fn(context: &Context, inputs: &[Type], results: &[Type]) -> Func {
-    let name = StringBacked::from_string(&"test".to_string());
+    let name = StringBacked::from("test");
     let loc = context.get_unknown_location();
     let t_f = FunctionType::new(context, inputs, results);
     Func::new(
@@ -45,7 +45,7 @@ pub fn get_private_fn(
     input_attrs: Option<&Arguments>,
     result_attrs: Option<&Results>,
 ) -> Func {
-    let name = StringBacked::from_string(&name.to_string());
+    let name = StringBacked::from(name);
     let loc = context.get_unknown_location();
     let t_f = FunctionType::new(context, inputs, results);
     Func::new(

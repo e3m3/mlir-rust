@@ -471,7 +471,7 @@ impl Extract {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Extract.get_name(),
@@ -529,7 +529,7 @@ impl ExtractElement {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::ExtractElement.get_name(),
@@ -559,7 +559,7 @@ impl ExtractElement {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::ExtractElement.get_name(),
@@ -606,7 +606,7 @@ impl FromElements {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::FromElements.get_name(),
@@ -671,7 +671,7 @@ impl Load {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Load.get_name(),
@@ -705,7 +705,7 @@ impl Load {
 impl Print {
     pub fn new(context: &Context, args: &[Value], p: PunctuationKind, loc: &Location) -> Self {
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Print.get_name(),
@@ -719,7 +719,7 @@ impl Print {
 
     pub fn new_string(context: &Context, s: &StringLiteral, loc: &Location) -> Self {
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Print.get_name(),
@@ -743,10 +743,10 @@ impl Print {
 
     pub fn get_punctuation(&self) -> Option<Punctuation> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Punctuation::get_name().to_string());
+        let attr_name = StringBacked::from(Punctuation::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
-            let attr_name = StringBacked::from_string(&Punctuation::get_name().to_string());
+            let attr_name = StringBacked::from(Punctuation::get_name());
             let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
             Some(Punctuation::from(*attr.get()))
         } else {
@@ -760,10 +760,10 @@ impl Print {
 
     pub fn get_string_literal(&self) -> Option<StringLiteral> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&StringLiteral::get_name().to_string());
+        let attr_name = StringBacked::from(StringLiteral::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
-            let attr_name = StringBacked::from_string(&StringLiteral::get_name().to_string());
+            let attr_name = StringBacked::from(StringLiteral::get_name());
             let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
             Some(StringLiteral::from(*attr.get()))
         } else {
@@ -823,7 +823,7 @@ impl Store {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Store.get_name(),
@@ -913,7 +913,7 @@ impl TransferRead {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::TransferRead.get_name(),
@@ -953,7 +953,7 @@ impl TransferRead {
     }
 
     pub fn get_bounds_attribute(&self) -> InBounds {
-        let attr_name = StringBacked::from_string(&InBounds::get_name().to_string());
+        let attr_name = StringBacked::from(InBounds::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         InBounds::from(*attr.get())
     }
@@ -963,7 +963,7 @@ impl TransferRead {
     }
 
     pub fn get_permuration_attribute(&self) -> PermutationMap {
-        let attr_name = StringBacked::from_string(&PermutationMap::get_name().to_string());
+        let attr_name = StringBacked::from(PermutationMap::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         PermutationMap::from(*attr.get())
     }
@@ -990,7 +990,7 @@ impl TransferWrite {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::TransferWrite.get_name(),
@@ -1037,7 +1037,7 @@ impl TransferWrite {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::TransferWrite.get_name(),
@@ -1148,7 +1148,7 @@ impl TransferWrite {
     }
 
     pub fn get_bounds_attribute(&self) -> InBounds {
-        let attr_name = StringBacked::from_string(&InBounds::get_name().to_string());
+        let attr_name = StringBacked::from(InBounds::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         InBounds::from(*attr.get())
     }
@@ -1158,7 +1158,7 @@ impl TransferWrite {
     }
 
     pub fn get_permutation_attribute(&self) -> PermutationMap {
-        let attr_name = StringBacked::from_string(&PermutationMap::get_name().to_string());
+        let attr_name = StringBacked::from(PermutationMap::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         PermutationMap::from(*attr.get())
     }

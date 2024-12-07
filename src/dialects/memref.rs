@@ -333,7 +333,7 @@ impl Alloc {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Alloc.get_name(),
@@ -363,7 +363,7 @@ impl Alloc {
 
     pub fn get_alignment(&self) -> Option<Alignment> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Alignment::get_name().to_string());
+        let attr_name = StringBacked::from(Alignment::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -420,7 +420,7 @@ impl Alloca {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Alloca.get_name(),
@@ -450,7 +450,7 @@ impl Alloca {
 
     pub fn get_alignment(&self) -> Option<Alignment> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Alignment::get_name().to_string());
+        let attr_name = StringBacked::from(Alignment::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -473,7 +473,7 @@ impl Cast {
     fn new(t: &Type, source: &Value, loc: &Location) -> Self {
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Cast.get_name(),
@@ -616,7 +616,7 @@ impl Copy {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Copy.get_name(),
@@ -646,7 +646,7 @@ impl Dealloc {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Dealloc.get_name(),
@@ -689,7 +689,7 @@ impl Dim {
         }
         let t = Index::new(context);
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Dim.get_name(),
@@ -727,7 +727,7 @@ impl GetGlobal {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::GetGlobal.get_name(),
@@ -768,7 +768,7 @@ impl Global {
     ) -> Self {
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Global.get_name(),
@@ -808,7 +808,7 @@ impl Global {
 
     pub fn get_alignment(&self) -> Option<Alignment> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&Alignment::get_name().to_string());
+        let attr_name = StringBacked::from(Alignment::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -820,7 +820,7 @@ impl Global {
 
     pub fn get_constant_attribute(&self) -> Option<IsConstant> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&IsConstant::get_name().to_string());
+        let attr_name = StringBacked::from(IsConstant::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -840,7 +840,7 @@ impl Global {
 
     pub fn get_initial_value(&self) -> Option<InitialValue> {
         let op = self.as_operation();
-        let attr_name = StringBacked::from_string(&InitialValue::get_name().to_string());
+        let attr_name = StringBacked::from(InitialValue::get_name());
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr = op.get_attribute_inherent(&s_ref);
@@ -855,7 +855,7 @@ impl Global {
     }
 
     pub fn get_symbol_name(&self) -> SymbolName {
-        let attr_name = StringBacked::from_string(&SymbolName::get_name().to_string());
+        let attr_name = StringBacked::from(SymbolName::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         SymbolName::from(*attr.get())
     }
@@ -865,13 +865,13 @@ impl Global {
     }
 
     pub fn get_symbol_visibility(&self) -> SymbolVisibility {
-        let attr_name = StringBacked::from_string(&SymbolVisibility::get_name().to_string());
+        let attr_name = StringBacked::from(SymbolVisibility::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         SymbolVisibility::from(*attr.get())
     }
 
     pub fn get_type_attribute(&self) -> GlobalType {
-        let attr_name = StringBacked::from_string(&GlobalType::get_name().to_string());
+        let attr_name = StringBacked::from(GlobalType::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         GlobalType::from(*attr.get())
     }
@@ -919,7 +919,7 @@ impl Load {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Load.get_name(),
@@ -946,7 +946,7 @@ impl Load {
     }
 
     pub fn get_non_temporal_attribute(&self) -> NonTemporal {
-        let attr_name = StringBacked::from_string(&NonTemporal::get_name().to_string());
+        let attr_name = StringBacked::from(NonTemporal::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         NonTemporal::from(*attr.get())
     }
@@ -969,7 +969,7 @@ impl Rank {
         }
         let t = Index::new(context);
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Rank.get_name(),
@@ -1030,7 +1030,7 @@ impl Store {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Store.get_name(),
@@ -1083,7 +1083,7 @@ impl Transpose {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Transpose.get_name(),
@@ -1108,7 +1108,7 @@ impl Transpose {
     }
 
     pub fn get_permutation(&self) -> Permutation {
-        let attr_name = StringBacked::from_string(&Permutation::get_name().to_string());
+        let attr_name = StringBacked::from(Permutation::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }
@@ -1161,7 +1161,7 @@ impl View {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::View.get_name(),

@@ -362,7 +362,7 @@ impl Bitcast {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Bitcast.get_name(),
@@ -421,7 +421,7 @@ impl Cast {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Cast.get_name(),
@@ -475,7 +475,7 @@ impl CollapseShape {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::CollapseShape.get_name(),
@@ -500,7 +500,7 @@ impl CollapseShape {
     }
 
     pub fn get_reassociation(&self) -> Reassociation {
-        let attr_name = StringBacked::from_string(&Reassociation::get_name().to_string());
+        let attr_name = StringBacked::from(Reassociation::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Reassociation::from(*attr.get())
     }
@@ -559,7 +559,7 @@ impl Concat {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Concat.get_name(),
@@ -581,7 +581,7 @@ impl Concat {
     }
 
     pub fn get_dimension(&self) -> Dimension {
-        let attr_name = StringBacked::from_string(&Dimension::get_name().to_string());
+        let attr_name = StringBacked::from(Dimension::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
@@ -614,7 +614,7 @@ impl Dim {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Dim.get_name(),
@@ -656,7 +656,7 @@ impl Empty {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Empty.get_name(),
@@ -748,7 +748,7 @@ impl ExpandShape {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Empty.get_name(),
@@ -780,7 +780,7 @@ impl ExpandShape {
     }
 
     pub fn get_reassociation(&self) -> Reassociation {
-        let attr_name = StringBacked::from_string(&Reassociation::get_name().to_string());
+        let attr_name = StringBacked::from(Reassociation::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Reassociation::from(*attr.get())
     }
@@ -790,7 +790,7 @@ impl ExpandShape {
     }
 
     pub fn get_static_output_shape(&self) -> StaticOutputShape {
-        let attr_name = StringBacked::from_string(&StaticOutputShape::get_name().to_string());
+        let attr_name = StringBacked::from(StaticOutputShape::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticOutputShape::from(*attr.get())
     }
@@ -821,7 +821,7 @@ impl Extract {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Extract.get_name(),
@@ -892,7 +892,7 @@ impl ExtractSlice {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::ExtractSlice.get_name(),
@@ -936,19 +936,19 @@ impl ExtractSlice {
     }
 
     pub fn get_static_offsets(&self) -> StaticOffsets {
-        let attr_name = StringBacked::from_string(&StaticOffsets::get_name().to_string());
+        let attr_name = StringBacked::from(StaticOffsets::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticOffsets::from(*attr.get())
     }
 
     pub fn get_static_sizes(&self) -> StaticSizes {
-        let attr_name = StringBacked::from_string(&StaticSizes::get_name().to_string());
+        let attr_name = StringBacked::from(StaticSizes::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticSizes::from(*attr.get())
     }
 
     pub fn get_static_strides(&self) -> StaticStrides {
-        let attr_name = StringBacked::from_string(&StaticStrides::get_name().to_string());
+        let attr_name = StringBacked::from(StaticStrides::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticStrides::from(*attr.get())
     }
@@ -978,7 +978,7 @@ impl FromElements {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::FromElements.get_name(),
@@ -1026,7 +1026,7 @@ impl Generate {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Generate.get_name(),
@@ -1112,7 +1112,7 @@ impl Pad {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Pad.get_name(),
@@ -1157,19 +1157,19 @@ impl Pad {
     }
 
     pub fn get_static_high(&self) -> StaticHigh {
-        let attr_name = StringBacked::from_string(&StaticHigh::get_name().to_string());
+        let attr_name = StringBacked::from(StaticHigh::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticHigh::from(*attr.get())
     }
 
     pub fn get_static_low(&self) -> StaticLow {
-        let attr_name = StringBacked::from_string(&StaticLow::get_name().to_string());
+        let attr_name = StringBacked::from(StaticLow::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         StaticLow::from(*attr.get())
     }
 
     pub fn is_no_fold(&self) -> bool {
-        let attr_name = StringBacked::from_string(&NoFold::get_name().to_string());
+        let attr_name = StringBacked::from(NoFold::get_name());
         self.as_operation().has_attribute_inherent(&attr_name.as_string_ref())
     }
 }
@@ -1181,7 +1181,7 @@ impl Rank {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Rank.get_name(),
@@ -1241,7 +1241,7 @@ impl Reshape {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Reshape.get_name(),
@@ -1277,7 +1277,7 @@ impl Yield {
         dialect: &Dialect,
         loc: &Location
     ) -> Self {
-        let name = StringBacked::from_string(&format!(
+        let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
             Op::Yield.get_name(),

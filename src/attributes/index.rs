@@ -28,7 +28,7 @@ impl Index {
     /// NOTE: No getters for index attribute are currently provided by the C API.
     /// As a hack, construct a string and parse it as an attribute.
     pub fn new(context: &Context, value: i64) -> Self {
-        let data = StringBacked::from_string(&format!("{} : index", value));
+        let data = StringBacked::from(format!("{} : index", value));
         let attr = Attribute::from_parse(context, &data.as_string_ref());
         Self::from(*attr.get())
     }

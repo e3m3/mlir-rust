@@ -20,7 +20,7 @@ pub fn main() -> () {
     let f = get_empty_test_fn(&context, &[], &[]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let message = StringBacked::from_string(&"Hello World!".to_string());
+    let message = StringBacked::from("Hello World!");
     let attr = StringLiteral::new(&context, &message.as_string_ref());
     let mut op_print = Print::new_string(&context, &attr, &loc).as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();

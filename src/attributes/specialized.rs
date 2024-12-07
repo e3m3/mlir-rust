@@ -634,8 +634,8 @@ pub trait NamedOpaque: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 
     fn new_custom(t: &Type, cad: &CustomAttributeData) -> Self {
-        let namespace = StringBacked::from_string(cad.get_namespace());
-        let data = StringBacked::from_string(&format!("{}{}", cad.get_name(), cad.get_data_joined()));
+        let namespace = StringBacked::from(cad.get_namespace());
+        let data = StringBacked::from(format!("{}{}", cad.get_name(), cad.get_data_joined()));
         Self::new(t, &namespace.as_string_ref(), &data.as_string_ref())
     }
 
@@ -659,7 +659,7 @@ pub trait NamedParsed: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 
     fn new_custom(context: &Context, cad: &CustomAttributeData) -> Self {
-        let s = StringBacked::from_string(&cad.to_string());
+        let s = StringBacked::from(cad.to_string());
         Self::new(context, &s.as_string_ref())
     }
 }
