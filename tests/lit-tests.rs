@@ -132,6 +132,7 @@ mod tests{
     fn lit() {
         let os_name: String = get_os();
         let arch: String = get_arch();
+        let num_jobs: usize = get_num_jobs();
 
         if os_name.is_empty() {
             eprintln!("Target OS '{}' not yet supported.", os_name);
@@ -141,6 +142,7 @@ mod tests{
             eprintln!("Target arch '{}' not yet supported.", arch);
             assert!(false);
         }
+        eprintln!("Detected {} CPUs/threads.", num_jobs);
 
         let bin_dir: PathBuf = get_bin_dir();
         let lit_bin_str: String = get_lit(&os_name);
@@ -182,7 +184,7 @@ mod tests{
             "--config-prefix=lit",
             "--order=lexical",
             "--show-all",
-            format!("--workers={}", get_num_jobs()).as_str(),
+            format!("--workers={}", num_jobs).as_str(),
             format!("--param=ARCH={}", arch).as_str(),
             format!("--param=OS_NAME={}", os_name).as_str(),
             format!("--param=CARGO_OUTDIR={}", lit_dir_rust_output_dir_str).as_str(),
@@ -205,7 +207,7 @@ mod tests{
         println!("Building lit test binaries from tests in '{}':", lit_dir_rust_tests_dir_str);
         let output_cargo = Command::new(&shell)
             .arg("-c")
-            .arg(format!("cargo build --manifest-path {} -j {}", lit_dir_rust_manifest_str, get_num_jobs()))
+            .arg(format!("cargo build --manifest-path {} -j {}", lit_dir_rust_manifest_str, num_jobs))
             .output()
             .expect("Failed building downstream rust project for lit tests");
         let stderr_cargo: &[u8] = output_cargo.stderr.as_slice();
