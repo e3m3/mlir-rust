@@ -1097,6 +1097,10 @@ impl LogicalResult {
         &self.0
     }
 
+    pub fn get_bool(&self) -> bool {
+        self.get_value() != 0
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirLogicalResult {
         &mut self.0
     }
