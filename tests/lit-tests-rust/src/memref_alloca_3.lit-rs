@@ -1,0 +1,62 @@
+// RUN: %O/memref_alloca_3 2>&1 | @mlir-opt | @filecheck %M/memref_alloca_3.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::dialects::affine::AffineExpr;
+use mlir::dialects::affine::Binary as AffineBinop;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Symbol as AffineSymbol;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::common::MemoryLayout;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::memref::Alloca;
+use mlir::ir::Block;
+use mlir::ir::Shape;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+use mlir::types::IRType;
+use mlir::types::memref::MemRef;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_index = Index::new(&context).as_type();
+    let s_out = ShapeImpl::from(vec![8, 64]);
+    let affine_d0 = AffineDim::new(&context, 0).as_expr();
+    let affine_d1 = AffineDim::new(&context, 1).as_expr();
+    let affine_s0 = AffineSymbol::new(&context, 0).as_expr();
+    let affine_expr0 = AffineBinop::new_add(&affine_d0, &affine_s0).as_expr();
+    let map = AffineMap::new_results(&context, s_out.rank(), 1, &[affine_expr0, affine_d1]);
+    let layout = MemoryLayout::from(map);
+    let t_mr_out = MemRef::new(&s_out, &t, &layout, &DefaultMemorySpace::new());
+    let f = get_empty_test_fn(
+        &context,
+        &[t_index.clone()],
+        &[t_mr_out.as_type()],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_alloca = Alloca::new(
+        &t_mr_out,
+        &[],
+        &[f_block.get_arg(0)],
+        None,
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_alloca.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_alloca);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}

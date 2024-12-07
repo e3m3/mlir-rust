@@ -93,6 +93,130 @@ name = "func_func_1"
 path = "src/func_func_1.lit-rs"
 
 [[bin]]
+name = "memref_alloc_1"
+path = "src/memref_alloc_1.lit-rs"
+
+[[bin]]
+name = "memref_alloc_2"
+path = "src/memref_alloc_2.lit-rs"
+
+[[bin]]
+name = "memref_alloc_3"
+path = "src/memref_alloc_3.lit-rs"
+
+[[bin]]
+name = "memref_alloc_4"
+path = "src/memref_alloc_4.lit-rs"
+
+[[bin]]
+name = "memref_alloca_1"
+path = "src/memref_alloca_1.lit-rs"
+
+[[bin]]
+name = "memref_alloca_2"
+path = "src/memref_alloca_2.lit-rs"
+
+[[bin]]
+name = "memref_alloca_3"
+path = "src/memref_alloca_3.lit-rs"
+
+[[bin]]
+name = "memref_alloca_4"
+path = "src/memref_alloca_4.lit-rs"
+
+[[bin]]
+name = "memref_cast_1"
+path = "src/memref_cast_1.lit-rs"
+
+[[bin]]
+name = "memref_cast_2"
+path = "src/memref_cast_2.lit-rs"
+
+[[bin]]
+name = "memref_cast_3"
+path = "src/memref_cast_3.lit-rs"
+
+[[bin]]
+name = "memref_cast_4"
+path = "src/memref_cast_4.lit-rs"
+
+[[bin]]
+name = "memref_cast_5"
+path = "src/memref_cast_5.lit-rs"
+
+[[bin]]
+name = "memref_cast_6"
+path = "src/memref_cast_6.lit-rs"
+
+[[bin]]
+name = "memref_copy_1"
+path = "src/memref_copy_1.lit-rs"
+
+[[bin]]
+name = "memref_dealloc_1"
+path = "src/memref_dealloc_1.lit-rs"
+
+[[bin]]
+name = "memref_dim_1"
+path = "src/memref_dim_1.lit-rs"
+
+[[bin]]
+name = "memref_get_global_1"
+path = "src/memref_get_global_1.lit-rs"
+
+[[bin]]
+name = "memref_global_1"
+path = "src/memref_global_1.lit-rs"
+
+[[bin]]
+name = "memref_global_2"
+path = "src/memref_global_2.lit-rs"
+
+[[bin]]
+name = "memref_global_3"
+path = "src/memref_global_3.lit-rs"
+
+[[bin]]
+name = "memref_global_4"
+path = "src/memref_global_4.lit-rs"
+
+[[bin]]
+name = "memref_global_5"
+path = "src/memref_global_5.lit-rs"
+
+[[bin]]
+name = "memref_load_1"
+path = "src/memref_load_1.lit-rs"
+
+[[bin]]
+name = "memref_rank_1"
+path = "src/memref_rank_1.lit-rs"
+
+[[bin]]
+name = "memref_rank_2"
+path = "src/memref_rank_2.lit-rs"
+
+[[bin]]
+name = "memref_store_1"
+path = "src/memref_store_1.lit-rs"
+
+[[bin]]
+name = "memref_store_2"
+path = "src/memref_store_2.lit-rs"
+
+[[bin]]
+name = "memref_transpose_1"
+path = "src/memref_transpose_1.lit-rs"
+
+[[bin]]
+name = "memref_view_1"
+path = "src/memref_view_1.lit-rs"
+
+[[bin]]
+name = "memref_view_2"
+path = "src/memref_view_2.lit-rs"
+
+[[bin]]
 name = "module_empty"
 path = "src/module_empty.lit-rs"
 
