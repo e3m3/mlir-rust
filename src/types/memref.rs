@@ -14,9 +14,8 @@ use mlir::mlirMemRefTypeGetLayout;
 use mlir::mlirMemRefTypeGetMemorySpace;
 use mlir::mlirMemRefTypeGetStridesAndOffset;
 use mlir::mlirMemRefTypeGetTypeID;
+use mlir::MlirAttribute;
 use mlir::MlirType;
-
-use std::cmp;
 
 use crate::attributes;
 use crate::dialects;
@@ -25,12 +24,14 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
+use attributes::strided_layout::StridedLayout;
+use attributes::specialized::NamedMemoryLayout;
 use attributes::specialized::NamedMemorySpace;
-use dialects::affine;
+use dialects::affine::Map as AffineMap;
 use exit_code::exit;
 use exit_code::ExitCode;
-use ir::Attribute;
 use ir::Location;
+use ir::LogicalResult;
 use ir::Shape;
 use ir::Type;
 use ir::TypeID;
@@ -40,16 +41,11 @@ use types::shaped::Shaped;
 #[derive(Clone)]
 pub struct MemRef(MlirType);
 
-pub struct StridesAndOffset {
-    strides: Box<[i64]>,
-    offset: Box<[i64]>,
-}
-
 impl MemRef {
     pub fn new(
         shape: &dyn Shape,
         t: &Type,
-        layout: &Attribute,
+        layout: &impl NamedMemoryLayout,
         memory_space: &impl NamedMemorySpace,
     ) -> Self {
         let (r, s) = shape.unpack();
@@ -57,7 +53,7 @@ impl MemRef {
             *t.get(),
             r,
             s.as_ptr(),
-            *layout.get(),
+            *layout.as_attribute().get(),
             *memory_space.get(),
         )))
     }
@@ -65,7 +61,7 @@ impl MemRef {
     pub fn new_checked(
         shape: &dyn Shape,
         t: &Type,
-        layout: &Attribute,
+        layout: &impl NamedMemoryLayout,
         memory_space: &impl NamedMemorySpace,
         loc: &Location
     ) -> Self {
@@ -75,7 +71,7 @@ impl MemRef {
             *t.get(),
             r,
             s.as_ptr(),
-            *layout.get(),
+            *layout.as_attribute().get(),
             *memory_space.get(),
         )))
     }
@@ -123,21 +119,24 @@ impl MemRef {
         &self.0
     }
 
-    pub fn get_affine_map(&self) -> affine::Map {
-        affine::Map::from(do_unsafe!(mlirMemRefTypeGetAffineMap(self.0)))
+    pub fn get_affine_map(&self) -> AffineMap {
+        AffineMap::from(do_unsafe!(mlirMemRefTypeGetAffineMap(self.0)))
     }
 
-    pub fn get_layout(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirMemRefTypeGetLayout(self.0)))
+    pub fn get_layout<T: From<MlirAttribute>>(&self) -> T {
+        T::from(do_unsafe!(mlirMemRefTypeGetLayout(self.0)))
     }
 
-    pub fn get_matching_suffix<T: NamedMemorySpace>(&self, other: &Self) -> Option<Self> {
+    pub fn get_matching_suffix<L: NamedMemoryLayout, S: NamedMemorySpace>(
+        &self,
+        other: &Self,
+    ) -> Option<Self> {
         let s = self.as_shaped();
         let s_other = other.as_shaped();
         s.get_matching_suffix(&s_other).map(|s_suffix| {
             let t = s.get_element_type();
-            let l = self.get_layout();
-            let m = self.get_memory_space::<T>();
+            let l = self.get_layout::<L>();
+            let m = self.get_memory_space::<S>();
             Self::new(&s_suffix, &t, &l, &m)
         })
     }
@@ -150,12 +149,26 @@ impl MemRef {
         &mut self.0
     }
 
-    pub fn get_strides_and_offset(&self) -> StridesAndOffset {
-        let rank = self.as_shaped().rank().unwrap_or(0) as usize;
+    pub fn get_strided_layout(&self) -> Result<StridedLayout, String>{
+        let rank = self
+            .as_shaped()
+            .rank()
+            .unwrap_or(Err("Expected ranked memory reference".to_string())?)
+            as usize;
         let mut strides = vec![0; rank];
         let mut offset = vec![0; rank];
-        do_unsafe!(mlirMemRefTypeGetStridesAndOffset(self.0, strides.as_mut_ptr(), offset.as_mut_ptr()));
-        StridesAndOffset::new(&strides, &offset)
+        let result = LogicalResult::from(do_unsafe!(mlirMemRefTypeGetStridesAndOffset(
+            self.0,
+            strides.as_mut_ptr(),
+            offset.as_mut_ptr(),
+        )));
+        if result.get_bool() {
+            let context = self.get_context();
+            let offset_ = offset.first().cloned().unwrap_or(Shaped::dynamic_size());
+            Ok(StridedLayout::new(&context, offset_, &strides))
+        } else {
+            Err("Failed to get strides and offsets for memory reference".to_string())
+        }
     }
 
     pub fn get_type_id() -> TypeID {
@@ -170,40 +183,5 @@ impl IRType for MemRef {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
-    }
-}
-
-impl StridesAndOffset {
-    pub fn new(strides: &[i64], offset: &[i64]) -> Self {
-        if strides.len() != offset.len() {
-            eprintln!("Mismatched lengths for strides and offset");
-            exit(ExitCode::IRError);
-        }
-        StridesAndOffset{
-            strides: strides.to_vec().into_boxed_slice(),
-            offset: offset.to_vec().into_boxed_slice(),
-        }
-    }
-
-    pub fn get_offset(&self) -> &[i64] {
-        &self.offset
-    }
-
-    pub fn get_strides(&self) -> &[i64] {
-        &self.strides
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    pub fn len(&self) -> usize {
-        self.strides.len()
-    }
-}
-
-impl cmp::PartialEq for StridesAndOffset {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.get_offset() == rhs.get_offset() && self.get_strides() == rhs.get_strides()
     }
 }
