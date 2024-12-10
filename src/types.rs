@@ -17,7 +17,9 @@ use ir::Context;
 use ir::Type;
 
 use float::Float as FloatType;
+use index::Index;
 use integer::Integer as IntegerType;
+use shaped::Shaped;
 
 pub mod complex;
 pub mod float;
@@ -35,6 +37,22 @@ pub mod unranked_memref;
 pub mod unranked_tensor;
 pub mod vector;
 
+pub trait GetWidth: IRType {
+    fn get_width(&self) -> Option<usize> {
+        if self.as_type().is_index() {
+            Some(Index::from(*self.get()).get_width())
+        } else if self.as_type().is_integer() {
+            Some(IntegerType::from(*self.get()).get_width())
+        } else if self.as_type().is_float() {
+            Some(FloatType::from(*self.get()).get_width())
+        } else if self.as_type().is_shaped() {
+            Shaped::from(*self.get()).get_element_type().get_width()
+        } else {
+            None
+        }
+    }
+}
+
 pub trait IRType {
     fn get(&self) -> &MlirType;
     fn get_mut(&mut self) -> &mut MlirType;
@@ -51,6 +69,8 @@ pub trait IRType {
 pub trait IsPromotableTo<T> {
     fn is_promotable_to(&self, other: &T) -> bool;
 }
+
+impl GetWidth for dyn IRType {}
 
 impl cmp::PartialEq for dyn IRType {
     fn eq(&self, rhs: &Self) -> bool {
