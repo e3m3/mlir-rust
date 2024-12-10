@@ -27,6 +27,7 @@ use exit_code::ExitCode;
 use ir::Shape;
 use ir::ShapeImpl;
 use ir::Type;
+use types::GetWidth;
 use types::IRType;
 
 #[derive(Clone)]
@@ -93,6 +94,14 @@ impl Shaped {
         Some(ShapeImpl::from(v.into_iter().rev().collect::<Vec<i64>>()))
     }
 
+    pub fn get_width(&self) -> Option<usize> {
+        self.get_element_type().get_width()
+    }
+
+    pub fn has_matching_element_type_width(&self, other: &Self) -> bool {
+        self.get_width() == other.get_width()
+    }
+
     pub fn has_matching_suffix(&self, other: &Self) -> bool {
         if self.get_element_type() != other.get_element_type() {
             return false;
@@ -144,7 +153,7 @@ impl Shaped {
     /// Can only be computed if the shaped is statically sized with no dynamically sized dimensions.
     pub fn num_elements(&self) -> Option<i64> {
         if self.is_static() && !self.has_dynamic_dims() {
-            self.rank().map(|rank| (0..rank).fold(0, |acc,i| acc + self.dim_size(i as isize)))
+            self.rank().map(|rank| (0..rank).fold(1, |acc,i| acc * self.dim_size(i as isize)))
         } else {
             None
         }
