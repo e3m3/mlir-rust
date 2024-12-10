@@ -16,6 +16,9 @@ mlir-sys = { version = "=0.3.0" }
 
 [dev-dependencies]
 
+[workspace]
+members = [ "tests/lit-tests-rust" ]
+
 [lints.clippy]
 macro_metavars_in_unsafe = "allow"
 unused_unit = "allow"

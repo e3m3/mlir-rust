@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #[cfg(test)]
-mod tests{
+mod tests {
     extern crate num_cpus;
 
     use std::env;
-    use std::fs;
-    use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
     use std::path::PathBuf;
     use std::process::Command;
@@ -120,14 +118,6 @@ mod tests{
         )
     }
 
-    fn is_executable(path: &Path) -> bool {
-        if !path.is_file() {
-            return false;
-        }
-        let mode = path.metadata().expect("Failed to get metadata").permissions().mode();
-        mode & 0o111 != 0
-    }
-
     #[test]
     fn lit() {
         let os_name: String = get_os();
@@ -154,9 +144,8 @@ mod tests{
         let lit_dir_rust: PathBuf = tests_dir.join("lit-tests-rust");
         let cfg_path_mlir: PathBuf = lit_dir_mlir.join("lit.cfg");
         let cfg_path_rust: PathBuf = lit_dir_rust.join("lit.cfg");
-        let lit_dir_rust_manifest: PathBuf = lit_dir_rust.join("Cargo.toml");
         let lit_dir_rust_tests_dir: PathBuf = lit_dir_rust.join("src");
-        let lit_dir_rust_output_dir: PathBuf = lit_dir_rust.join("target/debug");
+        let lit_dir_rust_manifest: PathBuf = lit_dir_rust.join("Cargo.toml");
 
         println!("Lit binary path: {}", lit_bin_str);
 
@@ -166,15 +155,14 @@ mod tests{
         assert!(lit_dir_rust.is_dir());
         assert!(cfg_path_mlir.is_file());
         assert!(cfg_path_rust.is_file());
-        assert!(lit_dir_rust_manifest.is_file());
         assert!(lit_dir_rust_tests_dir.is_dir());
+        assert!(lit_dir_rust_manifest.is_file());
 
         let bin_dir_str: String = pathbuf_to_string(&bin_dir);
         let lit_dir_mlir_str: String = pathbuf_to_string(&lit_dir_mlir);
         let lit_bin_str: String = path_to_string(&lit_bin);
-        let lit_dir_rust_manifest_str: String = pathbuf_to_string(&lit_dir_rust_manifest);
         let lit_dir_rust_tests_dir_str: String = pathbuf_to_string(&lit_dir_rust_tests_dir);
-        let lit_dir_rust_output_dir_str: String = pathbuf_to_string(&lit_dir_rust_output_dir);
+        let lit_dir_rust_manifest_str: String = pathbuf_to_string(&lit_dir_rust_manifest);
 
         let env_path_str: String = [
             bin_dir_str.clone(),
@@ -187,22 +175,10 @@ mod tests{
             format!("--workers={}", num_jobs).as_str(),
             format!("--param=ARCH={}", arch).as_str(),
             format!("--param=OS_NAME={}", os_name).as_str(),
-            format!("--param=CARGO_OUTDIR={}", lit_dir_rust_output_dir_str).as_str(),
+            format!("--param=CARGO_OUTDIR={}", bin_dir_str).as_str(),
             format!("--param=MLIR_TESTDIR={}", lit_dir_mlir_str).as_str(),
             format!("--path={}", env_path_str).as_str(),
         ].join(" ");
-
-        if lit_dir_rust_output_dir.exists() {
-            println!("Clearing lit test binaries in '{}':", lit_dir_rust_output_dir_str);
-            for entry in lit_dir_rust_output_dir.read_dir().expect("Failed to read directory") {
-                if let Ok(entry_) = entry {
-                    let path = entry_.path();
-                    if is_executable(&path) {
-                        assert!(fs::remove_file(path).is_ok());
-                    }
-                }
-            }
-        }
 
         println!("Building lit test binaries from tests in '{}':", lit_dir_rust_tests_dir_str);
         let output_cargo = Command::new(&shell)
