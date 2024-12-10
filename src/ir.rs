@@ -262,6 +262,7 @@ use attributes::named::Named;
 use dialects::affine;
 use exit_code::exit;
 use exit_code::ExitCode;
+use types::GetWidth;
 use types::IRType;
 use types::IsPromotableTo;
 use types::unit::Unit;
@@ -636,7 +637,12 @@ impl Block {
     }
 
     pub fn insert_arg(&mut self, t: &Type, loc: &Location, i: usize) -> Value {
-        Value::from(do_unsafe!(mlirBlockInsertArgument(*self.get_mut(), i as isize, *t.get(), *loc.get())))
+        Value::from(do_unsafe!(mlirBlockInsertArgument(
+            *self.get_mut(),
+            i as isize,
+            *t.get(),
+            *loc.get(),
+        )))
     }
 
     pub fn insert_operation(&mut self, op: &mut Operation, i: usize) -> () {
@@ -1342,7 +1348,11 @@ impl Operation {
         do_unsafe!(mlirOperationRemoveFromParent(*self.get_mut()))
     }
 
-    pub fn replace_all_symbol_uses(&mut self, sym_old: &StringRef, sym_new: &StringRef) -> LogicalResult {
+    pub fn replace_all_symbol_uses(
+        &mut self,
+        sym_old: &StringRef,
+        sym_new: &StringRef,
+    ) -> LogicalResult {
         LogicalResult::from(do_unsafe!(mlirSymbolTableReplaceAllSymbolUses(
             *sym_old.get(),
             *sym_new.get(),
@@ -1351,7 +1361,11 @@ impl Operation {
     }
 
     pub fn set_attribute_discardable(&mut self, name: &StringRef, attr: &Attribute) -> () {
-        do_unsafe!(mlirOperationSetDiscardableAttributeByName(*self.get_mut(), *name.get(), *attr.get()))
+        do_unsafe!(mlirOperationSetDiscardableAttributeByName(
+            *self.get_mut(),
+            *name.get(),
+            *attr.get(),
+        ))
     }
 
     pub fn set_attribute_inherent(&mut self, name: &StringRef, attr: &Attribute) -> () {
@@ -2161,6 +2175,8 @@ impl Type {
         do_unsafe!(mlirTypeIsAVector(self.0))
     }
 }
+
+impl GetWidth for Type {}
 
 impl IRType for Type {
     fn as_type(&self) -> Type {
