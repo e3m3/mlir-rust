@@ -25,6 +25,8 @@ use types::IRType;
 pub struct Index(MlirType);
 
 impl Index {
+    const WIDTH: usize = 64;
+
     pub fn new(context: &Context) -> Self {
         Self::from(do_unsafe!(mlirIndexTypeGet(*context.get())))
     }
@@ -49,6 +51,11 @@ impl Index {
 
     pub fn get_mut(&mut self) -> &mut MlirType {
         &mut self.0
+    }
+
+    #[inline]
+    pub const fn get_width(&self) -> usize {
+        Self::WIDTH
     }
 
     pub fn get_type_id() -> TypeID {
