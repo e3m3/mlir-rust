@@ -41,6 +41,10 @@ name = "arith_constant_3"
 path = "src/arith_constant_3.lit-rs"
 
 [[bin]]
+name = "arith_constant_4"
+path = "src/arith_constant_4.lit-rs"
+
+[[bin]]
 name = "arith_divf_1"
 path = "src/arith_divf_1.lit-rs"
 
@@ -223,6 +227,118 @@ path = "src/module_empty.lit-rs"
 [[bin]]
 name = "linalg_add_1"
 path = "src/linalg_add_1.lit-rs"
+
+[[bin]]
+name = "tensor_bitcast_1"
+path = "src/tensor_bitcast_1.lit-rs"
+
+[[bin]]
+name = "tensor_bitcast_2"
+path = "src/tensor_bitcast_2.lit-rs"
+
+[[bin]]
+name = "tensor_cast_1"
+path = "src/tensor_cast_1.lit-rs"
+
+[[bin]]
+name = "tensor_cast_2"
+path = "src/tensor_cast_2.lit-rs"
+
+[[bin]]
+name = "tensor_cast_3"
+path = "src/tensor_cast_3.lit-rs"
+
+[[bin]]
+name = "tensor_cast_4"
+path = "src/tensor_cast_4.lit-rs"
+
+[[bin]]
+name = "tensor_collapse_shape_1"
+path = "src/tensor_collapse_shape_1.lit-rs"
+
+[[bin]]
+name = "tensor_concat_1"
+path = "src/tensor_concat_1.lit-rs"
+
+[[bin]]
+name = "tensor_concat_2"
+path = "src/tensor_concat_2.lit-rs"
+
+[[bin]]
+name = "tensor_dim_1"
+path = "src/tensor_dim_1.lit-rs"
+
+[[bin]]
+name = "tensor_empty_1"
+path = "src/tensor_empty_1.lit-rs"
+
+[[bin]]
+name = "tensor_empty_2"
+path = "src/tensor_empty_2.lit-rs"
+
+[[bin]]
+name = "tensor_expand_shape_1"
+path = "src/tensor_expand_shape_1.lit-rs"
+
+[[bin]]
+name = "tensor_extract_1"
+path = "src/tensor_extract_1.lit-rs"
+
+[[bin]]
+name = "tensor_extract_2"
+path = "src/tensor_extract_2.lit-rs"
+
+[[bin]]
+name = "tensor_extract_slice_1"
+path = "src/tensor_extract_slice_1.lit-rs"
+
+[[bin]]
+name = "tensor_extract_slice_2"
+path = "src/tensor_extract_slice_2.lit-rs"
+
+[[bin]]
+name = "tensor_from_elements_1"
+path = "src/tensor_from_elements_1.lit-rs"
+
+[[bin]]
+name = "tensor_generate_1"
+path = "src/tensor_generate_1.lit-rs"
+
+[[bin]]
+name = "tensor_generate_2"
+path = "src/tensor_generate_2.lit-rs"
+
+[[bin]]
+name = "tensor_pad_1"
+path = "src/tensor_pad_1.lit-rs"
+
+[[bin]]
+name = "tensor_rank_1"
+path = "src/tensor_rank_1.lit-rs"
+
+[[bin]]
+name = "tensor_rank_2"
+path = "src/tensor_rank_2.lit-rs"
+
+[[bin]]
+name = "tensor_reshape_1"
+path = "src/tensor_reshape_1.lit-rs"
+
+[[bin]]
+name = "tensor_reshape_2"
+path = "src/tensor_reshape_2.lit-rs"
+
+[[bin]]
+name = "tensor_reshape_3"
+path = "src/tensor_reshape_3.lit-rs"
+
+[[bin]]
+name = "tensor_reshape_4"
+path = "src/tensor_reshape_4.lit-rs"
+
+[[bin]]
+name = "tensor_reshape_5"
+path = "src/tensor_reshape_5.lit-rs"
 
 [[bin]]
 name = "ub_poison_1"

@@ -1,0 +1,42 @@
+// RUN: %O/tensor_bitcast_2 2>&1 | @mlir-opt | @filecheck %M/tensor_bitcast_2.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::tensor::Bitcast;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::IRType;
+use mlir::types::ranked_tensor::RankedTensor;
+use mlir::types::unranked_tensor::UnrankedTensor;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_int = IntegerType::new(&context, 32).as_type();
+    let t_uint = IntegerType::new_unsigned(&context, 32).as_type();
+    let s_in = ShapeImpl::from(vec![4]);
+    let t_tnsr_in = RankedTensor::new(&s_in, &t_uint);
+    let t_tnsr_out = UnrankedTensor::new(&t_int);
+    let f = get_empty_test_fn(&context, &[t_tnsr_in.as_type()], &[t_tnsr_out.as_type()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_cast = Bitcast::new_unranked(
+        &t_tnsr_out,
+        &f_block.get_arg(0),
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_cast.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_cast);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}

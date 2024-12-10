@@ -1,0 +1,61 @@
+// RUN: %O/tensor_pad_1 2>&1 | @mlir-opt --canonicalize | @filecheck %M/tensor_pad_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::attributes::specialized::NamedI64DenseArray;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::tensor::Pad;
+use mlir::dialects::tensor::StaticHigh;
+use mlir::dialects::tensor::StaticLow;
+use mlir::dialects::tensor::Yield;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::IRType;
+use mlir::types::ranked_tensor::RankedTensor;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = IntegerType::new(&context, 32).as_type();
+    let s_in = ShapeImpl::from(vec![10]);
+    let s_out = ShapeImpl::from(vec![18]);
+    let t_tnsr_in = RankedTensor::new(&s_in, &t.as_type());
+    let t_tnsr_out = RankedTensor::new(&s_out, &t.as_type());
+    let f = get_empty_test_fn(
+        &context,
+        &[t_tnsr_in.as_type(), t.clone()],
+        &[t_tnsr_out.as_type()],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let static_low = StaticLow::new(&context, &[3]);
+    let static_high = StaticHigh::new(&context, &[5]);
+    let tensor_pad = Pad::new(
+        &t_tnsr_out,
+        &f_block.get_arg(0),
+        &[],
+        &[],
+        &static_low,
+        &static_high,
+        None,
+        &loc,
+    );
+    let mut op_pad = tensor_pad.as_operation();
+    let pad_region = op_pad.iter().next().unwrap_or_default();
+    let mut pad_block = pad_region.iter().next().unwrap_or_default();
+    let mut op_yield = Yield::new_pad(&f_block.get_arg(1), &tensor_pad, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_pad.get_result(0)], &loc).as_operation();
+    pad_block.append_operation(&mut op_yield);
+    f_block.append_operation(&mut op_pad);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
