@@ -29,19 +29,11 @@ pub struct Float(MlirAttribute);
 
 impl Float {
     pub fn new(t: &FloatType, value: f64) -> Self {
-        if !t.is_f64() {
-            eprintln!("Only double types are supported for float attributes");
-            exit(ExitCode::IRError);
-        }
         let context = t.as_type().get_context();
         Self::from(do_unsafe!(mlirFloatAttrDoubleGet(*context.get(), *t.get(), value)))
     }
 
     pub fn new_checked(t: &FloatType, value: f64, loc: &Location) -> Self {
-        if !t.is_f64() {
-            eprintln!("Only double types are supported for float attributes");
-            exit(ExitCode::IRError);
-        }
         Self::from(do_unsafe!(mlirFloatAttrDoubleGetChecked(*loc.get(), *t.get(), value)))
     }
 

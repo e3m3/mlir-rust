@@ -41,7 +41,6 @@ use mlir::mlirTypeIsAF64;
 use mlir::mlirTypeIsATF32;
 use mlir::MlirType;
 
-use std::ffi::c_uint;
 use std::fmt;
 
 use crate::do_unsafe;
@@ -164,8 +163,8 @@ impl Float {
         }))
     }
 
-    pub fn get_width(&self) -> c_uint {
-        do_unsafe!(mlirFloatTypeGetWidth(self.0))
+    pub fn get_width(&self) -> usize {
+        do_unsafe!(mlirFloatTypeGetWidth(self.0)) as usize
     }
 
     pub fn is(&self, layout: Layout) -> bool {

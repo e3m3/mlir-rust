@@ -1,0 +1,34 @@
+// RUN: %O/arith_constant_4 2>&1 | @mlir-opt | @filecheck %M/arith_constant_4.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use mlir::attributes::float::Float as FloatAttr;
+use mlir::dialects::arith::Constant;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::ir::Block;
+use mlir::types::IRType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32);
+    let f = get_empty_test_fn(&context, &[], &[t.as_type()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let attr = FloatAttr::new(&t, 2.0);
+    let mut op_const = Constant::new_float(&attr, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_const.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_const);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
