@@ -56,6 +56,7 @@ use types::index::Index;
 use types::IRType;
 use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
+use types::unranked_tensor::UnrankedTensor;
 
 ///////////////////////////////
 //  Attributes
@@ -275,7 +276,10 @@ impl StaticOutputShape {
 
     pub fn num_dynamic_dims(&self) -> isize {
         let a = self.as_dense_array();
-        (0..a.num_elements()).filter(|&i| a.get_element_i64(i) == Shaped::dynamic_size()).count() as isize
+        (0..a.num_elements())
+            .filter(|&i| a.get_element_i64(i) == Shaped::dynamic_size())
+            .count()
+            as isize
     }
 
     pub fn num_static_dims(&self) -> isize {
@@ -342,23 +346,10 @@ impl Op {
 ///////////////////////////////
 
 impl Bitcast {
-    pub fn new(t: &Type, value: &Value, loc: &Location) -> Self {
-        let t_value = value.get_type();
-        if !t.is_tensor() || !t_value.is_tensor() {
-            eprintln!("Expected tensor type for bitcast result and operand");
+    fn new(t: &Shaped, t_value: &Shaped, value: &Value, loc: &Location) -> Self {
+        if !t.has_matching_element_type_width(t_value) {
+            eprintln!("Expected matching element type widths for source and result tensor types");
             exit(ExitCode::DialectError);
-        }
-        if t.is_ranked_tensor() && t_value.is_ranked_tensor() {
-            let t_tensor = RankedTensor::from_type(t);
-            let t_value_tensor = RankedTensor::from_type(&t_value);
-            if !t_tensor.has_matching_ranks(&t_value_tensor) {
-                eprintln!("Expected matching ranks for ranked tensor type of bitcast operation");
-                exit(ExitCode::DialectError);
-            }
-            if !t_tensor.has_matching_static_dimensions(&t_value_tensor) {
-                eprintln!("Expected matching sizes for static dimension of bitcast operation");
-                exit(ExitCode::DialectError);
-            }
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
@@ -369,8 +360,41 @@ impl Bitcast {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
-        op_state.add_results(&[t.clone()]);
+        op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new_ranked(t: &RankedTensor, value: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor type for bitcast result and operand");
+            exit(ExitCode::DialectError);
+        }
+        let s = t.as_shaped();
+        let s_value = Shaped::from(*t_value.get());
+        if t_value.is_ranked_tensor() {
+            let t_value_tensor = RankedTensor::from_type(&t_value);
+            if !t.has_matching_ranks(&t_value_tensor) {
+                eprintln!("Expected matching ranks for ranked tensor type of bitcast operation");
+                exit(ExitCode::DialectError);
+            }
+            if !t.has_matching_static_dimensions(&t_value_tensor) {
+                eprintln!("Expected matching sizes for static dimension of bitcast operation");
+                exit(ExitCode::DialectError);
+            }
+        }
+        Self::new(&s, &s_value, value, loc)
+    }
+
+    pub fn new_unranked(t: &UnrankedTensor, value: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor type for bitcast result and operand");
+            exit(ExitCode::DialectError);
+        }
+        let s = t.as_shaped();
+        let s_value = Shaped::from(*t_value.get());
+        Self::new(&s, &s_value, value, loc)
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -391,35 +415,16 @@ impl Bitcast {
 }
 
 impl Cast {
-    /// TODO:?  "The operation is invalid if converting to a mismatching constant dimension." [1]
-    /// [1]:    `https://mlir.llvm.org/docs/Dialects/TensorOps/#tensorcast-tensorcastop`
-    pub fn new(t: &Type, value: &Value, loc: &Location) -> Self {
-        let t_value = value.get_type();
-        if !t.is_tensor() || !t_value.is_tensor() {
-            eprintln!("Expected tensor type for cast result and operand");
-            exit(ExitCode::DialectError);
-        }
-        if t.is_ranked_tensor() && t_value.is_ranked_tensor() {
-            let t_tensor = RankedTensor::from_type(t);
-            let t_value_tensor = RankedTensor::from_type(&t_value);
-            if !t_tensor.has_matching_ranks(&t_value_tensor) {
-                eprintln!("Expected matching ranks for ranked tensor type cast");
-                exit(ExitCode::DialectError);
-            }
-            if !t_tensor.has_matching_static_dimensions(&t_value_tensor) {
-                eprintln!("Expected matching sizes for static dimension cast");
-                exit(ExitCode::DialectError);
-            }
-        }
-        let s = Shaped::from(*t.get());
-        let s_value = Shaped::from(*t.get());
+    /// TODO:? "The operation is invalid if converting to a mismatching constant dimension." [1]
+    /// [1]: https://mlir.llvm.org/docs/Dialects/TensorOps/#tensorcast-tensorcastop
+    pub fn new(s: &Shaped, s_value: &Shaped, value: &Value, loc: &Location) -> Self {
         if s.get_element_type() != s_value.get_element_type() {
             eprintln!("Expected matching element types for source and result tensor types of \
                 cast shape operation"
             );
             exit(ExitCode::DialectError);
         }
-        let context = t.get_context();
+        let context = s.get_context();
         let dialect = context.get_dialect_tensor();
         let name = StringBacked::from(format!(
             "{}.{}",
@@ -428,8 +433,41 @@ impl Cast {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
-        op_state.add_results(&[t.clone()]);
+        op_state.add_results(&[s.as_type()]);
         Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new_ranked(t: &RankedTensor, value: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor type for cast result and operand");
+            exit(ExitCode::DialectError);
+        }
+        let s = Shaped::from(*t.get());
+        let s_value = Shaped::from(*t_value.get());
+        if t_value.is_ranked_tensor() {
+            let t_value_tensor = RankedTensor::from_type(&t_value);
+            if !t.has_matching_ranks(&t_value_tensor) {
+                eprintln!("Expected matching ranks for ranked tensor type cast");
+                exit(ExitCode::DialectError);
+            }
+            if !t.has_matching_static_dimensions(&t_value_tensor) {
+                eprintln!("Expected matching sizes for static dimension cast");
+                exit(ExitCode::DialectError);
+            }
+        }
+        Self::new(&s, &s_value, value, loc)
+    }
+
+    pub fn new_unranked(t: &UnrankedTensor, value: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor type for cast result and operand");
+            exit(ExitCode::DialectError);
+        }
+        let s = Shaped::from(*t.get());
+        let s_value = Shaped::from(*t_value.get());
+        Self::new(&s, &s_value, value, loc)
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -450,9 +488,12 @@ impl Cast {
 }
 
 impl CollapseShape {
-    pub fn new(t: &Type, value: &Value, reassoc: &Reassociation, loc: &Location) -> Self {
-        if !t.is_tensor() || !value.get_type().is_tensor() {
-            eprintln!("Expected tensor type for result and source operand for collapse shape operation");
+    pub fn new(t: &RankedTensor, value: &Value, reassoc: &Reassociation, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor type for result and source operand \
+                of collapse shape operation"
+            );
             exit(ExitCode::DialectError);
         }
         let s = RankedTensor::from(*t.get()).as_shaped();
@@ -483,7 +524,7 @@ impl CollapseShape {
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[reassoc.as_named_attribute()]);
         op_state.add_operands(&[value.clone()]);
-        op_state.add_results(&[t.clone()]);
+        op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -564,9 +605,8 @@ impl Concat {
             dialect.get_namespace(),
             Op::Concat.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[values.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute(), dim.as_named_attribute()]);
+        op_state.add_attributes(&[dim.as_named_attribute()]);
         op_state.add_operands(values);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -694,18 +734,15 @@ impl Empty {
 
 impl ExpandShape {
     pub fn new(
-        t: &Type,
+        t: &RankedTensor,
         source: &Value,
         shape: &[Value],
         reassoc: &Reassociation,
         static_shape: &StaticOutputShape,
         loc: &Location,
     ) -> Self {
-        if !t.is_tensor() {
-            eprintln!("Expected tensor type for result of expand shape operation");
-            exit(ExitCode::DialectError);
-        }
-        if !source.get_type().is_tensor() {
+        let t_source = source.get_type();
+        if !t_source.is_tensor() {
             eprintln!("Expected tensor type for source operand of expand shape operation");
             exit(ExitCode::DialectError);
         }
@@ -713,36 +750,52 @@ impl ExpandShape {
             eprintln!("Expected index types for output shape operand(s) of expand shape operation");
             exit(ExitCode::DialectError);
         }
-        let s = Shaped::from(*t.get());
-        let s_source = Shaped::from(*source.get_type().get());
+        let s = t.as_shaped();
+        let s_source = Shaped::from(*t_source.get());
         if s.get_element_type() != s_source.get_element_type() {
             eprintln!("Expected matching element type for source and result tensor type \
                 of expand shape operation"
             );
             exit(ExitCode::DialectError);
         }
-        if s.rank().unwrap_or(-1) < s_source.rank().unwrap_or(-1) {
-            eprintln!("Expected rank of result tensor type to be of equal or greater rank than \
-                the source operand of expand shape operation");
+        let rank = s.rank().unwrap_or(-1);
+        let rank_source = s_source.rank().unwrap_or(-1);
+        if rank < rank_source {
+            eprintln!("Expected rank of result tensor type ({}) to be of equal or greater rank than \
+                the rank of th esource operand ({}) of expand shape operation",
+                rank,
+                rank_source,
+            );
             exit(ExitCode::DialectError);
         }
-        if static_shape.num_dynamic_dims() != shape.len() as isize {
-            eprintln!("Expected matching number of symbolic dimensions (length of output shape) \
-                to match number of dynamic dimensions (value '{}') in static output shape \
+        let n_static_shape = static_shape.num_dynamic_dims();
+        let n_dyn_sizes = shape.len() as isize;
+        if n_static_shape != n_dyn_sizes {
+            eprintln!("Expected matching number of symbolic dimensions ({}) (length of output shape) \
+                to match number of dynamic dimensions (value '{}') in static output shape ({}) \
                 of expand shape operation",
+                n_dyn_sizes,
                 Shaped::dynamic_size(),
+                n_static_shape,
             );
             exit(ExitCode::DialectError);
         }
-        if s.num_elements().unwrap_or(0) != reassoc.num_elements_flattened() as i64 {
-            eprintln!("Expected result tensor of rank equal to number of total dimensions (flattened)
-                specified by the reassociation map of expand shape operation"
+        let n_reassoc = reassoc.num_elements() as i64;
+        let n_reassoc_flat = reassoc.num_elements_flattened() as i64;
+        if rank != n_reassoc_flat {
+            eprintln!("Expected result tensor of rank ({}) equal to number of \
+                total dimensions (flattened) specified by the reassociation map ({}) \
+                of expand shape operation",
+                rank,
+                n_reassoc_flat,
             );
             exit(ExitCode::DialectError);
         }
-        if s_source.num_elements().unwrap_or(0) != reassoc.num_elements() as i64 {
-            eprintln!("Expected source tensor of rank equal to number of dimensional groupings
-                specified by the reassociation map of expand shape operation"
+        if rank_source != n_reassoc {
+            eprintln!("Expected source tensor of rank equal ({}) to number of dimensional groupings \
+                specified by the reassociation map ({}) of expand shape operation",
+                rank_source,
+                n_reassoc,
             );
             exit(ExitCode::DialectError);
         }
@@ -751,19 +804,17 @@ impl ExpandShape {
         let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
-            Op::Empty.get_name(),
+            Op::ExpandShape.get_name(),
         ));
         let mut args = vec![source.clone()];
         args.append(&mut shape.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, shape.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[
-            opseg_attr.as_named_attribute(),
             reassoc.as_named_attribute(),
             static_shape.as_named_attribute(),
         ]);
         op_state.add_operands(&args);
-        op_state.add_results(&[t.clone()]);
+        op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -813,9 +864,13 @@ impl Extract {
             );
             exit(ExitCode::DialectError);
         }
-        if s_source.rank().unwrap_or(-1) != indices.len() as i64 {
-            eprintln!("Expected matching arity of indices and rank for source operand \
-                of extract operation"
+        let rank_source = s_source.rank().unwrap_or(-1);
+        let n_indices = indices.len() as i64;
+        if rank_source != n_indices {
+            eprintln!("Expected matching arity of indices ({}) and rank ({}) for source operand \
+                of extract operation",
+                n_indices,
+                rank_source,
             );
             exit(ExitCode::DialectError);
         }
@@ -828,9 +883,7 @@ impl Extract {
         ));
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[1, indices.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&args);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -967,8 +1020,14 @@ impl FromElements {
             );
             exit(ExitCode::DialectError);
         }
-        if s.num_elements().unwrap_or(-1) != elements.len() as i64 {
-            eprintln!("Expected matching elements size for tensor result type of from elements operation");
+        let n_elem = s.num_elements().unwrap_or(-1);
+        let n_elem_inputs = elements.len() as i64;
+        if n_elem != n_elem_inputs {
+            eprintln!("Expected matching elements size ({}) and inputs ({}) for tensor result type \
+                of from elements operation",
+                n_elem,
+                n_elem_inputs,
+            );
             exit(ExitCode::DialectError);
         }
         let t_element = elements.first().unwrap().get_type();
@@ -983,9 +1042,7 @@ impl FromElements {
             dialect.get_namespace(),
             Op::FromElements.get_name(),
         ));
-        let opseg_attr = OperandSegmentSizes::new(&context, &[elements.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(elements);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
@@ -1018,9 +1075,14 @@ impl Generate {
             eprintln!("Expected extents of index type for generate operation");
             exit(ExitCode::DialectError);
         }
-        if t.as_shaped().num_dynamic_dims().unwrap_or(-1) != extents.len() as i64 {
-            eprintln!("Expected one index per dynamic extent for result tensor type \
-                of generate operation"
+        let s = t.as_shaped();
+        let n_dyn_dims = s.num_dynamic_dims().unwrap_or(-1);
+        let n_extents = extents.len() as i64;
+        if n_dyn_dims != n_extents {
+            eprintln!("Expected one index type extent ({}) per dynamic dimension \
+                in result tensor type ({}) of generate operation",
+                n_extents,
+                n_dyn_dims,
             );
             exit(ExitCode::DialectError);
         }
@@ -1031,12 +1093,14 @@ impl Generate {
             dialect.get_namespace(),
             Op::Generate.get_name(),
         ));
+        let rank = s.rank().unwrap_or(-1) as isize;
+        let t_index = Index::new(&context).as_type();
+        let t_indices: Vec<Type> = (0..rank).map(|_| t_index.clone()).collect();
+        let locs: Vec<Location> = (0..rank).map(|_| loc.clone()).collect();
         let mut region = Region::new();
-        let mut block = Block::new(0, &[], &[]);
+        let mut block = Block::new(rank, &t_indices, &locs);
         region.append_block(&mut block); // Add empty starter block
-        let opseg_attr = OperandSegmentSizes::new(&context, &[extents.len() as i32]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(extents);
         op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
@@ -1101,13 +1165,23 @@ impl Pad {
             eprintln!("Expected high values of index type for pad operation");
             exit(ExitCode::DialectError);
         }
-        let n = s.rank().unwrap_or(0) as isize;
-        if n != (static_low.num_elements() + values_low.len() as isize) {
-            eprintln!("Expected arity of low indices to match rank of result type for pad operation");
+        let rank = s.rank().unwrap_or(-1) as isize;
+        let n_low = static_low.num_elements() + values_low.len() as isize;
+        let n_high = static_high.num_elements() + values_high.len() as isize;
+        if rank != n_low {
+            eprintln!("Expected arity of low indices ({}) to match rank ({}) for result type \
+                of pad operation",
+                n_low,
+                rank,
+            );
             exit(ExitCode::DialectError);
         }
-        if n != (static_high.num_elements() + values_high.len() as isize) {
-            eprintln!("Expected arity of high indices to match rank of result type for pad operation");
+        if rank != n_high {
+            eprintln!("Expected arity of high indices ({}) to match rank ({}) for result type \
+                of pad operation",
+                n_high,
+                rank,
+            );
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -1133,9 +1207,16 @@ impl Pad {
         let mut args = vec![source.clone()];
         args.append(&mut values_low.to_vec());
         args.append(&mut values_high.to_vec());
+        let t_index = Index::new(&context).as_type();
+        let t_indices: Vec<Type> = (0..rank).map(|_| t_index.clone()).collect();
+        let locs: Vec<Location> = (0..rank).map(|_| loc.clone()).collect();
+        let mut region = Region::new();
+        let mut block = Block::new(rank, &t_indices, &locs);
+        region.append_block(&mut block); // Add empty starter block
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&attrs);
         op_state.add_operands(&args);
+        op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
         Self::from(*op_state.create_operation().get())
     }
@@ -1210,35 +1291,13 @@ impl Rank {
 }
 
 impl Reshape {
-    pub fn new(t: &Type, value: &Value, shape: &Value, loc: &Location) -> Self {
-        let t_value = value.get_type();
-        let t_shape = shape.get_type();
-        if !t.is_tensor() || !t_value.is_tensor() {
-            eprintln!("Expected tensor for result and source operand for reshape operation");
-            exit(ExitCode::DialectError);
-        }
-        if !t_shape.is_ranked_tensor() {
-            eprintln!("Expected 1D tensor for reshape operation");
-            exit(ExitCode::DialectError);
-        }
-        let s_shape = RankedTensor::from_type(&t_shape).as_shaped();
-        if s_shape.is_static() && !t.is_ranked_tensor() {
-            eprintln!("Expected ranked tensor result for statically sized shape operand");
-            exit(ExitCode::DialectError);
-        } else if !s_shape.is_static() && !t.is_unranked_tensor() {
-            eprintln!("Expected unranked tensor result for dynamically sized shape operand");
-            exit(ExitCode::DialectError);
-        }
-        let s = Shaped::from_type(t);
-        let s_value = Shaped::from_type(&t_value);
+    fn new(s: &Shaped, value: &Value, shape: &Value, loc: &Location) -> Self {
+        let s_value = Shaped::from_type(&value.get_type());
         if s.get_element_type() != s_value.get_element_type() {
             eprintln!("Expected matching element types for result and source tensor types");
             exit(ExitCode::DialectError);
         }
-        if s_shape.is_static() && s.num_elements() != s_value.num_elements() {
-            eprintln!("Expected matching number of elements for result and source tensor types");
-            exit(ExitCode::DialectError);
-        }
+        let t = s.as_type();
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
         let name = StringBacked::from(format!(
@@ -1250,6 +1309,60 @@ impl Reshape {
         op_state.add_operands(&[value.clone(), shape.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new_ranked(t: &RankedTensor, value: &Value, shape: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        let t_shape = shape.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor for source operand of reshape operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_shape.is_ranked_tensor() {
+            eprintln!("Expected 1D tensor for reshape operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_shape = RankedTensor::from_type(&t_shape).as_shaped();
+        if !s_shape.is_static() {
+            eprintln!("Expected statically sized shape operand for ranked tensor result \
+                of reshape operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let s = t.as_shaped();
+        let s_value = Shaped::from_type(&t_value);
+        let n_elem = s.num_elements();
+        let n_elem_value = s_value.num_elements();
+        if s_shape.is_static() && n_elem != n_elem_value {
+            eprintln!("Expected matching number of elements for result ({:?}) and source ({:?}) \
+                tensor types",
+                n_elem,
+                n_elem_value,
+            );
+            exit(ExitCode::DialectError);
+        }
+        Self::new(&s, value, shape, loc)
+    }
+
+    pub fn new_unranked(t: &UnrankedTensor, value: &Value, shape: &Value, loc: &Location) -> Self {
+        let t_value = value.get_type();
+        let t_shape = shape.get_type();
+        if !t_value.is_tensor() {
+            eprintln!("Expected tensor for source operand of reshape operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_shape.is_ranked_tensor() {
+            eprintln!("Expected 1D tensor for reshape operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_shape = RankedTensor::from_type(&t_shape).as_shaped();
+        if s_shape.is_static() {
+            eprintln!("Expected dynamically sized shape operand for unranked tensor result \
+                of reshape operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        Self::new(&t.as_shaped(), value, shape, loc)
     }
 
     pub fn from(op: MlirOperation) -> Self {
