@@ -43,6 +43,24 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
     cargo build
     ```
 
+*   Build Rust lit tests:
+
+    ```shell
+    cargo build --manifest-path tests/lit-tests-rust/Cargo.toml
+    ```
+
+*   Run Rust lit test (e.g., `tests/lit-tests-rust/src/<test-name>.lit-rs`:
+
+    ```shell
+    cargo run --manifest-path tests/lit-tests-rust/Cargo.toml --bin <test-name>
+    ```
+
+*   Build and run lit test suite (MLIR + Rust):
+
+    ```shell
+    cargo test -- --nocapture
+    ```
+
 *   Container build and test [podman][6] [[6]]:
 
     ```shell
