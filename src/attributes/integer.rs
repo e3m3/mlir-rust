@@ -3,14 +3,12 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirIntegerAttrGet;
-use mlir::mlirIntegerAttrGetTypeID;
-use mlir::mlirIntegerAttrGetValueInt;
-use mlir::mlirIntegerAttrGetValueSInt;
-use mlir::mlirIntegerAttrGetValueUInt;
-use mlir::MlirAttribute;
+use mlir_sys::mlirIntegerAttrGet;
+use mlir_sys::mlirIntegerAttrGetTypeID;
+use mlir_sys::mlirIntegerAttrGetValueInt;
+use mlir_sys::mlirIntegerAttrGetValueSInt;
+use mlir_sys::mlirIntegerAttrGetValueUInt;
+use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;

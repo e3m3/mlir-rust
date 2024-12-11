@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirSparseElementsAttribute;
-use mlir::mlirSparseElementsAttrGetIndices;
-use mlir::mlirSparseElementsAttrGetTypeID;
-use mlir::mlirSparseElementsAttrGetValues;
-use mlir::MlirAttribute;
+use mlir_sys::mlirSparseElementsAttribute;
+use mlir_sys::mlirSparseElementsAttrGetIndices;
+use mlir_sys::mlirSparseElementsAttrGetTypeID;
+use mlir_sys::mlirSparseElementsAttrGetValues;
+use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;

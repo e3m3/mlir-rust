@@ -1,6 +1,6 @@
 [package]
 name = "lit-tests-rust"
-edition = "2021"
+edition = "2024"
 authors = ["Giordano Salvador <73959795+e3m3@users.noreply.github.com>"]
 description = "Lit tests for rust bindings over the MLIR C API bindings from mlir-sys"
 readme = "README.md"
@@ -8,7 +8,7 @@ license-file = "LICENSE"
 
 [dependencies]
 mlir = { path = "../../" }
-mlir-sys = { version = "=0.3.0" }
+mlir-sys = { version = "0.4.1", tag = "v0.4.1.2" , git = "https://github.com/e3m3/mlir-sys.git" }
 
 [lints.clippy]
 unused_unit = "allow"

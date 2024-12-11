@@ -3,8 +3,6 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
 use std::fmt;
 
 #[derive(Clone,Copy,PartialEq)]

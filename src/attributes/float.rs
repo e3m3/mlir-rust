@@ -3,12 +3,10 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirFloatAttrDoubleGet;
-use mlir::mlirFloatAttrDoubleGetChecked;
-use mlir::mlirFloatAttrGetValueDouble;
-use mlir::MlirAttribute;
+use mlir_sys::mlirFloatAttrDoubleGet;
+use mlir_sys::mlirFloatAttrDoubleGetChecked;
+use mlir_sys::mlirFloatAttrGetValueDouble;
+use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;

@@ -3,11 +3,9 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirBoolAttrGet;
-use mlir::mlirBoolAttrGetValue;
-use mlir::MlirAttribute;
+use mlir_sys::mlirBoolAttrGet;
+use mlir_sys::mlirBoolAttrGetValue;
+use mlir_sys::MlirAttribute;
 
 use std::ffi::c_int;
 

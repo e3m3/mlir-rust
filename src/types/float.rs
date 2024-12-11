@@ -3,43 +3,41 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirFloatTypeGetWidth;
-use mlir::mlirFloat8E5M2TypeGet;
-use mlir::mlirFloat8E5M2TypeGetTypeID;
-use mlir::mlirFloat8E4M3TypeGet;
-use mlir::mlirFloat8E4M3TypeGetTypeID;
-use mlir::mlirFloat8E4M3FNTypeGet;
-use mlir::mlirFloat8E4M3FNTypeGetTypeID;
-use mlir::mlirFloat8E5M2FNUZTypeGet;
-use mlir::mlirFloat8E5M2FNUZTypeGetTypeID;
-use mlir::mlirFloat8E4M3FNUZTypeGet;
-use mlir::mlirFloat8E4M3FNUZTypeGetTypeID;
-use mlir::mlirFloat8E4M3B11FNUZTypeGet;
-use mlir::mlirFloat8E4M3B11FNUZTypeGetTypeID;
-use mlir::mlirBF16TypeGet;
-use mlir::mlirBFloat16TypeGetTypeID;
-use mlir::mlirF16TypeGet;
-use mlir::mlirFloat16TypeGetTypeID;
-use mlir::mlirF32TypeGet;
-use mlir::mlirFloat32TypeGetTypeID;
-use mlir::mlirF64TypeGet;
-use mlir::mlirFloat64TypeGetTypeID;
-use mlir::mlirTF32TypeGet;
-use mlir::mlirFloatTF32TypeGetTypeID;
-use mlir::mlirTypeIsAFloat8E5M2;
-use mlir::mlirTypeIsAFloat8E4M3;
-use mlir::mlirTypeIsAFloat8E4M3FN;
-use mlir::mlirTypeIsAFloat8E5M2FNUZ;
-use mlir::mlirTypeIsAFloat8E4M3FNUZ;
-use mlir::mlirTypeIsAFloat8E4M3B11FNUZ;
-use mlir::mlirTypeIsABF16;
-use mlir::mlirTypeIsAF16;
-use mlir::mlirTypeIsAF32;
-use mlir::mlirTypeIsAF64;
-use mlir::mlirTypeIsATF32;
-use mlir::MlirType;
+use mlir_sys::mlirFloatTypeGetWidth;
+use mlir_sys::mlirFloat8E5M2TypeGet;
+use mlir_sys::mlirFloat8E5M2TypeGetTypeID;
+use mlir_sys::mlirFloat8E4M3TypeGet;
+use mlir_sys::mlirFloat8E4M3TypeGetTypeID;
+use mlir_sys::mlirFloat8E4M3FNTypeGet;
+use mlir_sys::mlirFloat8E4M3FNTypeGetTypeID;
+use mlir_sys::mlirFloat8E5M2FNUZTypeGet;
+use mlir_sys::mlirFloat8E5M2FNUZTypeGetTypeID;
+use mlir_sys::mlirFloat8E4M3FNUZTypeGet;
+use mlir_sys::mlirFloat8E4M3FNUZTypeGetTypeID;
+use mlir_sys::mlirFloat8E4M3B11FNUZTypeGet;
+use mlir_sys::mlirFloat8E4M3B11FNUZTypeGetTypeID;
+use mlir_sys::mlirBF16TypeGet;
+use mlir_sys::mlirBFloat16TypeGetTypeID;
+use mlir_sys::mlirF16TypeGet;
+use mlir_sys::mlirFloat16TypeGetTypeID;
+use mlir_sys::mlirF32TypeGet;
+use mlir_sys::mlirFloat32TypeGetTypeID;
+use mlir_sys::mlirF64TypeGet;
+use mlir_sys::mlirFloat64TypeGetTypeID;
+use mlir_sys::mlirTF32TypeGet;
+use mlir_sys::mlirFloatTF32TypeGetTypeID;
+use mlir_sys::mlirTypeIsAFloat8E5M2;
+use mlir_sys::mlirTypeIsAFloat8E4M3;
+use mlir_sys::mlirTypeIsAFloat8E4M3FN;
+use mlir_sys::mlirTypeIsAFloat8E5M2FNUZ;
+use mlir_sys::mlirTypeIsAFloat8E4M3FNUZ;
+use mlir_sys::mlirTypeIsAFloat8E4M3B11FNUZ;
+use mlir_sys::mlirTypeIsABF16;
+use mlir_sys::mlirTypeIsAF16;
+use mlir_sys::mlirTypeIsAF32;
+use mlir_sys::mlirTypeIsAF64;
+use mlir_sys::mlirTypeIsATF32;
+use mlir_sys::MlirType;
 
 use std::fmt;
 

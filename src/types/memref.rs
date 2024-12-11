@@ -3,19 +3,17 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirMemRefTypeContiguousGet;
-use mlir::mlirMemRefTypeContiguousGetChecked;
-use mlir::mlirMemRefTypeGet;
-use mlir::mlirMemRefTypeGetAffineMap;
-use mlir::mlirMemRefTypeGetChecked;
-use mlir::mlirMemRefTypeGetLayout;
-use mlir::mlirMemRefTypeGetMemorySpace;
-use mlir::mlirMemRefTypeGetStridesAndOffset;
-use mlir::mlirMemRefTypeGetTypeID;
-use mlir::MlirAttribute;
-use mlir::MlirType;
+use mlir_sys::mlirMemRefTypeContiguousGet;
+use mlir_sys::mlirMemRefTypeContiguousGetChecked;
+use mlir_sys::mlirMemRefTypeGet;
+use mlir_sys::mlirMemRefTypeGetAffineMap;
+use mlir_sys::mlirMemRefTypeGetChecked;
+use mlir_sys::mlirMemRefTypeGetLayout;
+use mlir_sys::mlirMemRefTypeGetMemorySpace;
+use mlir_sys::mlirMemRefTypeGetStridesAndOffset;
+use mlir_sys::mlirMemRefTypeGetTypeID;
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirType;
 
 use crate::attributes;
 use crate::dialects;

@@ -3,11 +3,9 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirIndexTypeGet;
-use mlir::mlirIndexTypeGetTypeID;
-use mlir::MlirType;
+use mlir_sys::mlirIndexTypeGet;
+use mlir_sys::mlirIndexTypeGetTypeID;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

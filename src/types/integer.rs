@@ -3,17 +3,15 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirIntegerTypeGet;
-use mlir::mlirIntegerTypeGetWidth;
-use mlir::mlirIntegerTypeGetTypeID;
-use mlir::mlirIntegerTypeIsSigned;
-use mlir::mlirIntegerTypeIsSignless;
-use mlir::mlirIntegerTypeIsUnsigned;
-use mlir::mlirIntegerTypeSignedGet;
-use mlir::mlirIntegerTypeUnsignedGet;
-use mlir::MlirType;
+use mlir_sys::mlirIntegerTypeGet;
+use mlir_sys::mlirIntegerTypeGetWidth;
+use mlir_sys::mlirIntegerTypeGetTypeID;
+use mlir_sys::mlirIntegerTypeIsSigned;
+use mlir_sys::mlirIntegerTypeIsSignless;
+use mlir_sys::mlirIntegerTypeIsUnsigned;
+use mlir_sys::mlirIntegerTypeSignedGet;
+use mlir_sys::mlirIntegerTypeUnsignedGet;
+use mlir_sys::MlirType;
 
 use std::ffi::c_uint;
 

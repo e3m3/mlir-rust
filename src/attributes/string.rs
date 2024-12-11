@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirStringAttrGet;
-use mlir::mlirStringAttrGetValue;
-use mlir::mlirStringAttrGetTypeID;
-use mlir::mlirStringAttrTypedGet;
-use mlir::MlirAttribute;
+use mlir_sys::mlirStringAttrGet;
+use mlir_sys::mlirStringAttrGetValue;
+use mlir_sys::mlirStringAttrGetTypeID;
+use mlir_sys::mlirStringAttrTypedGet;
+use mlir_sys::MlirAttribute;
 
 use std::fmt;
 

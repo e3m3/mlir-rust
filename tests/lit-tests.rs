@@ -124,6 +124,11 @@ mod tests {
         let arch: String = get_arch();
         let num_jobs: usize = get_num_jobs();
 
+        #[cfg(debug_assertions)]
+        let build_mode = "";
+        #[cfg(not(debug_assertions))]
+        let build_mode = "--release";
+
         if os_name.is_empty() {
             eprintln!("Target OS '{}' not yet supported.", os_name);
             assert!(false);
@@ -183,7 +188,12 @@ mod tests {
         println!("Building lit test binaries from tests in '{}':", lit_dir_rust_tests_dir_str);
         let output_cargo = Command::new(&shell)
             .arg("-c")
-            .arg(format!("cargo build --manifest-path {} -j {}", lit_dir_rust_manifest_str, num_jobs))
+            .arg(format!(
+                "cargo build {} --manifest-path {} -j {}",
+                build_mode,
+                lit_dir_rust_manifest_str,
+                num_jobs,
+            ))
             .output()
             .expect("Failed building downstream rust project for lit tests");
         let stderr_cargo: &[u8] = output_cargo.stderr.as_slice();

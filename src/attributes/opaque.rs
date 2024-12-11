@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirOpaqueAttrGet;
-use mlir::mlirOpaqueAttrGetData;
-use mlir::mlirOpaqueAttrGetDialectNamespace;
-use mlir::mlirOpaqueAttrGetTypeID;
-use mlir::MlirAttribute;
+use mlir_sys::mlirOpaqueAttrGet;
+use mlir_sys::mlirOpaqueAttrGetData;
+use mlir_sys::mlirOpaqueAttrGetDialectNamespace;
+use mlir_sys::mlirOpaqueAttrGetTypeID;
+use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
