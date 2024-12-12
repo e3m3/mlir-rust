@@ -3,11 +3,9 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirNamedAttributeGet;
-use mlir::MlirAttribute;
-use mlir::MlirNamedAttribute;
+use mlir_sys::mlirNamedAttributeGet;
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirNamedAttribute;
 
 use std::cmp;
 

@@ -3,19 +3,17 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirShapedTypeGetDimSize;
-use mlir::mlirShapedTypeGetDynamicSize;
-use mlir::mlirShapedTypeGetDynamicStrideOrOffset;
-use mlir::mlirShapedTypeGetElementType;
-use mlir::mlirShapedTypeGetRank;
-use mlir::mlirShapedTypeHasRank;
-use mlir::mlirShapedTypeHasStaticShape;
-use mlir::mlirShapedTypeIsDynamicDim;
-use mlir::mlirShapedTypeIsDynamicSize;
-use mlir::mlirShapedTypeIsDynamicStrideOrOffset;
-use mlir::MlirType;
+use mlir_sys::mlirShapedTypeGetDimSize;
+use mlir_sys::mlirShapedTypeGetDynamicSize;
+use mlir_sys::mlirShapedTypeGetDynamicStrideOrOffset;
+use mlir_sys::mlirShapedTypeGetElementType;
+use mlir_sys::mlirShapedTypeGetRank;
+use mlir_sys::mlirShapedTypeHasRank;
+use mlir_sys::mlirShapedTypeHasStaticShape;
+use mlir_sys::mlirShapedTypeIsDynamicDim;
+use mlir_sys::mlirShapedTypeIsDynamicSize;
+use mlir_sys::mlirShapedTypeIsDynamicStrideOrOffset;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

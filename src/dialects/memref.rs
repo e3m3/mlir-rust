@@ -3,10 +3,8 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::MlirAttribute;
-use mlir::MlirOperation;
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirOperation;
 
 use std::ffi::c_uint;
 use std::fmt;

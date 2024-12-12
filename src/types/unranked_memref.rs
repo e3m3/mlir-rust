@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirUnrankedMemRefTypeGet;
-use mlir::mlirUnrankedMemRefTypeGetChecked;
-use mlir::mlirUnrankedMemRefTypeGetTypeID;
-use mlir::mlirUnrankedMemrefGetMemorySpace;
-use mlir::MlirType;
+use mlir_sys::mlirUnrankedMemRefTypeGet;
+use mlir_sys::mlirUnrankedMemRefTypeGetChecked;
+use mlir_sys::mlirUnrankedMemRefTypeGetTypeID;
+use mlir_sys::mlirUnrankedMemrefGetMemorySpace;
+use mlir_sys::MlirType;
 
 use crate::attributes;
 use crate::do_unsafe;

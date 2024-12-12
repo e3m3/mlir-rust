@@ -3,8 +3,6 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
 use std::fmt;
 
 pub type MemoryEffectList = &'static [&'static MemoryEffect];

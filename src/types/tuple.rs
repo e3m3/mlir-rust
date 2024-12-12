@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirTupleTypeGet;
-use mlir::mlirTupleTypeGetNumTypes;
-use mlir::mlirTupleTypeGetType;
-use mlir::mlirTupleTypeGetTypeID;
-use mlir::MlirType;
+use mlir_sys::mlirTupleTypeGet;
+use mlir_sys::mlirTupleTypeGetNumTypes;
+use mlir_sys::mlirTupleTypeGetType;
+use mlir_sys::mlirTupleTypeGetTypeID;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

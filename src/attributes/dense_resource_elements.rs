@@ -3,32 +3,30 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirUnmanagedDenseBoolResourceElementsAttrGet;
-use mlir::mlirDenseBoolResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseDoubleResourceElementsAttrGet;
-use mlir::mlirDenseDoubleResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseFloatResourceElementsAttrGet;
-use mlir::mlirDenseFloatResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseInt8ResourceElementsAttrGet;
-use mlir::mlirDenseInt8ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseInt16ResourceElementsAttrGet;
-use mlir::mlirDenseInt16ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseInt32ResourceElementsAttrGet;
-use mlir::mlirDenseInt32ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseInt64ResourceElementsAttrGet;
-use mlir::mlirDenseInt64ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseUInt8ResourceElementsAttrGet;
-use mlir::mlirDenseUInt8ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseUInt16ResourceElementsAttrGet;
-use mlir::mlirDenseUInt16ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseUInt32ResourceElementsAttrGet;
-use mlir::mlirDenseUInt32ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseUInt64ResourceElementsAttrGet;
-use mlir::mlirDenseUInt64ResourceElementsAttrGetValue;
-use mlir::mlirUnmanagedDenseResourceElementsAttrGet;
-use mlir::MlirAttribute;
+use mlir_sys::mlirUnmanagedDenseBoolResourceElementsAttrGet;
+use mlir_sys::mlirDenseBoolResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseDoubleResourceElementsAttrGet;
+use mlir_sys::mlirDenseDoubleResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseFloatResourceElementsAttrGet;
+use mlir_sys::mlirDenseFloatResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseInt8ResourceElementsAttrGet;
+use mlir_sys::mlirDenseInt8ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseInt16ResourceElementsAttrGet;
+use mlir_sys::mlirDenseInt16ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseInt32ResourceElementsAttrGet;
+use mlir_sys::mlirDenseInt32ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseInt64ResourceElementsAttrGet;
+use mlir_sys::mlirDenseInt64ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseUInt8ResourceElementsAttrGet;
+use mlir_sys::mlirDenseUInt8ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseUInt16ResourceElementsAttrGet;
+use mlir_sys::mlirDenseUInt16ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseUInt32ResourceElementsAttrGet;
+use mlir_sys::mlirDenseUInt32ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseUInt64ResourceElementsAttrGet;
+use mlir_sys::mlirDenseUInt64ResourceElementsAttrGetValue;
+use mlir_sys::mlirUnmanagedDenseResourceElementsAttrGet;
+use mlir_sys::MlirAttribute;
 
 use std::ffi::c_int;
 use std::ffi::c_void;

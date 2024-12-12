@@ -3,16 +3,14 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirVectorTypeGet;
-use mlir::mlirVectorTypeGetChecked;
-use mlir::mlirVectorTypeGetScalable;
-use mlir::mlirVectorTypeGetScalableChecked;
-use mlir::mlirVectorTypeGetTypeID;
-use mlir::mlirVectorTypeIsDimScalable;
-use mlir::mlirVectorTypeIsScalable;
-use mlir::MlirType;
+use mlir_sys::mlirVectorTypeGet;
+use mlir_sys::mlirVectorTypeGetChecked;
+use mlir_sys::mlirVectorTypeGetScalable;
+use mlir_sys::mlirVectorTypeGetScalableChecked;
+use mlir_sys::mlirVectorTypeGetTypeID;
+use mlir_sys::mlirVectorTypeIsDimScalable;
+use mlir_sys::mlirVectorTypeIsScalable;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

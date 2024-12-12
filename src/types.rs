@@ -3,10 +3,8 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirTypeEqual;
-use mlir::MlirType;
+use mlir_sys::mlirTypeEqual;
+use mlir_sys::MlirType;
 
 use std::cmp;
 

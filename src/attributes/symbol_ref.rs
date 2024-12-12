@@ -3,17 +3,15 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirFlatSymbolRefAttrGet;
-use mlir::mlirFlatSymbolRefAttrGetValue;
-use mlir::mlirSymbolRefAttrGet;
-use mlir::mlirSymbolRefAttrGetLeafReference;
-use mlir::mlirSymbolRefAttrGetNestedReference;
-use mlir::mlirSymbolRefAttrGetNumNestedReferences;
-use mlir::mlirSymbolRefAttrGetRootReference;
-use mlir::mlirSymbolRefAttrGetTypeID;
-use mlir::MlirAttribute;
+use mlir_sys::mlirFlatSymbolRefAttrGet;
+use mlir_sys::mlirFlatSymbolRefAttrGetValue;
+use mlir_sys::mlirSymbolRefAttrGet;
+use mlir_sys::mlirSymbolRefAttrGetLeafReference;
+use mlir_sys::mlirSymbolRefAttrGetNestedReference;
+use mlir_sys::mlirSymbolRefAttrGetNumNestedReferences;
+use mlir_sys::mlirSymbolRefAttrGetRootReference;
+use mlir_sys::mlirSymbolRefAttrGetTypeID;
+use mlir_sys::MlirAttribute;
 
 use std::cmp;
 use std::fmt;

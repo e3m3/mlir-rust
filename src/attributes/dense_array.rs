@@ -3,25 +3,23 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirDenseArrayGetNumElements;
-use mlir::mlirDenseBoolArrayGet;
-use mlir::mlirDenseBoolArrayGetElement;
-use mlir::mlirDenseF32ArrayGet;
-use mlir::mlirDenseF32ArrayGetElement;
-use mlir::mlirDenseF64ArrayGet;
-use mlir::mlirDenseF64ArrayGetElement;
-use mlir::mlirDenseI8ArrayGet;
-use mlir::mlirDenseI8ArrayGetElement;
-use mlir::mlirDenseI16ArrayGet;
-use mlir::mlirDenseI16ArrayGetElement;
-use mlir::mlirDenseI32ArrayGet;
-use mlir::mlirDenseI32ArrayGetElement;
-use mlir::mlirDenseI64ArrayGet;
-use mlir::mlirDenseI64ArrayGetElement;
-use mlir::mlirDenseArrayAttrGetTypeID;
-use mlir::MlirAttribute;
+use mlir_sys::mlirDenseArrayGetNumElements;
+use mlir_sys::mlirDenseBoolArrayGet;
+use mlir_sys::mlirDenseBoolArrayGetElement;
+use mlir_sys::mlirDenseF32ArrayGet;
+use mlir_sys::mlirDenseF32ArrayGetElement;
+use mlir_sys::mlirDenseF64ArrayGet;
+use mlir_sys::mlirDenseF64ArrayGetElement;
+use mlir_sys::mlirDenseI8ArrayGet;
+use mlir_sys::mlirDenseI8ArrayGetElement;
+use mlir_sys::mlirDenseI16ArrayGet;
+use mlir_sys::mlirDenseI16ArrayGetElement;
+use mlir_sys::mlirDenseI32ArrayGet;
+use mlir_sys::mlirDenseI32ArrayGetElement;
+use mlir_sys::mlirDenseI64ArrayGet;
+use mlir_sys::mlirDenseI64ArrayGetElement;
+use mlir_sys::mlirDenseArrayAttrGetTypeID;
+use mlir_sys::MlirAttribute;
 
 use std::ffi::c_int;
 use std::fmt;

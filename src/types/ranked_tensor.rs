@@ -3,13 +3,11 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirRankedTensorTypeGet;
-use mlir::mlirRankedTensorTypeGetChecked;
-use mlir::mlirRankedTensorTypeGetEncoding;
-use mlir::mlirRankedTensorTypeGetTypeID;
-use mlir::MlirType;
+use mlir_sys::mlirRankedTensorTypeGet;
+use mlir_sys::mlirRankedTensorTypeGetChecked;
+use mlir_sys::mlirRankedTensorTypeGetEncoding;
+use mlir_sys::mlirRankedTensorTypeGetTypeID;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

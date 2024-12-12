@@ -3,15 +3,13 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::mlirFunctionTypeGet;
-use mlir::mlirFunctionTypeGetInput;
-use mlir::mlirFunctionTypeGetNumInputs;
-use mlir::mlirFunctionTypeGetNumResults;
-use mlir::mlirFunctionTypeGetResult;
-use mlir::mlirFunctionTypeGetTypeID;
-use mlir::MlirType;
+use mlir_sys::mlirFunctionTypeGet;
+use mlir_sys::mlirFunctionTypeGetInput;
+use mlir_sys::mlirFunctionTypeGetNumInputs;
+use mlir_sys::mlirFunctionTypeGetNumResults;
+use mlir_sys::mlirFunctionTypeGetResult;
+use mlir_sys::mlirFunctionTypeGetTypeID;
+use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;

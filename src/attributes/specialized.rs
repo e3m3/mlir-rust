@@ -3,9 +3,7 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::MlirAttribute;
+use mlir_sys::MlirAttribute;
 
 use std::cmp;
 use std::ffi::c_uint;

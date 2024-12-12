@@ -3,9 +3,7 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::MlirType;
+use mlir_sys::MlirType;
 
 use crate::attributes;
 use crate::exit_code;

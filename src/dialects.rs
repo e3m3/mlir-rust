@@ -3,9 +3,7 @@
 
 #![allow(dead_code)]
 
-extern crate mlir_sys as mlir;
-
-use mlir::MlirOperation;
+use mlir_sys::MlirOperation;
 
 use std::cmp;
 use std::fmt;
