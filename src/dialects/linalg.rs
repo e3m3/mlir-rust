@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
+#![allow(unused_variables)] // TODO: Remove.
 
 use mlir_sys::MlirAttribute;
 use mlir_sys::MlirOperation;
@@ -23,11 +24,16 @@ use attributes::specialized::NamedArrayOfAffineMaps;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
+use dialects::affine::AffineExpr;
+use dialects::affine::Dim as AffineDim;
+use dialects::affine::Map as AffineMap;
+use dialects::arith;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
 use dialects::IROp;
 use dialects::IROperation;
 use effects::MemoryEffectList;
+use effects::MEFF_NO_MEMORY_EFFECT;
 use exit_code::exit;
 use exit_code::ExitCode;
 use interfaces::Interface;
@@ -35,6 +41,7 @@ use interfaces::MemoryEffectOpInterface;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
+use ir::Operation;
 use ir::OperationState;
 use ir::Block;
 use ir::Region;
@@ -322,11 +329,14 @@ pub struct Transpose(MlirOperation);
 #[derive(Clone)]
 pub struct Vecmat(MlirOperation);
 
+#[derive(Clone)]
+pub struct Yield(MlirOperation);
+
 ///////////////////////////////
 //  Traits
 ///////////////////////////////
 
-pub trait PerformMatmul {
+pub trait TransformShape {
     fn matmul(&self, rhs: &Self) -> Option<Vec<i64>>;
     fn matmul_transpose_a(&self, rhs: &Self) -> Option<Vec<i64>>;
     fn matmul_transpose_b(&self, rhs: &Self) -> Option<Vec<i64>>;
@@ -362,11 +372,52 @@ pub trait ElementwiseCheckResult {
     fn __check_result(op: &'static Op, t: &RankedTensor, t_out: &Type) -> ();
 }
 
+pub trait ElementwiseBinaryOperationGetBody {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation>;
+}
+
+pub trait ElementwiseUnaryOperationGetBody {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation>;
+}
+
 pub trait ElementwiseBinaryOperation:
+    ElementwiseBinaryOperationGetBody +
     ElementwiseCheckBinaryOperands +
     ElementwiseCheckResult +
     ElementwiseOperation
 {
+    fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
+        let context = t.get_context(); 
+        let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
+        let ops = Self::get_body(
+            t,
+            &block.get_arg(0),
+            &block.get_arg(1),
+            &block.get_arg(2),
+            loc,
+        );
+        let results = if let Some(op) = ops.last() {
+            vec![op.get_result(0)]
+        } else {
+            vec![]
+        };
+        let mut op_yield = Yield::new(&context, &results, loc).as_operation();
+        ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
+        block.append_operation(&mut op_yield);
+        Self::from(*op_parent.get_mut())
+    }
+
     fn __new_mem_ref(
         op: &'static Op,
         context: &Context,
@@ -388,13 +439,18 @@ pub trait ElementwiseBinaryOperation:
             op.get_name(),
         ));
         let mut region = Region::new();
-        region.append_block(&mut Block::new_empty());
+        let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
+        region.append_block(&mut Block::new(
+            3,
+            &[t_elem.clone(), t_elem.clone(), t_elem.clone()],
+            &[loc.clone(), loc.clone(), loc.clone()],
+        ));
         let opseg_attr = OperandSegmentSizes::new(context, &[2, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone(), output.clone()]);
         op_state.add_regions(&[region]);
-        Self::from(*op_state.create_operation().get())
+        Self::__new_body(&t_elem, &mut op_state.create_operation(), loc)
     }
 
     fn __new_tensor(
@@ -419,22 +475,48 @@ pub trait ElementwiseBinaryOperation:
             op.get_name(),
         ));
         let mut region = Region::new();
-        region.append_block(&mut Block::new_empty());
+        let t_elem = t.as_shaped().get_element_type();
+        region.append_block(&mut Block::new(
+            3,
+            &[t_elem.clone(), t_elem.clone(), t_elem.clone()],
+            &[loc.clone(), loc.clone(), loc.clone()],
+        ));
         let opseg_attr = OperandSegmentSizes::new(&context, &[2, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone(), output.clone()]);
         op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
-        Self::from(*op_state.create_operation().get())
+        Self::__new_body(&t_elem, &mut op_state.create_operation(), loc)
     }
 }
 
 pub trait ElementwiseUnaryOperation:
+    ElementwiseUnaryOperationGetBody +
     ElementwiseCheckUnaryOperands +
     ElementwiseCheckResult +
     ElementwiseOperation
 {
+    fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
+        let context = t.get_context(); 
+        let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
+        let ops = Self::get_body(
+            t,
+            &block.get_arg(0),
+            &block.get_arg(2),
+            loc,
+        );
+        let results = if let Some(op) = ops.last() {
+            vec![op.get_result(0)]
+        } else {
+            vec![]
+        };
+        let mut op_yield = Yield::new(&context, &results, loc).as_operation();
+        ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
+        block.append_operation(&mut op_yield);
+        Self::from(*op_parent.get_mut())
+    }
+
     fn __new_mem_ref(
         op: &'static Op,
         context: &Context,
@@ -454,13 +536,18 @@ pub trait ElementwiseUnaryOperation:
             op.get_name(),
         ));
         let mut region = Region::new();
-        region.append_block(&mut Block::new_empty());
+        let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
+        region.append_block(&mut Block::new(
+            2,
+            &[t_elem.clone(), t_elem.clone()],
+            &[loc.clone(), loc.clone()],
+        ));
         let opseg_attr = OperandSegmentSizes::new(context, &[1, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[input.clone(), output.clone()]);
         op_state.add_regions(&[region]);
-        Self::from(*op_state.create_operation().get())
+        Self::__new_body(&t_elem, &mut op_state.create_operation(), loc)
     }
 
     fn __new_tensor(
@@ -484,14 +571,19 @@ pub trait ElementwiseUnaryOperation:
             op.get_name(),
         ));
         let mut region = Region::new();
-        region.append_block(&mut Block::new_empty());
+        let t_elem = t.as_shaped().get_element_type();
+        region.append_block(&mut Block::new(
+            2,
+            &[t_elem.clone(), t_elem.clone()],
+            &[loc.clone(), loc.clone()],
+        ));
         let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
         op_state.add_operands(&[input.clone(), output.clone()]);
         op_state.add_regions(&[region]);
         op_state.add_results(&[t.as_type()]);
-        Self::from(*op_state.create_operation().get())
+        Self::__new_body(&t_elem, &mut op_state.create_operation(), loc)
     }
 }
 
@@ -581,13 +673,14 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsMatmulShapedResult {
                     );
                     exit(ExitCode::DialectError);
                 }
-                if s_unpacked_matmul.is_none() || s_unpacked != s_unpacked_matmul.unwrap()  {
-                    eprintln!(
-                        "Expected compatible matmul output shape for operands of {} operation",
-                        op.get_name(),
-                    );
-                    exit(ExitCode::DialectError);
-                }
+                // TODO: Shape check depends on indexing maps.
+                //if s_unpacked_matmul.is_none() || s_unpacked != s_unpacked_matmul.unwrap()  {
+                //    eprintln!(
+                //        "Expected compatible matmul output shape for operands of {} operation",
+                //        op.get_name(),
+                //    );
+                //    exit(ExitCode::DialectError);
+                //}
             }
         }
     }
@@ -660,7 +753,7 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsMatvecShapedResult {
                 let s_output = Shaped::from(*output.get_type().get());
                 let t_elem = s_output.get_element_type();
                 let s_unpacked = s_output.unpack();
-                let s_unpacked_matvec = s_lhs.unpack_matvec(&s_rhs);
+                let s_unpacked_matvec = s_lhs.unpack_matvec(&s_rhs).unwrap_or_default();
                 if t_elem != s_lhs.get_element_type() || t_elem != s_rhs.get_element_type() {
                     eprintln!(
                         "Expected matching element types for input and output operands of {} operation",
@@ -668,9 +761,12 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsMatvecShapedResult {
                     );
                     exit(ExitCode::DialectError);
                 }
-                if s_unpacked_matvec.is_none() || s_unpacked != s_unpacked_matvec.unwrap()  {
+                if s_unpacked != s_unpacked_matvec {
                     eprintln!(
-                        "Expected compatible matvec output shape for operands of {} operation",
+                        "Expected compatible matvec output shape ({:?}) for result shape ({:?}) of \
+                        {} operation",
+                        s_unpacked,
+                        s_unpacked_matvec,
                         op.get_name(),
                     );
                     exit(ExitCode::DialectError);
@@ -747,7 +843,7 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsVecmatShapedResult {
                 let s_output = Shaped::from(*output.get_type().get());
                 let t_elem = s_output.get_element_type();
                 let s_unpacked = s_output.unpack();
-                let s_unpacked_vecmat = s_lhs.unpack_vecmat(&s_rhs);
+                let s_unpacked_vecmat = s_lhs.unpack_vecmat(&s_rhs).unwrap_or_default();
                 if t_elem != s_lhs.get_element_type() || t_elem != s_rhs.get_element_type() {
                     eprintln!(
                         "Expected matching element types for input and output operands of {} operation",
@@ -755,9 +851,12 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsVecmatShapedResult {
                     );
                     exit(ExitCode::DialectError);
                 }
-                if s_unpacked_vecmat.is_none() || s_unpacked != s_unpacked_vecmat.unwrap()  {
+                if s_unpacked != s_unpacked_vecmat  {
                     eprintln!(
-                        "Expected compatible vecmat output shape for operands of {} operation",
+                        "Expected compatible vecmat output shape ({:?}) for result shape ({:?}) of \
+                        {} operation",
+                        s_unpacked,
+                        s_unpacked_vecmat,
                         op.get_name(),
                     );
                     exit(ExitCode::DialectError);
@@ -1346,7 +1445,7 @@ impl Copy {
     ) -> Self {
         let mut op = Self::__new_mem_ref(&Op::Copy, context, input, output, loc).as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1359,7 +1458,7 @@ impl Copy {
     ) -> Self {
         let mut op = Self::__new_tensor(&Op::Copy, t, input, output, loc).as_operation();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1377,7 +1476,7 @@ impl Copy {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1518,8 +1617,8 @@ impl ElementwiseBinary {
             .as_operation();
         let f = BinaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1535,8 +1634,8 @@ impl ElementwiseBinary {
         let mut op = Self::__new_tensor(&Op::ElementwiseBinary, t, lhs, rhs, output, loc).as_operation();
         let f = BinaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1554,13 +1653,13 @@ impl ElementwiseBinary {
 
     pub fn get_binary_function(&self) -> BinaryFunction {
         let attr_name = StringBacked::from(BinaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         BinaryFunction::from(*attr.get())
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1582,8 +1681,8 @@ impl ElementwiseUnary {
             .as_operation();
         let f = UnaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1598,8 +1697,8 @@ impl ElementwiseUnary {
         let mut op = Self::__new_tensor(&Op::ElementwiseUnary, t, input, output, loc).as_operation();
         let f = UnaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1617,7 +1716,7 @@ impl ElementwiseUnary {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1627,7 +1726,7 @@ impl ElementwiseUnary {
 
     pub fn get_unary_function(&self) -> UnaryFunction {
         let attr_name = StringBacked::from(UnaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         UnaryFunction::from(*attr.get())
     }
 }
@@ -1759,7 +1858,7 @@ impl Index {
 
     pub fn get_dimension(&self) -> Dimension {
         let attr_name = StringBacked::from(Dimension::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
 
@@ -1809,37 +1908,27 @@ impl Log {
 }
 
 impl Matmul {
-    pub fn new_mem_ref(
+    pub fn new(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
-        index_maps: &IndexingMaps,
-        cast_kind: CastKind,
+        index_maps: Option<&IndexingMaps>,
+        cast_kind: Option<CastKind>,
         loc: &Location,
     ) -> Self {
         let mut op = Self::__new_mem_ref(&Op::Matmul, context, lhs, rhs, output, loc).as_operation();
-        let cast = Cast::new(context, cast_kind).as_named_attribute();
-        let m = index_maps.as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        op.set_attribute_inherent(&m.get_identifier().as_string(), &m.as_attribute());
-        Self::from(*op.get_mut())
-    }
-
-    pub fn new_tensor(
-        t: &RankedTensor,
-        lhs: &Value,
-        rhs: &Value,
-        output: &Value,
-        index_maps: &IndexingMaps,
-        cast_kind: CastKind,
-        loc: &Location,
-    ) -> Self {
-        let mut op = Self::__new_tensor(&Op::Matmul, t, lhs, rhs, output, loc).as_operation();
-        let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        let m = index_maps.as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        op.set_attribute_inherent(&m.get_identifier().as_string(), &m.as_attribute());
+        let index_maps_ = index_maps.unwrap_or(
+            &Self::get_default_indexing_maps(context)
+        ).as_named_attribute();
+        op.set_attribute_discardable(
+            &index_maps_.get_identifier().as_string(),
+            &index_maps_.as_attribute(),
+        );
+        if let Some(cast_kind_) = cast_kind {
+            let cast = Cast::new(context, cast_kind_).as_named_attribute();
+            op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        }
         Self::from(*op.get_mut())
     }
 
@@ -1855,15 +1944,25 @@ impl Matmul {
         &self.0
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        Cast::from(*attr.get())
+    }
+
+    pub fn get_default_indexing_maps(context: &Context) -> IndexingMaps {
+        let affine_d0 = AffineDim::new(context, 0).as_expr();
+        let affine_d1 = AffineDim::new(context, 1).as_expr();
+        let affine_d2 = AffineDim::new(context, 2).as_expr();
+        let map0 = AffineMap::new_results(context, 2, 0, &[affine_d0, affine_d2]);
+        let map1 = AffineMap::new_results(context, 2, 0, &[affine_d2, affine_d1]);
+        let map2 = AffineMap::new_results(context, 2, 0, &[affine_d0, affine_d0]);
+        IndexingMaps::new(context, &[map0, map1, map2])
     }
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
@@ -1877,7 +1976,7 @@ impl Matmul {
 }
 
 impl MatmulTransposeA {
-    pub fn new_mem_ref(
+    pub fn new(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -1888,21 +1987,7 @@ impl MatmulTransposeA {
         let mut op = Self::__new_mem_ref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc)
             .as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        Self::from(*op.get_mut())
-    }
-
-    pub fn new_tensor(
-        t: &RankedTensor,
-        lhs: &Value,
-        rhs: &Value,
-        output: &Value,
-        cast_kind: CastKind,
-        loc: &Location,
-    ) -> Self {
-        let mut op = Self::__new_tensor(&Op::MatmulTransposeA, t, lhs, rhs, output, loc).as_operation();
-        let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1920,7 +2005,7 @@ impl MatmulTransposeA {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1934,7 +2019,7 @@ impl MatmulTransposeA {
 }
 
 impl MatmulTransposeB {
-    pub fn new_mem_ref(
+    pub fn new(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -1945,21 +2030,7 @@ impl MatmulTransposeB {
         let mut op = Self::__new_mem_ref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc)
             .as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        Self::from(*op.get_mut())
-    }
-
-    pub fn new_tensor(
-        t: &RankedTensor,
-        lhs: &Value,
-        rhs: &Value,
-        output: &Value,
-        cast_kind: CastKind,
-        loc: &Location,
-    ) -> Self {
-        let mut op = Self::__new_tensor(&Op::MatmulTransposeB, t, lhs, rhs, output, loc).as_operation();
-        let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1977,7 +2048,7 @@ impl MatmulTransposeB {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -2446,7 +2517,7 @@ impl Transpose {
     ) -> Self {
         let mut op = Self::__new_mem_ref(&Op::Transpose, context, input, output, loc).as_operation();
         let p_ = p.as_named_attribute();
-        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
+        op.set_attribute_discardable(&p_.get_identifier().as_string(), &p_.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2459,7 +2530,7 @@ impl Transpose {
     ) -> Self {
         let mut op = Self::__new_tensor(&Op::Transpose, t, input, output, loc).as_operation();
         let p_ = p.as_named_attribute();
-        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
+        op.set_attribute_discardable(&p_.get_identifier().as_string(), &p_.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2481,12 +2552,22 @@ impl Transpose {
 
     pub fn get_permutation(&self) -> Permutation {
         let attr_name = StringBacked::from(Permutation::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }
 }
 
 impl Vecmat {
+    fn new_maps(op: &mut Self) -> Self {
+        let context = op.as_operation().get_context();
+        let indexing_maps = Self::get_default_indexing_maps(&context).as_named_attribute();
+        op.as_operation().set_attribute_discardable(
+            &indexing_maps.get_identifier().as_string(),
+            &indexing_maps.as_attribute(),
+        );
+        op.clone()
+    }
+
     pub fn new_mem_ref(
         context: &Context,
         lhs: &Value,
@@ -2494,7 +2575,7 @@ impl Vecmat {
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Vecmat, context, lhs, rhs, output, loc)
+        Self::new_maps(&mut Self::__new_mem_ref(&Op::Vecmat, context, lhs, rhs, output, loc))
     }
 
     pub fn new_tensor(
@@ -2504,7 +2585,7 @@ impl Vecmat {
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_tensor(&Op::Vecmat, t, lhs, rhs, output, loc)
+        Self::new_maps(&mut Self::__new_tensor(&Op::Vecmat, t, lhs, rhs, output, loc))
     }
 
     fn check_operands(lhs: &Value, rhs: &Value, output: &Value) -> () {
@@ -2519,6 +2600,21 @@ impl Vecmat {
         &self.0
     }
 
+    pub fn get_default_indexing_maps(context: &Context) -> IndexingMaps {
+        let affine_d0 = AffineDim::new(context, 0).as_expr();
+        let affine_d1 = AffineDim::new(context, 1).as_expr();
+        let map0 = AffineMap::new_results(context, 2, 0, &[affine_d1]);
+        let map1 = AffineMap::new_results(context, 2, 0, &[affine_d0, affine_d1]);
+        let map2 = AffineMap::new_results(context, 2, 0, &[affine_d0]);
+        IndexingMaps::new(context, &[map0, map1, map2])
+    }
+
+    pub fn get_indexing_maps(&self) -> IndexingMaps {
+        let attr_name = StringBacked::from(IndexingMaps::get_name());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        IndexingMaps::from(*attr.get())
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
     }
@@ -2528,11 +2624,46 @@ impl Vecmat {
     }
 }
 
+impl Yield {
+    pub fn new(context: &Context, values: &[Value], loc: &Location) -> Self {
+        let dialect = context.get_dialect_linalg();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::Yield.get_name(),
+        ));
+        let mut region = Region::new();
+        region.append_block(&mut Block::new_empty());
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(values);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 ///////////////////////////////
 //  Trait Implementation
 ///////////////////////////////
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Abs);
+
+impl ElementwiseUnaryOperationGetBody for Abs {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Abs {
     fn from(op: MlirOperation) -> Self {
@@ -2586,6 +2717,27 @@ impl IROperation for Abs {
 }
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Add);
+
+impl ElementwiseBinaryOperationGetBody for Add {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op = arith::AddF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            vec![op]
+        } else if t.is_integer() {
+            let op = arith::AddI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            vec![op]
+        } else {
+            eprintln!("Expected float or integer element type for add operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
 
 impl From<MlirOperation> for Add {
     fn from(op: MlirOperation) -> Self {
@@ -2700,6 +2852,17 @@ impl NamedInteger for Cast {}
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Ceil);
 
+impl ElementwiseUnaryOperationGetBody for Ceil {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Ceil {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -2752,6 +2915,17 @@ impl IROperation for Ceil {
 }
 
 impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult!(Copy);
+
+impl ElementwiseUnaryOperationGetBody for Copy {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Copy {
     fn from(op: MlirOperation) -> Self {
@@ -2806,6 +2980,27 @@ impl IROperation for Copy {
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Div);
 
+impl ElementwiseBinaryOperationGetBody for Div {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op = arith::DivF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            vec![op]
+        } else if t.is_integer() {
+            let op = arith::DivSI::new(t, lhs, rhs, loc).as_operation();
+            vec![op]
+        } else {
+            eprintln!("Expected float or integer element type for div operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl From<MlirOperation> for Div {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -2859,6 +3054,24 @@ impl IROperation for Div {
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(DivUnsigned);
 
+impl ElementwiseBinaryOperationGetBody for DivUnsigned {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_integer() {
+            let op = arith::DivUI::new(t, lhs, rhs, loc).as_operation();
+            vec![op]
+        } else {
+            eprintln!("Expected signless integer element type for div unsigned operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl From<MlirOperation> for DivUnsigned {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -2911,6 +3124,18 @@ impl IROperation for DivUnsigned {
 }
 
 impl_ElementwiseBinaryOpPromotableTypeOperandsAndScalarResult!(Dot);
+
+impl ElementwiseBinaryOperationGetBody for Dot {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Dot {
     fn from(op: MlirOperation) -> Self {
@@ -2966,6 +3191,18 @@ impl IROperation for Dot {
 
 impl_ElementwiseBinaryOpPromotableTypeOperandsAndShapedResult!(ElementwiseBinary);
 
+impl ElementwiseBinaryOperationGetBody for ElementwiseBinary {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for ElementwiseBinary {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3018,6 +3255,17 @@ impl IROperation for ElementwiseBinary {
 }
 
 impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult!(ElementwiseUnary);
+
+impl ElementwiseUnaryOperationGetBody for ElementwiseUnary {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for ElementwiseUnary {
     fn from(op: MlirOperation) -> Self {
@@ -3072,6 +3320,17 @@ impl IROperation for ElementwiseUnary {
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Erf);
 
+impl ElementwiseUnaryOperationGetBody for Erf {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Erf {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3125,6 +3384,17 @@ impl IROperation for Erf {
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Exp);
 
+impl ElementwiseUnaryOperationGetBody for Exp {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Exp {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3177,6 +3447,17 @@ impl IROperation for Exp {
 }
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Floor);
+
+impl ElementwiseUnaryOperationGetBody for Floor {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Floor {
     fn from(op: MlirOperation) -> Self {
@@ -3293,7 +3574,7 @@ impl IRAttribute for IndexingMaps {
 
 impl IRAttributeNamed for IndexingMaps {
     fn get_name() -> &'static str {
-        "indexing_maps"
+        "linalg.memoized_indexing_maps"
     }
 }
 
@@ -3330,6 +3611,17 @@ impl IRAttributeNamed for IteratorType {
 impl NamedInteger for IteratorType {}
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Log);
+
+impl ElementwiseUnaryOperationGetBody for Log {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Log {
     fn from(op: MlirOperation) -> Self {
@@ -3383,6 +3675,54 @@ impl IROperation for Log {
 }
 
 impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult!(Matmul);
+
+impl ElementwiseBinaryOperationGetBody for Matmul {
+    /// TODO: Check `cast` attribute.
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op_mul = arith::MulF::new(
+                t,
+                lhs,
+                rhs,
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddF::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else if t.is_integer() {
+            let op_mul = arith::MulI::new(
+                t,
+                lhs,
+                rhs,
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddI::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else {
+            eprintln!("Expected float or integer element type for matmul operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
 
 impl From<MlirOperation> for Matmul {
     fn from(op: MlirOperation) -> Self {
@@ -3438,6 +3778,18 @@ impl IROperation for Matmul {
 
 impl_ElementwiseBinaryOpMatmulTransposeATypeOperandsAndShapedResult!(MatmulTransposeA);
 
+impl ElementwiseBinaryOperationGetBody for MatmulTransposeA {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for MatmulTransposeA {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3491,6 +3843,18 @@ impl IROperation for MatmulTransposeA {
 }
 
 impl_ElementwiseBinaryOpMatmulTransposeBTypeOperandsAndShapedResult!(MatmulTransposeB);
+
+impl ElementwiseBinaryOperationGetBody for MatmulTransposeB {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for MatmulTransposeB {
     fn from(op: MlirOperation) -> Self {
@@ -3546,6 +3910,53 @@ impl IROperation for MatmulTransposeB {
 
 impl_ElementwiseBinaryOpMatvecTypeOperandsAndShapedResult!(Matvec);
 
+impl ElementwiseBinaryOperationGetBody for Matvec {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op_mul = arith::MulF::new(
+                t,
+                lhs,
+                rhs,
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddF::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else if t.is_integer() {
+            let op_mul = arith::MulI::new(
+                t,
+                lhs,
+                rhs,
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddI::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else {
+            eprintln!("Expected float or integer element type for matvec operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl From<MlirOperation> for Matvec {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3600,6 +4011,18 @@ impl IROperation for Matvec {
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Max);
 
+impl ElementwiseBinaryOperationGetBody for Max {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Max {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3652,6 +4075,18 @@ impl IROperation for Max {
 }
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Min);
+
+impl ElementwiseBinaryOperationGetBody for Min {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Min {
     fn from(op: MlirOperation) -> Self {
@@ -3706,6 +4141,27 @@ impl IROperation for Min {
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Mul);
 
+impl ElementwiseBinaryOperationGetBody for Mul {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            vec![op]
+        } else if t.is_integer() {
+            let op = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            vec![op]
+        } else {
+            eprintln!("Expected float or integer element type for mul operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl From<MlirOperation> for Mul {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3758,6 +4214,17 @@ impl IROperation for Mul {
 }
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(NegF);
+
+impl ElementwiseUnaryOperationGetBody for NegF {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for NegF {
     fn from(op: MlirOperation) -> Self {
@@ -3880,6 +4347,17 @@ impl NamedI64DenseArray for Permutation {}
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Reciprocal);
 
+impl ElementwiseUnaryOperationGetBody for Reciprocal {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Reciprocal {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -3932,6 +4410,17 @@ impl IROperation for Reciprocal {
 }
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Round);
+
+impl ElementwiseUnaryOperationGetBody for Round {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Round {
     fn from(op: MlirOperation) -> Self {
@@ -3986,6 +4475,17 @@ impl IROperation for Round {
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Rsqrt);
 
+impl ElementwiseUnaryOperationGetBody for Rsqrt {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Rsqrt {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -4038,6 +4538,17 @@ impl IROperation for Rsqrt {
 }
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Sqrt);
+
+impl ElementwiseUnaryOperationGetBody for Sqrt {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Sqrt {
     fn from(op: MlirOperation) -> Self {
@@ -4092,6 +4603,17 @@ impl IROperation for Sqrt {
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Square);
 
+impl ElementwiseUnaryOperationGetBody for Square {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Square {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -4144,6 +4666,27 @@ impl IROperation for Square {
 }
 
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Sub);
+
+impl ElementwiseBinaryOperationGetBody for Sub {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op = arith::SubF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            vec![op]
+        } else if t.is_integer() {
+            let op = arith::SubI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            vec![op]
+        } else {
+            eprintln!("Expected float or integer element type for sub operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
 
 impl From<MlirOperation> for Sub {
     fn from(op: MlirOperation) -> Self {
@@ -4198,6 +4741,17 @@ impl IROperation for Sub {
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Tanh);
 
+impl ElementwiseUnaryOperationGetBody for Tanh {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
+
 impl From<MlirOperation> for Tanh {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -4250,6 +4804,17 @@ impl IROperation for Tanh {
 }
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndTransposeResult!(Transpose);
+
+impl ElementwiseUnaryOperationGetBody for Transpose {
+    fn get_body(
+        t: &Type,
+        input: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        todo!()
+    }
+}
 
 impl From<MlirOperation> for Transpose {
     fn from(op: MlirOperation) -> Self {
@@ -4334,6 +4899,53 @@ impl NamedInteger for UnaryFunction {}
 
 impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult!(Vecmat);
 
+impl ElementwiseBinaryOperationGetBody for Vecmat {
+    fn get_body(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        acc: &Value,
+        loc: &Location,
+    ) -> Vec<Operation> {
+        if t.is_float() {
+            let op_mul = arith::MulF::new(
+                t,
+                lhs,
+                rhs,
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddF::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else if t.is_integer() {
+            let op_mul = arith::MulI::new(
+                t,
+                lhs,
+                rhs,
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddI::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else {
+            eprintln!("Expected float or integer element type for vecmat operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl From<MlirOperation> for Vecmat {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -4386,7 +4998,57 @@ impl IROperation for Vecmat {
     }
 }
 
-impl <T: Shape> PerformMatmul for T {
+impl From<MlirOperation> for Yield {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IROperation for Yield {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_linalg()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[
+            MEFF_NO_MEMORY_EFFECT,
+        ]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::RegionBranchTerminatorOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Yield.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IROp {
+        &Op::Yield
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ReturnLike,
+            Trait::Terminator,
+        ]
+    }
+}
+
+impl <T: Shape> TransformShape for T {
     fn matmul(&self, rhs: &Self) -> Option<Vec<i64>> {
         if self.rank() == 2 && rhs.rank() == 2 && self.get(1) == rhs.get(0) {
             Some(vec![self.get(0), rhs.get(1)])
@@ -4421,7 +5083,7 @@ impl <T: Shape> PerformMatmul for T {
 
     fn vecmat(&self, rhs: &Self) -> Option<Vec<i64>> {
         if self.rank() == 1 && rhs.rank() == 2 && self.get(0) == rhs.get(0) {
-            Some(vec![self.get(0), rhs.get(1)])
+            Some(vec![rhs.get(1)])
         } else {
             None
         }
@@ -4440,7 +5102,7 @@ impl <T: Shape> PerformMatmul for T {
     }
 
     fn unpack_matvec(&self, rhs: &Self) -> Option<(isize, Vec<i64>)> {
-        self.matvec(rhs).map(|v| (self.rank(), v))
+        self.matvec(rhs).map(|v| (rhs.rank(), v))
     }
 
     fn unpack_vecmat(&self, rhs: &Self) -> Option<(isize, Vec<i64>)> {
