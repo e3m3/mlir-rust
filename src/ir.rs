@@ -1767,6 +1767,10 @@ impl ShapeImpl<Vec<i64>> {
     pub fn get_mut(&mut self) -> &mut [i64] {
         self.0.as_mut()
     }
+
+    pub fn transpose(&self) -> Self {
+        Self::from(self.to_vec_transpose())
+    }
 }
 
 impl fmt::Display for ShapeImpl<Vec<i64>> {
