@@ -29,6 +29,7 @@ pub mod func;
 //pub mod index;
 pub mod linalg;
 //pub mod llvm;
+//pub mod math;
 pub mod memref;
 //pub mod scf;
 //pub mod spirv;
