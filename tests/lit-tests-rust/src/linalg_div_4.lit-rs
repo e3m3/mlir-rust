@@ -1,17 +1,17 @@
-// RUN: %O/linalg_add_1 2>&1 | @mlir-opt | @filecheck %M/linalg_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/linalg_div_4 2>&1 | @mlir-opt | @filecheck %M/linalg_div_4.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
+use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
-use mlir::dialects::linalg::Add;
-use mlir::dialects::tensor::Empty;
+use mlir::dialects::linalg::Div;
+use mlir::dialects::memref::Alloc;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
 use mlir::types::IRType;
-use mlir::types::float::Float as FloatType;
-use mlir::types::float::Layout as FloatLayout;
-use mlir::types::ranked_tensor::RankedTensor;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::memref::MemRef;
 
 mod common;
 use crate::common::*;
@@ -22,22 +22,22 @@ pub fn main() -> () {
     let loc = context.get_unknown_location();
     let dims: Vec<i64> = vec![8, 16];
     let s = ShapeImpl::from(dims);
-    let t_elem = FloatType::new(&context, FloatLayout::F32);
-    let t = RankedTensor::new(&s, &t_elem.as_type());
+    let t_elem = IntegerType::new(&context, 64);
+    let t = MemRef::new_contiguous(&s, &t_elem.as_type(), &DefaultMemorySpace::new());
     let f = get_empty_test_fn(&context, &[t.as_type(), t.as_type()], &[t.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_tensor_empty = Empty::new(&t, &[], &loc).as_operation();
-    let mut op_add = Add::new_tensor(
-        &t,
+    let mut op_alloc = Alloc::new(&t, &[], &[], None, &loc).as_operation();
+    let mut op_div = Div::new_mem_ref(
+        &context,
         &f_block.get_arg(0),
         &f_block.get_arg(1),
-        &op_tensor_empty.get_result(0),
+        &op_alloc.get_result(0),
         &loc,
     ).as_operation();
-    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
-    f_block.append_operation(&mut op_tensor_empty);
-    f_block.append_operation(&mut op_add);
+    let mut op_ret = Return::new(&f, &[op_alloc.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_alloc);
+    f_block.append_operation(&mut op_div);
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());

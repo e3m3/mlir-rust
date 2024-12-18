@@ -1,4 +1,4 @@
-// RUN: %O/linalg_add_1 2>&1 | @mlir-opt | @filecheck %M/linalg_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/linalg_add_3 2>&1 | @mlir-opt | @filecheck %M/linalg_add_3.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
@@ -9,8 +9,7 @@ use mlir::dialects::tensor::Empty;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
 use mlir::types::IRType;
-use mlir::types::float::Float as FloatType;
-use mlir::types::float::Layout as FloatLayout;
+use mlir::types::integer::Integer as IntegerType;
 use mlir::types::ranked_tensor::RankedTensor;
 
 mod common;
@@ -22,7 +21,7 @@ pub fn main() -> () {
     let loc = context.get_unknown_location();
     let dims: Vec<i64> = vec![8, 16];
     let s = ShapeImpl::from(dims);
-    let t_elem = FloatType::new(&context, FloatLayout::F32);
+    let t_elem = IntegerType::new(&context, 64);
     let t = RankedTensor::new(&s, &t_elem.as_type());
     let f = get_empty_test_fn(&context, &[t.as_type(), t.as_type()], &[t.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();

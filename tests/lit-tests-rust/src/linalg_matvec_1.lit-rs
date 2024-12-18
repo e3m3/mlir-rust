@@ -1,10 +1,11 @@
-// RUN: %O/linalg_add_1 2>&1 | @mlir-opt | @filecheck %M/linalg_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/linalg_matvec_1 2>&1 | @mlir-opt | @filecheck %M/linalg_matvec_1.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
 use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
-use mlir::dialects::linalg::Add;
+use mlir::dialects::linalg::Matvec;
+use mlir::dialects::linalg::TransformShape;
 use mlir::dialects::tensor::Empty;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
@@ -20,24 +21,27 @@ pub fn main() -> () {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
-    let dims: Vec<i64> = vec![8, 16];
-    let s = ShapeImpl::from(dims);
+    let s_mat = ShapeImpl::from(vec![8, 16]);
+    let s_vec = ShapeImpl::from(vec![16]);
+    let s_out = ShapeImpl::from(s_mat.matvec(&s_vec).unwrap());
     let t_elem = FloatType::new(&context, FloatLayout::F32);
-    let t = RankedTensor::new(&s, &t_elem.as_type());
-    let f = get_empty_test_fn(&context, &[t.as_type(), t.as_type()], &[t.as_type()]);
+    let t_mat = RankedTensor::new(&s_mat, &t_elem.as_type());
+    let t_vec = RankedTensor::new(&s_vec, &t_elem.as_type());
+    let t_out = RankedTensor::new(&s_out, &t_elem.as_type());
+    let f = get_empty_test_fn(&context, &[t_mat.as_type(), t_vec.as_type()], &[t_out.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_tensor_empty = Empty::new(&t, &[], &loc).as_operation();
-    let mut op_add = Add::new_tensor(
-        &t,
+    let mut op_tensor_empty = Empty::new(&t_out, &[], &loc).as_operation();
+    let mut op_matvec = Matvec::new_tensor(
+        &t_out,
         &f_block.get_arg(0),
         &f_block.get_arg(1),
         &op_tensor_empty.get_result(0),
         &loc,
     ).as_operation();
-    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_matvec.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_tensor_empty);
-    f_block.append_operation(&mut op_add);
+    f_block.append_operation(&mut op_matvec);
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());

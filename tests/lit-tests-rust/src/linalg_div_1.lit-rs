@@ -1,10 +1,10 @@
-// RUN: %O/linalg_add_1 2>&1 | @mlir-opt | @filecheck %M/linalg_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/linalg_div_1 2>&1 | @mlir-opt | @filecheck %M/linalg_div_1.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
 use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
-use mlir::dialects::linalg::Add;
+use mlir::dialects::linalg::Div;
 use mlir::dialects::tensor::Empty;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
@@ -28,16 +28,16 @@ pub fn main() -> () {
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_tensor_empty = Empty::new(&t, &[], &loc).as_operation();
-    let mut op_add = Add::new_tensor(
+    let mut op_div = Div::new_tensor(
         &t,
         &f_block.get_arg(0),
         &f_block.get_arg(1),
         &op_tensor_empty.get_result(0),
         &loc,
     ).as_operation();
-    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_div.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_tensor_empty);
-    f_block.append_operation(&mut op_add);
+    f_block.append_operation(&mut op_div);
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
