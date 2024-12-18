@@ -85,7 +85,7 @@ pub trait AffineExpr {
     fn get(&self) -> &MlirAffineExpr;
 }
 
-#[derive(Copy,Clone,PartialEq)]
+#[derive(Clone,Copy,PartialEq)]
 pub enum BinOp {
     Add,
     Mod,
@@ -94,22 +94,22 @@ pub enum BinOp {
     FloorDiv,
 }
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Binary(MlirAffineExpr, BinOp);
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Constant(MlirAffineExpr);
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Dim(MlirAffineExpr);
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Expr(MlirAffineExpr);
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Map(MlirAffineMap);
 
-#[derive(Clone)]
+#[derive(Clone,Copy)]
 pub struct Symbol(MlirAffineExpr);
 
 impl Binary {
@@ -413,7 +413,7 @@ impl Map {
         if num_results <= 0 {
             None
         } else if num_results >= self.num_results() {
-            Some(self.clone())
+            Some(*self)
         } else {
             Some(Self::from(do_unsafe!(mlirAffineMapGetMajorSubMap(self.0, num_results))))
         }
@@ -423,7 +423,7 @@ impl Map {
         if num_results <= 0 {
             None
         } else if num_results >= self.num_results() {
-            Some(self.clone())
+            Some(*self)
         } else {
             Some(Self::from(do_unsafe!(mlirAffineMapGetMinorSubMap(self.0, num_results))))
         }
@@ -554,7 +554,7 @@ impl AffineExpr for Dim {
 
 impl AffineExpr for Expr {
     fn as_expr(&self) -> Expr {
-        self.clone()
+        *self
     }
 
     fn get(&self) -> &MlirAffineExpr {
