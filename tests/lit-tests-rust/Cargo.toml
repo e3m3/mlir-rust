@@ -229,6 +229,106 @@ name = "linalg_add_1"
 path = "src/linalg_add_1.lit-rs"
 
 [[bin]]
+name = "linalg_add_2"
+path = "src/linalg_add_2.lit-rs"
+
+[[bin]]
+name = "linalg_add_3"
+path = "src/linalg_add_3.lit-rs"
+
+[[bin]]
+name = "linalg_add_4"
+path = "src/linalg_add_4.lit-rs"
+
+[[bin]]
+name = "linalg_div_1"
+path = "src/linalg_div_1.lit-rs"
+
+[[bin]]
+name = "linalg_div_2"
+path = "src/linalg_div_2.lit-rs"
+
+[[bin]]
+name = "linalg_div_3"
+path = "src/linalg_div_3.lit-rs"
+
+[[bin]]
+name = "linalg_div_4"
+path = "src/linalg_div_4.lit-rs"
+
+[[bin]]
+name = "linalg_div_unsigned_1"
+path = "src/linalg_div_unsigned_1.lit-rs"
+
+[[bin]]
+name = "linalg_div_unsigned_2"
+path = "src/linalg_div_unsigned_2.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_1"
+path = "src/linalg_matmul_1.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_2"
+path = "src/linalg_matmul_2.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_3"
+path = "src/linalg_matmul_3.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_4"
+path = "src/linalg_matmul_4.lit-rs"
+
+[[bin]]
+name = "linalg_matvec_1"
+path = "src/linalg_matvec_1.lit-rs"
+
+[[bin]]
+name = "linalg_matvec_2"
+path = "src/linalg_matvec_2.lit-rs"
+
+[[bin]]
+name = "linalg_mul_1"
+path = "src/linalg_mul_1.lit-rs"
+
+[[bin]]
+name = "linalg_mul_2"
+path = "src/linalg_mul_2.lit-rs"
+
+[[bin]]
+name = "linalg_mul_3"
+path = "src/linalg_mul_3.lit-rs"
+
+[[bin]]
+name = "linalg_mul_4"
+path = "src/linalg_mul_4.lit-rs"
+
+[[bin]]
+name = "linalg_sub_1"
+path = "src/linalg_sub_1.lit-rs"
+
+[[bin]]
+name = "linalg_sub_2"
+path = "src/linalg_sub_2.lit-rs"
+
+[[bin]]
+name = "linalg_sub_3"
+path = "src/linalg_sub_3.lit-rs"
+
+[[bin]]
+name = "linalg_sub_4"
+path = "src/linalg_sub_4.lit-rs"
+
+[[bin]]
+name = "linalg_vecmat_1"
+path = "src/linalg_vecmat_1.lit-rs"
+
+[[bin]]
+name = "linalg_vecmat_2"
+path = "src/linalg_vecmat_2.lit-rs"
+
+[[bin]]
 name = "tensor_bitcast_1"
 path = "src/tensor_bitcast_1.lit-rs"
 
