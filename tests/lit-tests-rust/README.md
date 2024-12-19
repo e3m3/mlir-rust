@@ -22,7 +22,7 @@ from the `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 ##  Setup
 
 *   To run the full suite of tests, run the following command from the parent cargo project:
-    
+
     ```shell
     cargo test -- --nocapture
     ```
