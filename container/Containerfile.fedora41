@@ -47,6 +47,8 @@ COPY src                    ${PROJECT_DIR}/src/
 COPY tests                  ${PROJECT_DIR}/tests/
 
 ARG BUILD_MODE=
+ARG CARGO_JOBS=
+ARG LIT_JOBS=
 
 WORKDIR ${PROJECT_DIR}
 

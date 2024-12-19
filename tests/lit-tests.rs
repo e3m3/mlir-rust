@@ -30,6 +30,22 @@ mod tests {
         num_cpus::get()
     }
 
+    fn get_num_jobs_cargo() -> usize {
+        let n = get_num_jobs();
+        match env::var("CARGO_JOBS") {
+            Ok(j)   => j.parse::<usize>().unwrap_or(n),
+            Err(_)  => n,
+        }
+    }
+
+    fn get_num_jobs_lit() -> usize {
+        let n = get_num_jobs();
+        match env::var("LIT_JOBS") {
+            Ok(j)   => j.parse::<usize>().unwrap_or(n),
+            Err(_)  => n,
+        }
+    }
+
     fn get_tests_dir() -> PathBuf {
         env::current_exe().ok().map(|mut path: PathBuf| {
             path.pop();
@@ -177,7 +193,7 @@ mod tests {
             "--config-prefix=lit",
             "--order=lexical",
             "--show-all",
-            format!("--workers={}", num_jobs).as_str(),
+            format!("--workers={}", get_num_jobs_lit()).as_str(),
             format!("--param=ARCH={}", arch).as_str(),
             format!("--param=OS_NAME={}", os_name).as_str(),
             format!("--param=CARGO_OUTDIR={}", bin_dir_str).as_str(),
@@ -192,7 +208,7 @@ mod tests {
                 "cargo build {} --manifest-path {} -j {}",
                 build_mode,
                 lit_dir_rust_manifest_str,
-                num_jobs,
+                get_num_jobs_cargo(),
             ))
             .output()
             .expect("Failed building downstream rust project for lit tests");
