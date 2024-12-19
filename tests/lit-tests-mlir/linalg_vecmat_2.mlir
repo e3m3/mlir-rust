@@ -1,6 +1,7 @@
-// RUN: @mlir-opt -h                            | @filecheck %s
-// RUN: @mlir-opt %s --canonicalize             | @filecheck %s --check-prefix=CHECK_CAN
-// RUN: @mlir-opt %s --mlir-print-op-generic    | @filecheck %s --check-prefix=CHECK_GEN
+// RUN: @mlir-opt -h                                    | @filecheck %s
+// RUN: @mlir-opt %s --canonicalize                     | @filecheck %s --check-prefix=CHECK_CAN
+// RUN: @mlir-opt %s --mlir-print-op-generic            | @filecheck %s --check-prefix=CHECK_GEN
+// RUN: @mlir-opt %s --convert-linalg-to-affine-loops   | @filecheck %s --check-prefix=CHECK_AFF
 
 // CHECK:       Available Dialects:
 // CHECK-SAME:  func
@@ -40,3 +41,20 @@ module {
 // CHECK_GEN:           "func.return"(%0) : (memref<8xf32>) -> ()
 // CHECK_GEN:       }) : () -> ()
 // CHECK_GEN:   }) : () -> ()
+
+// CHECK_AFF:   module {
+// CHECK_AFF:       func.func @test(%arg0: memref<16xf32>, %arg1: memref<16x8xf32>) -> memref<8xf32> {
+// CHECK_AFF:           %alloc = memref.alloc() : memref<8xf32>
+// CHECK_AFF:           affine.for %arg2 = 0 to 8 {
+// CHECK_AFF:               affine.for %arg3 = 0 to 16 {
+// CHECK_AFF:                   %0 = affine.load %arg0[%arg3] : memref<16xf32>
+// CHECK_AFF:                   %1 = affine.load %arg1[%arg3, %arg2] : memref<16x8xf32>
+// CHECK_AFF:                   %2 = affine.load %alloc[%arg2] : memref<8xf32>
+// CHECK_AFF:                   %3 = arith.mulf %0, %1 : f32
+// CHECK_AFF:                   %4 = arith.addf %2, %3 : f32
+// CHECK_AFF:                   affine.store %4, %alloc[%arg2] : memref<8xf32>
+// CHECK_AFF:               }
+// CHECK_AFF:           }
+// CHECK_AFF:           return %alloc : memref<8xf32>
+// CHECK_AFF:       }
+// CHECK_AFF:   }
