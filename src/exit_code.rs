@@ -4,11 +4,11 @@
 use std::process;
 
 #[repr(u8)]
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub enum ExitCode {
-    Ok              = 0,
-    IRError         = 100,
-    DialectError    = 200,
+    Ok = 0,
+    IRError = 100,
+    DialectError = 200,
 }
 
 pub fn exit(code: ExitCode) -> ! {

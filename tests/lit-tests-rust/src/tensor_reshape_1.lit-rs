@@ -2,15 +2,15 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::tensor::Reshape;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::integer::Integer as IntegerType;
-use mlir::types::IRType;
 use mlir::types::ranked_tensor::RankedTensor;
 
 mod common;
@@ -28,19 +28,14 @@ pub fn main() -> () {
     let t_tnsr_in = RankedTensor::new(&s_in, &t_float);
     let t_tnsr_shape = RankedTensor::new(&s_shape, &t_int);
     let t_tnsr_out = RankedTensor::new(&s_out, &t_float);
-    let f = get_empty_test_fn(
-        &context,
-        &[t_tnsr_in.as_type(), t_tnsr_shape.as_type()],
-        &[t_tnsr_out.as_type()],
-    );
+    let f = get_empty_test_fn(&context, &[t_tnsr_in.as_type(), t_tnsr_shape.as_type()], &[
+        t_tnsr_out.as_type(),
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_reshape = Reshape::new_ranked(
-        &t_tnsr_out,
-        &f_block.get_arg(0),
-        &f_block.get_arg(1),
-        &loc,
-    ).as_operation();
+    let mut op_reshape =
+        Reshape::new_ranked(&t_tnsr_out, &f_block.get_arg(0), &f_block.get_arg(1), &loc)
+            .as_operation();
     let mut op_ret = Return::new(&f, &[op_reshape.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_reshape);
     f_block.append_operation(&mut op_ret);

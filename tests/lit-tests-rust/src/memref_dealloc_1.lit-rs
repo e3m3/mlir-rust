@@ -2,18 +2,18 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::IntegerMemorySpace;
 use mlir::dialects::common::MemoryLayout;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Dealloc;
 use mlir::ir::Block;
 use mlir::ir::Shape;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 
 mod common;
@@ -27,18 +27,10 @@ pub fn main() -> () {
     let s_in = ShapeImpl::from(vec![8, 64]);
     let layout = MemoryLayout::from(AffineMap::new_identity(&context, s_in.rank()));
     let t_mr_in = MemRef::new(&s_in, &t, &layout, &IntegerMemorySpace::new(&context, 1));
-    let f = get_empty_test_fn(
-        &context,
-        &[t_mr_in.as_type()],
-        &[],
-    );
+    let f = get_empty_test_fn(&context, &[t_mr_in.as_type()], &[]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_dealloc = Dealloc::new(
-        &context,
-        &f_block.get_arg(0),
-        &loc,
-    ).as_operation();
+    let mut op_dealloc = Dealloc::new(&context, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_dealloc);
     f_block.append_operation(&mut op_ret);

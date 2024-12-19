@@ -6,21 +6,21 @@ use mlir::attributes::dense_elements::DenseElements;
 use mlir::attributes::specialized::NamedInitialization;
 use mlir::attributes::specialized::NamedString;
 use mlir::attributes::specialized::NamedType;
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::SymbolName;
 use mlir::dialects::common::SymbolVisibilityKind;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Alignment;
-use mlir::dialects::memref::InitialValue;
 use mlir::dialects::memref::Global;
 use mlir::dialects::memref::GlobalType;
+use mlir::dialects::memref::InitialValue;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
 use mlir::ir::StringBacked;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 use mlir::types::ranked_tensor::RankedTensor;
 
@@ -40,7 +40,8 @@ pub fn main() -> () {
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let f_name_global = StringBacked::from("x");
     let sym_name = SymbolName::new(&context, &f_name_global.as_string_ref());
-    let attr_init = InitialValue::new_elements(&DenseElements::new_f32(&t_tnsr_out, &[2.0]).as_elements());
+    let attr_init =
+        InitialValue::new_elements(&DenseElements::new_f32(&t_tnsr_out, &[2.0]).as_elements());
     let align = Alignment::new(&context, 8);
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_global = Global::new(
@@ -51,7 +52,8 @@ pub fn main() -> () {
         None,
         Some(&align),
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();

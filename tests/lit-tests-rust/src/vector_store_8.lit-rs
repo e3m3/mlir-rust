@@ -3,17 +3,17 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedBool;
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::NonTemporal;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::vector::Store;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 use mlir::types::vector::Vector;
 
@@ -32,7 +32,12 @@ pub fn main() -> () {
     let t_mr_out = MemRef::new_contiguous(&s_out, &t, &DefaultMemorySpace::new()).as_type();
     let f = get_empty_test_fn(
         &context,
-        &[t_vec_in.as_type(), t_mr_out.clone(), t_index.clone(), t_index.clone()],
+        &[
+            t_vec_in.as_type(),
+            t_mr_out.clone(),
+            t_index.clone(),
+            t_index.clone(),
+        ],
         &[],
     );
     let f_region = f.as_operation().iter().next().unwrap_or_default();
@@ -44,7 +49,8 @@ pub fn main() -> () {
         &[f_block.get_arg(2), f_block.get_arg(3)],
         &NonTemporal::new(&context, true),
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_store);
     f_block.append_operation(&mut op_ret);

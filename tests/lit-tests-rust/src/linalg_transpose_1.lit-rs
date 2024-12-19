@@ -3,8 +3,8 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedI64DenseArray;
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::linalg::Permutation;
 use mlir::dialects::linalg::Transpose;
 use mlir::dialects::tensor::Empty;
@@ -38,7 +38,8 @@ pub fn main() -> () {
         &op_empty.get_result(0),
         &p,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_transpose.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_empty);
     f_block.append_operation(&mut op_transpose);

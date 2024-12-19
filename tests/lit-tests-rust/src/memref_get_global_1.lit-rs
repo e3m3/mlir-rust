@@ -4,20 +4,20 @@ extern crate mlir;
 
 use mlir::attributes::specialized::NamedString;
 use mlir::attributes::specialized::NamedType;
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::SymbolName;
 use mlir::dialects::common::SymbolVisibilityKind;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::GetGlobal;
 use mlir::dialects::memref::Global;
 use mlir::dialects::memref::GlobalType;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
 use mlir::ir::StringBacked;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 
 mod common;
@@ -45,11 +45,8 @@ pub fn main() -> () {
         None,
         &loc,
     );
-    let mut op_get_global = GetGlobal::new(
-        &t_mr_out,
-        &op_global.get_global_ref(&context),
-        &loc,
-    ).as_operation();
+    let mut op_get_global =
+        GetGlobal::new(&t_mr_out, &op_global.get_global_ref(&context), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_get_global.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_get_global);
     f_block.append_operation(&mut op_ret);

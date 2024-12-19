@@ -3,6 +3,7 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirShapedTypeGetDimSize;
 use mlir_sys::mlirShapedTypeGetDynamicSize;
 use mlir_sys::mlirShapedTypeGetDynamicStrideOrOffset;
@@ -13,15 +14,14 @@ use mlir_sys::mlirShapedTypeHasStaticShape;
 use mlir_sys::mlirShapedTypeIsDynamicDim;
 use mlir_sys::mlirShapedTypeIsDynamicSize;
 use mlir_sys::mlirShapedTypeIsDynamicStrideOrOffset;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Shape;
 use ir::ShapeImpl;
 use ir::Type;
@@ -151,7 +151,8 @@ impl Shaped {
     /// Can only be computed if the shaped is statically sized with no dynamically sized dimensions.
     pub fn num_elements(&self) -> Option<i64> {
         if self.is_static() && !self.has_dynamic_dims() {
-            self.rank().map(|rank| (0..rank).fold(1, |acc,i| acc * self.dim_size(i as isize)))
+            self.rank()
+                .map(|rank| (0..rank).fold(1, |acc, i| acc * self.dim_size(i as isize)))
         } else {
             None
         }
@@ -159,9 +160,15 @@ impl Shaped {
 
     /// Can only be computed if the shaped is ranked.
     pub fn num_dynamic_dims(&self) -> Option<i64> {
-        self.rank().map(|rank| (0..rank)
-            .fold(0, |acc,i| acc + if self.is_dynamic_dim(i as isize) { 1 } else { 0 })
-        )
+        self.rank().map(|rank| {
+            (0..rank).fold(0, |acc, i| {
+                acc + if self.is_dynamic_dim(i as isize) {
+                    1
+                } else {
+                    0
+                }
+            })
+        })
     }
 }
 

@@ -3,13 +3,13 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirNamedAttribute;
 use mlir_sys::mlirDictionaryAttrGet;
 use mlir_sys::mlirDictionaryAttrGetElement;
 use mlir_sys::mlirDictionaryAttrGetElementByName;
 use mlir_sys::mlirDictionaryAttrGetNumElements;
 use mlir_sys::mlirDictionaryAttrGetTypeID;
-use mlir_sys::MlirAttribute;
-use mlir_sys::MlirNamedAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -18,8 +18,8 @@ use crate::ir;
 
 use attributes::IRAttribute;
 use attributes::named;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::StringRef;
@@ -31,7 +31,11 @@ pub struct Dictionary(MlirAttribute);
 impl Dictionary {
     pub fn new(context: &Context, elements: &[named::Named]) -> Self {
         let e: Vec<MlirNamedAttribute> = elements.iter().map(|a| *a.get()).collect();
-        Self::from(do_unsafe!(mlirDictionaryAttrGet(*context.get(), e.len() as isize, e.as_ptr())))
+        Self::from(do_unsafe!(mlirDictionaryAttrGet(
+            *context.get(),
+            e.len() as isize,
+            e.as_ptr()
+        )))
     }
 
     pub fn from(attr: MlirAttribute) -> Self {
@@ -54,7 +58,10 @@ impl Dictionary {
     }
 
     pub fn get_element_by_name(&self, name: &StringRef) -> Attribute {
-        Attribute::from(do_unsafe!(mlirDictionaryAttrGetElementByName(self.0, *name.get())))
+        Attribute::from(do_unsafe!(mlirDictionaryAttrGetElementByName(
+            self.0,
+            *name.get()
+        )))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {

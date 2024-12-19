@@ -3,10 +3,10 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IROperation;
 use mlir::dialects::func::Call;
 use mlir::dialects::func::Callee;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
@@ -21,7 +21,14 @@ pub fn main() -> () {
     let loc = context.get_unknown_location();
     let t = FloatType::new(&context, FloatLayout::F64).as_type();
     let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone()]);
-    let f_callee = get_private_fn(&context, "callee", &[t.clone(), t.clone()], &[t.clone()], None, None);
+    let f_callee = get_private_fn(
+        &context,
+        "callee",
+        &[t.clone(), t.clone()],
+        &[t.clone()],
+        None,
+        None,
+    );
     let callee = Callee::from_symbol_ref(&f_callee.get_symbol_ref());
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
@@ -30,7 +37,8 @@ pub fn main() -> () {
         &[t.clone()],
         &[f_block.get_arg(0), f_block.get_arg(1)],
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_call.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_call);
     f_block.append_operation(&mut op_ret);

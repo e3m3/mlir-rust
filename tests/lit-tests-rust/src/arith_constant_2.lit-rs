@@ -3,9 +3,9 @@
 extern crate mlir;
 
 use mlir::attributes::integer::Integer as IntegerAttr;
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::Constant;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::integer::Integer as IntegerType;

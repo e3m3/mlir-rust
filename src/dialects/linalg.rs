@@ -26,26 +26,26 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedParsed;
+use dialects::IROp;
+use dialects::IROperation;
 use dialects::affine::AffineExpr;
 use dialects::affine::Dim as AffineDim;
 use dialects::affine::Map as AffineMap;
 use dialects::arith;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
-use dialects::IROp;
-use dialects::IROperation;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
+use ir::Block;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::Operation;
 use ir::OperationState;
-use ir::Block;
 use ir::Region;
 use ir::Shape;
 use ir::ShapeUnpacked;
@@ -55,8 +55,8 @@ use ir::Value;
 use traits::Trait;
 use types::IRType;
 use types::IsPromotableTo;
-use types::shaped::Shaped;
 use types::ranked_tensor::RankedTensor;
+use types::shaped::Shaped;
 
 ///////////////////////////////
 //  Attributes
@@ -85,37 +85,37 @@ pub struct UnaryFunction(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum BinaryFunctionKind {
-    Add         = 0,
-    Sub         = 1,
-    Mul         = 2,
-    Div         = 3,
+    Add = 0,
+    Sub = 1,
+    Mul = 2,
+    Div = 3,
     DivUnsigned = 4,
-    MaxSigned   = 5,
-    MinSigned   = 6,
+    MaxSigned = 5,
+    MinSigned = 6,
     MaxUnsigned = 7,
     MinUnsigned = 8,
-    PowF        = 9,
+    PowF = 9,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum CastKind {
-    Signed      = 0,
-    Unsigned    = 1,
+    Signed = 0,
+    Unsigned = 1,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum IteratorTypeKind {
-    Parallel    = 0,
-    Reduction   = 1,
-    Window      = 2,
+    Parallel = 0,
+    Reduction = 1,
+    Window = 2,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Abs,
     Add,
@@ -217,21 +217,21 @@ pub enum Op {
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum UnaryFunctionKind {
-    Exp         = 0,
-    Log         = 1,
-    Abs         = 2,
-    Ceil        = 3,
-    Floor       = 4,
-    NegF        = 5,
-    Reciprocal  = 6,
-    Round       = 7,
-    Sqrt        = 8,
-    Rsqrt       = 9,
-    Square      = 10,
-    Tanh        = 11,
-    Erf         = 12,
+    Exp = 0,
+    Log = 1,
+    Abs = 2,
+    Ceil = 3,
+    Floor = 4,
+    NegF = 5,
+    Reciprocal = 6,
+    Round = 7,
+    Sqrt = 8,
+    Rsqrt = 9,
+    Square = 10,
+    Tanh = 11,
+    Erf = 12,
 }
 
 ///////////////////////////////
@@ -375,32 +375,21 @@ pub trait ElementwiseCheckResult {
 }
 
 pub trait ElementwiseBinaryOperationGetBody {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation>;
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation>;
 }
 
 pub trait ElementwiseUnaryOperationGetBody {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation>;
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation>;
 }
 
 pub trait ElementwiseBinaryOperation:
-    ElementwiseBinaryOperationGetBody +
-    ElementwiseCheckBinaryOperands +
-    ElementwiseCheckResult +
-    ElementwiseOperation
+    ElementwiseBinaryOperationGetBody
+    + ElementwiseCheckBinaryOperands
+    + ElementwiseCheckResult
+    + ElementwiseOperation
 {
     fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
-        let context = t.get_context(); 
+        let context = t.get_context();
         let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
         let lhs = block.get_arg(0);
         let rhs = block.get_arg(1);
@@ -412,7 +401,8 @@ pub trait ElementwiseBinaryOperation:
             vec![acc.clone()]
         };
         let mut op_yield = Yield::new(&context, &results, loc).as_operation();
-        ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
+        ops.into_iter()
+            .for_each(|mut op| block.append_operation(&mut op));
         block.append_operation(&mut op_yield);
         Self::from(*op_parent.get_mut())
     }
@@ -425,18 +415,19 @@ pub trait ElementwiseBinaryOperation:
         output: &Value,
         loc: &Location,
     ) -> Self {
-        if !lhs.get_type().is_memref() || !rhs.get_type().is_memref()
-            || !output.get_type().is_memref() {
-            eprintln!("Expected memory reference type operand(s) for {} operation", op.get_name());
+        if !lhs.get_type().is_memref()
+            || !rhs.get_type().is_memref()
+            || !output.get_type().is_memref()
+        {
+            eprintln!(
+                "Expected memory reference type operand(s) for {} operation",
+                op.get_name()
+            );
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, lhs, rhs, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            op.get_name(),
-        ));
+        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
         let mut region = Region::new();
         let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
         region.append_block(&mut Block::new(
@@ -460,19 +451,21 @@ pub trait ElementwiseBinaryOperation:
         output: &Value,
         loc: &Location,
     ) -> Self {
-        if !lhs.get_type().is_tensor() || !rhs.get_type().is_tensor() || !output.get_type().is_tensor() {
-            eprintln!("Expected tensor type operand(s) for {} operation", op.get_name());
+        if !lhs.get_type().is_tensor()
+            || !rhs.get_type().is_tensor()
+            || !output.get_type().is_tensor()
+        {
+            eprintln!(
+                "Expected tensor type operand(s) for {} operation",
+                op.get_name()
+            );
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, lhs, rhs, output);
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            op.get_name(),
-        ));
+        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
         let mut region = Region::new();
         let t_elem = t.as_shaped().get_element_type();
         region.append_block(&mut Block::new(
@@ -491,13 +484,13 @@ pub trait ElementwiseBinaryOperation:
 }
 
 pub trait ElementwiseUnaryOperation:
-    ElementwiseUnaryOperationGetBody +
-    ElementwiseCheckUnaryOperands +
-    ElementwiseCheckResult +
-    ElementwiseOperation
+    ElementwiseUnaryOperationGetBody
+    + ElementwiseCheckUnaryOperands
+    + ElementwiseCheckResult
+    + ElementwiseOperation
 {
     fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
-        let context = t.get_context(); 
+        let context = t.get_context();
         let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
         let input = block.get_arg(0);
         let acc = block.get_arg(1);
@@ -508,7 +501,8 @@ pub trait ElementwiseUnaryOperation:
             vec![input.clone()]
         };
         let mut op_yield = Yield::new(&context, &results, loc).as_operation();
-        ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
+        ops.into_iter()
+            .for_each(|mut op| block.append_operation(&mut op));
         block.append_operation(&mut op_yield);
         Self::from(*op_parent.get_mut())
     }
@@ -521,23 +515,21 @@ pub trait ElementwiseUnaryOperation:
         loc: &Location,
     ) -> Self {
         if !input.get_type().is_memref() || !output.get_type().is_memref() {
-            eprintln!("Expected memory reference type operand(s) for {} operation", op.get_name());
+            eprintln!(
+                "Expected memory reference type operand(s) for {} operation",
+                op.get_name()
+            );
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, input, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            op.get_name(),
-        ));
+        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
         let mut region = Region::new();
         let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
-        region.append_block(&mut Block::new(
-            2,
-            &[t_elem.clone(), t_elem.clone()],
-            &[loc.clone(), loc.clone()],
-        ));
+        region.append_block(&mut Block::new(2, &[t_elem.clone(), t_elem.clone()], &[
+            loc.clone(),
+            loc.clone(),
+        ]));
         let opseg_attr = OperandSegmentSizes::new(context, &[1, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
@@ -554,25 +546,23 @@ pub trait ElementwiseUnaryOperation:
         loc: &Location,
     ) -> Self {
         if !input.get_type().is_tensor() || !output.get_type().is_tensor() {
-            eprintln!("Expected tensor type operand(s) for {} operation", op.get_name());
+            eprintln!(
+                "Expected tensor type operand(s) for {} operation",
+                op.get_name()
+            );
             exit(ExitCode::DialectError);
         }
         Self::__check_operands(op, input, output);
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            op.get_name(),
-        ));
+        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
         let mut region = Region::new();
         let t_elem = t.as_shaped().get_element_type();
-        region.append_block(&mut Block::new(
-            2,
-            &[t_elem.clone(), t_elem.clone()],
-            &[loc.clone(), loc.clone()],
-        ));
+        region.append_block(&mut Block::new(2, &[t_elem.clone(), t_elem.clone()], &[
+            loc.clone(),
+            loc.clone(),
+        ]));
         let opseg_attr = OperandSegmentSizes::new(&context, &[1, 1]);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[opseg_attr.as_named_attribute()]);
@@ -605,7 +595,7 @@ macro_rules! impl_ElementwiseCheckShapedResult {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseCheckScalarResult {
@@ -621,7 +611,7 @@ macro_rules! impl_ElementwiseCheckScalarResult {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseCheckBinaryOperandsMatchingShapedResult {
@@ -779,8 +769,9 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsPromotableScalarResult {
                 let s_lhs = Shaped::from(*lhs.get_type().get());
                 let s_rhs = Shaped::from(*rhs.get_type().get());
                 let t_elem = output.get_type();
-                if !s_lhs.get_element_type().is_promotable_to(&t_elem) ||
-                    !s_rhs.get_element_type().is_promotable_to(&t_elem) {
+                if !s_lhs.get_element_type().is_promotable_to(&t_elem)
+                    || !s_rhs.get_element_type().is_promotable_to(&t_elem)
+                {
                     eprintln!(
                         "Expected promotable element type for inputs to output operand type \
                         of {} operation",
@@ -797,7 +788,7 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsPromotableScalarResult {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseCheckBinaryOperandsPromotableShapedResult {
@@ -809,8 +800,9 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsPromotableShapedResult {
                 let s_output = Shaped::from(*output.get_type().get());
                 let s_unpacked = s_output.unpack();
                 let t_elem = s_output.get_element_type();
-                if !s_lhs.get_element_type().is_promotable_to(&t_elem) ||
-                    !s_rhs.get_element_type().is_promotable_to(&t_elem) {
+                if !s_lhs.get_element_type().is_promotable_to(&t_elem)
+                    || !s_rhs.get_element_type().is_promotable_to(&t_elem)
+                {
                     eprintln!(
                         "Expected promotable element type for inputs to output operand type \
                         of {} operation",
@@ -827,7 +819,7 @@ macro_rules! impl_ElementwiseCheckBinaryOperandsPromotableShapedResult {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseCheckBinaryOperandsVecmatShapedResult {
@@ -893,7 +885,10 @@ macro_rules! impl_ElementwiseCheckUnaryOperandsPromotableShapedResult {
             fn __check_operands(op: &'static Op, input: &Value, output: &Value) -> () {
                 let s_input = Shaped::from(*input.get_type().get());
                 let s_output = Shaped::from(*output.get_type().get());
-                if !s_input.get_element_type().is_promotable_to(&s_output.get_element_type()) {
+                if !s_input
+                    .get_element_type()
+                    .is_promotable_to(&s_output.get_element_type())
+                {
                     eprintln!(
                         "Expected promotable element type for input to output operand type \
                         of {} operation",
@@ -910,7 +905,7 @@ macro_rules! impl_ElementwiseCheckUnaryOperandsPromotableShapedResult {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseCheckUnaryOperandsMatchingTransposeResult {
@@ -944,7 +939,7 @@ macro_rules! impl_ElementwiseBinaryOpPromotableTypeOperandsAndScalarResult {
         impl_ElementwiseCheckBinaryOperandsPromotableScalarResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult {
@@ -953,7 +948,7 @@ macro_rules! impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult {
         impl_ElementwiseCheckBinaryOperandsMatchingShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult {
@@ -962,7 +957,7 @@ macro_rules! impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult {
         impl_ElementwiseCheckBinaryOperandsMatmulShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpMatmulTransposeATypeOperandsAndShapedResult {
@@ -971,7 +966,7 @@ macro_rules! impl_ElementwiseBinaryOpMatmulTransposeATypeOperandsAndShapedResult
         impl_ElementwiseCheckBinaryOperandsMatmulTransposeAShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpMatmulTransposeBTypeOperandsAndShapedResult {
@@ -980,7 +975,7 @@ macro_rules! impl_ElementwiseBinaryOpMatmulTransposeBTypeOperandsAndShapedResult
         impl_ElementwiseCheckBinaryOperandsMatmulTransposeBShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpMatvecTypeOperandsAndShapedResult {
@@ -989,7 +984,7 @@ macro_rules! impl_ElementwiseBinaryOpMatvecTypeOperandsAndShapedResult {
         impl_ElementwiseCheckBinaryOperandsMatvecShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult {
@@ -998,7 +993,7 @@ macro_rules! impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult {
         impl_ElementwiseCheckBinaryOperandsVecmatShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseBinaryOpPromotableTypeOperandsAndShapedResult {
@@ -1007,7 +1002,7 @@ macro_rules! impl_ElementwiseBinaryOpPromotableTypeOperandsAndShapedResult {
         impl_ElementwiseCheckBinaryOperandsPromotableShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseBinaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult {
@@ -1016,7 +1011,7 @@ macro_rules! impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult {
         impl_ElementwiseCheckUnaryOperandsMatchingShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseUnaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseUnaryOpMatchingTypeOperandsAndTransposeResult {
@@ -1025,7 +1020,7 @@ macro_rules! impl_ElementwiseUnaryOpMatchingTypeOperandsAndTransposeResult {
         impl_ElementwiseCheckUnaryOperandsMatchingTransposeResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseUnaryOperation for $OperationName {}
-    }
+    };
 }
 
 macro_rules! impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult {
@@ -1034,7 +1029,7 @@ macro_rules! impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult {
         impl_ElementwiseCheckUnaryOperandsPromotableShapedResult!($OperationName);
         impl ElementwiseOperation for $OperationName {}
         impl ElementwiseUnaryOperation for $OperationName {}
-    }
+    };
 }
 
 ///////////////////////////////
@@ -1144,20 +1139,20 @@ impl UnaryFunction {
 impl BinaryFunctionKind {
     pub fn from_i32(n: i32) -> Self {
         match n {
-            0   => BinaryFunctionKind::Add,
-            1   => BinaryFunctionKind::Sub,
-            2   => BinaryFunctionKind::Mul,
-            3   => BinaryFunctionKind::Div,
-            4   => BinaryFunctionKind::DivUnsigned,
-            5   => BinaryFunctionKind::MaxSigned,
-            6   => BinaryFunctionKind::MinSigned,
-            7   => BinaryFunctionKind::MaxUnsigned,
-            8   => BinaryFunctionKind::MinUnsigned,
-            9   => BinaryFunctionKind::PowF,
-            _   => {
+            0 => BinaryFunctionKind::Add,
+            1 => BinaryFunctionKind::Sub,
+            2 => BinaryFunctionKind::Mul,
+            3 => BinaryFunctionKind::Div,
+            4 => BinaryFunctionKind::DivUnsigned,
+            5 => BinaryFunctionKind::MaxSigned,
+            6 => BinaryFunctionKind::MinSigned,
+            7 => BinaryFunctionKind::MaxUnsigned,
+            8 => BinaryFunctionKind::MinUnsigned,
+            9 => BinaryFunctionKind::PowF,
+            _ => {
                 eprintln!("Invalid value '{}' for BinaryFunctionKind", n);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -1165,19 +1160,19 @@ impl BinaryFunctionKind {
 impl CastKind {
     pub fn from_i32(n: i32) -> Self {
         match n {
-            0   => CastKind::Signed,
-            1   => CastKind::Unsigned,
-            _   => {
+            0 => CastKind::Signed,
+            1 => CastKind::Unsigned,
+            _ => {
                 eprintln!("Invalid value '{}' for CastKind", n);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
     pub fn get_name(&self) -> &'static str {
         match self {
-            CastKind::Signed    => "cast_signed",
-            CastKind::Unsigned  => "cast_unsigned",
+            CastKind::Signed => "cast_signed",
+            CastKind::Unsigned => "cast_unsigned",
         }
     }
 }
@@ -1185,13 +1180,13 @@ impl CastKind {
 impl IteratorTypeKind {
     pub fn from_i32(n: i32) -> Self {
         match n {
-            0   => IteratorTypeKind::Parallel,
-            1   => IteratorTypeKind::Reduction,
-            2   => IteratorTypeKind::Window,
-            _   => {
+            0 => IteratorTypeKind::Parallel,
+            1 => IteratorTypeKind::Reduction,
+            2 => IteratorTypeKind::Window,
+            _ => {
                 eprintln!("Invalid value '{}' for IteratorTypeKind", n);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -1199,103 +1194,103 @@ impl IteratorTypeKind {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::Abs                         => "abs",
-            Op::Add                         => "add",
-            Op::BatchMatmul                 => "batch_matmul",
-            Op::BatchMatmulTransposeA       => "batch_matmul_transpose_a",
-            Op::BatchMatmulTransposeB       => "batch_matmul_transpose_b",
-            Op::BatchMatvec                 => "batch_matvec",
-            Op::BatchMmt4D                  => "batch_mmt4d",
-            Op::BatchReduceMatmul           => "batch_reduce_matmul",
-            Op::BatchVecmat                 => "batch_vecmat",
-            Op::Broadcast                   => "broadcast",
-            Op::Ceil                        => "ceil",
-            Op::Conv1DNcwFcw                => "conv_1d_ncw_fcw",
-            Op::Conv1DNwcWcf                => "conv_1d_nwc_wcf",
-            Op::Conv1D                      => "conv_1d",
-            Op::Conv2D                      => "conv_2d",
-            Op::Conv2DNchwFchw              => "conv_2d_nchw_fchw",
-            Op::Conv2DNgchwGfchw            => "conv_2d_ngchw_gfchw",
-            Op::Conv2DNgchwGfchwG           => "conv_2d_ngchw_gfchw_g",
-            Op::Conv2DNhwcFhwc              => "conv_2d_nhwc_fhwc",
-            Op::Conv2DNhwcFhwcQ             => "conv_2d_nhwc_fhwc_q",
-            Op::Conv2DNhwcHwcf              => "conv_2d_nhwc_hwcf",
-            Op::Conv2DNhwcHwcfQ             => "conv_2d_nhwc_hwcf_q",
-            Op::Conv3D                      => "conv_3d",
-            Op::Conv3DNcdhwFcdhw            => "conv_3d_ncdhw_fcdhw",
-            Op::Conv3DNdhwcDhwcf            => "conv_3d_ndhwc_dhwcf",
-            Op::Conv3DNdhwcDhwcfQ           => "conv_3d_ndhwc_dhwcf_q",
-            Op::Copy                        => "copy",
-            Op::DepthwiseConv1DNcwCw        => "depthwise_conv1d_ncw_cw",
-            Op::DepthwiseConv1DNwcWc        => "depthwise_conv1d_nwc_wc",
-            Op::DepthwiseConv1DNwcWcm       => "depthwise_conv1d_nwc_wcm",
-            Op::DepthwiseConv2DNchwChw      => "depthwise_conv2d_nchw_chw",
-            Op::DepthwiseConv2DNhwcHwc      => "depthwise_conv2d_nhwc_hwc",
-            Op::DepthwiseConv2DNhwcHwcQ     => "depthwise_conv2d_nhwc_hwc_q",
-            Op::DepthwiseConv2DNhwcHwcm     => "depthwise_conv2d_nhwc_hwcm",
-            Op::DepthwiseConv2DNhwcHwcmQ    => "depthwise_conv2d_nhwc_hwcm_q",
-            Op::DepthwiseConv3DNcdhwCdhw    => "depthwise_conv3d_ncdhw_cdhw",
-            Op::DepthwiseConv3DNdhwcDhwc    => "depthwise_conv3d_ndhwc_dhwc",
-            Op::DepthwiseConv3DNdhwcDhwcm   => "depthwise_conv3d_ndhwc_dhwcm",
-            Op::Div                         => "div",
-            Op::DivUnsigned                 => "div_unsigned",
-            Op::Dot                         => "dot",
-            Op::ElementwiseBinary           => "elementwise_binary",
-            Op::ElementwiseUnary            => "elementwise_unary",
-            Op::Erf                         => "erf",
-            Op::Exp                         => "exp",
-            Op::Fill                        => "fill",
-            Op::FillRng2D                   => "fill_rng_2d",
-            Op::Floor                       => "floor",
-            Op::Generic                     => "generic",
-            Op::Index                       => "index",
-            Op::Log                         => "log",
-            Op::Map                         => "map",
-            Op::Matmul                      => "matmul",
-            Op::MatmulTransposeA            => "matmul_transpose_a",
-            Op::MatmulTransposeB            => "matmul_transpose_b",
-            Op::Matvec                      => "matvec",
-            Op::Max                         => "max",
-            Op::Min                         => "min",
-            Op::Mmt4D                       => "mmt4d",
-            Op::Mul                         => "mul",
-            Op::NegF                        => "negf",
-            Op::PoolingNchwMax              => "pooling_nchw_max",
-            Op::PoolingNchwSum              => "pooling_nchw_sum",
-            Op::PoolingNcwMax               => "pooling_ncw_max",
-            Op::PoolingNcwSum               => "pooling_ncw_sum",
-            Op::PoolingNdhwcMax             => "pooling_ndhwc_max",
-            Op::PoolingNdhwcMin             => "pooling_ndhwc_min",
-            Op::PoolingNdhwcSum             => "pooling_ndhwc_sum",
-            Op::PoolingNhwcMax              => "pooling_nhwc_max",
-            Op::PoolingNhwcMaxUnsigned      => "pooling_nhwc_max_unsigned",
-            Op::PoolingNhwcMin              => "pooling_nhwc_min",
-            Op::PoolingNhwcMinUnsigned      => "pooling_nhwc_min_unsigned",
-            Op::PoolingNhwcSum              => "pooling_nhwc_sum",
-            Op::PoolingNwcMax               => "pooling_nwc_max",
-            Op::PoolingNwcMaxUnsigned       => "pooling_nwc_max_unsigned",
-            Op::PoolingNwcMin               => "pooling_nwc_min",
-            Op::PoolingNwcMinUnsigned       => "pooling_nwc_min_unsigned",
-            Op::PoolingNwcSum               => "pooling_nwc_sum",
-            Op::PowF                        => "powf",
-            Op::QuantizedBatchMatmul        => "quantized_batch_matmul",
-            Op::QuantizedMatmul             => "quantized_matmul",
-            Op::Reciprocal                  => "reciprocal",
-            Op::Reduce                      => "reduce",
-            Op::Round                       => "round",
-            Op::Rsqrt                       => "rsqrt",
-            Op::Select                      => "select",
-            Op::Softmax                     => "softmax",
-            Op::Sqrt                        => "sqrt",
-            Op::Square                      => "square",
-            Op::Sub                         => "sub",
-            Op::Tanh                        => "tanh",
-            Op::Transpose                   => "transpose",
-            Op::Vecmat                      => "vecmat",
-            Op::WinogradFilterTransform     => "winograd_filter_transform",
-            Op::WinogradInputTransform      => "winograd_input_transform",
-            Op::WinogradOutputTransform     => "winograd_output_transform",
-            Op::Yield                       => "yield",
+            Op::Abs => "abs",
+            Op::Add => "add",
+            Op::BatchMatmul => "batch_matmul",
+            Op::BatchMatmulTransposeA => "batch_matmul_transpose_a",
+            Op::BatchMatmulTransposeB => "batch_matmul_transpose_b",
+            Op::BatchMatvec => "batch_matvec",
+            Op::BatchMmt4D => "batch_mmt4d",
+            Op::BatchReduceMatmul => "batch_reduce_matmul",
+            Op::BatchVecmat => "batch_vecmat",
+            Op::Broadcast => "broadcast",
+            Op::Ceil => "ceil",
+            Op::Conv1DNcwFcw => "conv_1d_ncw_fcw",
+            Op::Conv1DNwcWcf => "conv_1d_nwc_wcf",
+            Op::Conv1D => "conv_1d",
+            Op::Conv2D => "conv_2d",
+            Op::Conv2DNchwFchw => "conv_2d_nchw_fchw",
+            Op::Conv2DNgchwGfchw => "conv_2d_ngchw_gfchw",
+            Op::Conv2DNgchwGfchwG => "conv_2d_ngchw_gfchw_g",
+            Op::Conv2DNhwcFhwc => "conv_2d_nhwc_fhwc",
+            Op::Conv2DNhwcFhwcQ => "conv_2d_nhwc_fhwc_q",
+            Op::Conv2DNhwcHwcf => "conv_2d_nhwc_hwcf",
+            Op::Conv2DNhwcHwcfQ => "conv_2d_nhwc_hwcf_q",
+            Op::Conv3D => "conv_3d",
+            Op::Conv3DNcdhwFcdhw => "conv_3d_ncdhw_fcdhw",
+            Op::Conv3DNdhwcDhwcf => "conv_3d_ndhwc_dhwcf",
+            Op::Conv3DNdhwcDhwcfQ => "conv_3d_ndhwc_dhwcf_q",
+            Op::Copy => "copy",
+            Op::DepthwiseConv1DNcwCw => "depthwise_conv1d_ncw_cw",
+            Op::DepthwiseConv1DNwcWc => "depthwise_conv1d_nwc_wc",
+            Op::DepthwiseConv1DNwcWcm => "depthwise_conv1d_nwc_wcm",
+            Op::DepthwiseConv2DNchwChw => "depthwise_conv2d_nchw_chw",
+            Op::DepthwiseConv2DNhwcHwc => "depthwise_conv2d_nhwc_hwc",
+            Op::DepthwiseConv2DNhwcHwcQ => "depthwise_conv2d_nhwc_hwc_q",
+            Op::DepthwiseConv2DNhwcHwcm => "depthwise_conv2d_nhwc_hwcm",
+            Op::DepthwiseConv2DNhwcHwcmQ => "depthwise_conv2d_nhwc_hwcm_q",
+            Op::DepthwiseConv3DNcdhwCdhw => "depthwise_conv3d_ncdhw_cdhw",
+            Op::DepthwiseConv3DNdhwcDhwc => "depthwise_conv3d_ndhwc_dhwc",
+            Op::DepthwiseConv3DNdhwcDhwcm => "depthwise_conv3d_ndhwc_dhwcm",
+            Op::Div => "div",
+            Op::DivUnsigned => "div_unsigned",
+            Op::Dot => "dot",
+            Op::ElementwiseBinary => "elementwise_binary",
+            Op::ElementwiseUnary => "elementwise_unary",
+            Op::Erf => "erf",
+            Op::Exp => "exp",
+            Op::Fill => "fill",
+            Op::FillRng2D => "fill_rng_2d",
+            Op::Floor => "floor",
+            Op::Generic => "generic",
+            Op::Index => "index",
+            Op::Log => "log",
+            Op::Map => "map",
+            Op::Matmul => "matmul",
+            Op::MatmulTransposeA => "matmul_transpose_a",
+            Op::MatmulTransposeB => "matmul_transpose_b",
+            Op::Matvec => "matvec",
+            Op::Max => "max",
+            Op::Min => "min",
+            Op::Mmt4D => "mmt4d",
+            Op::Mul => "mul",
+            Op::NegF => "negf",
+            Op::PoolingNchwMax => "pooling_nchw_max",
+            Op::PoolingNchwSum => "pooling_nchw_sum",
+            Op::PoolingNcwMax => "pooling_ncw_max",
+            Op::PoolingNcwSum => "pooling_ncw_sum",
+            Op::PoolingNdhwcMax => "pooling_ndhwc_max",
+            Op::PoolingNdhwcMin => "pooling_ndhwc_min",
+            Op::PoolingNdhwcSum => "pooling_ndhwc_sum",
+            Op::PoolingNhwcMax => "pooling_nhwc_max",
+            Op::PoolingNhwcMaxUnsigned => "pooling_nhwc_max_unsigned",
+            Op::PoolingNhwcMin => "pooling_nhwc_min",
+            Op::PoolingNhwcMinUnsigned => "pooling_nhwc_min_unsigned",
+            Op::PoolingNhwcSum => "pooling_nhwc_sum",
+            Op::PoolingNwcMax => "pooling_nwc_max",
+            Op::PoolingNwcMaxUnsigned => "pooling_nwc_max_unsigned",
+            Op::PoolingNwcMin => "pooling_nwc_min",
+            Op::PoolingNwcMinUnsigned => "pooling_nwc_min_unsigned",
+            Op::PoolingNwcSum => "pooling_nwc_sum",
+            Op::PowF => "powf",
+            Op::QuantizedBatchMatmul => "quantized_batch_matmul",
+            Op::QuantizedMatmul => "quantized_matmul",
+            Op::Reciprocal => "reciprocal",
+            Op::Reduce => "reduce",
+            Op::Round => "round",
+            Op::Rsqrt => "rsqrt",
+            Op::Select => "select",
+            Op::Softmax => "softmax",
+            Op::Sqrt => "sqrt",
+            Op::Square => "square",
+            Op::Sub => "sub",
+            Op::Tanh => "tanh",
+            Op::Transpose => "transpose",
+            Op::Vecmat => "vecmat",
+            Op::WinogradFilterTransform => "winograd_filter_transform",
+            Op::WinogradInputTransform => "winograd_input_transform",
+            Op::WinogradOutputTransform => "winograd_output_transform",
+            Op::Yield => "yield",
         }
     }
 }
@@ -1303,23 +1298,23 @@ impl Op {
 impl UnaryFunctionKind {
     pub fn from_i32(n: i32) -> Self {
         match n {
-            0   => UnaryFunctionKind::Exp,
-            1   => UnaryFunctionKind::Log,
-            2   => UnaryFunctionKind::Abs,
-            3   => UnaryFunctionKind::Ceil,
-            4   => UnaryFunctionKind::Floor,
-            5   => UnaryFunctionKind::NegF,
-            6   => UnaryFunctionKind::Reciprocal,
-            7   => UnaryFunctionKind::Round,
-            8   => UnaryFunctionKind::Sqrt,
-            9   => UnaryFunctionKind::Rsqrt,
-            10  => UnaryFunctionKind::Square,
-            11  => UnaryFunctionKind::Tanh,
-            12  => UnaryFunctionKind::Erf,
-            _   => {
+            0 => UnaryFunctionKind::Exp,
+            1 => UnaryFunctionKind::Log,
+            2 => UnaryFunctionKind::Abs,
+            3 => UnaryFunctionKind::Ceil,
+            4 => UnaryFunctionKind::Floor,
+            5 => UnaryFunctionKind::NegF,
+            6 => UnaryFunctionKind::Reciprocal,
+            7 => UnaryFunctionKind::Round,
+            8 => UnaryFunctionKind::Sqrt,
+            9 => UnaryFunctionKind::Rsqrt,
+            10 => UnaryFunctionKind::Square,
+            11 => UnaryFunctionKind::Tanh,
+            12 => UnaryFunctionKind::Erf,
+            _ => {
                 eprintln!("Invalid value '{}' for UnaryFunctionKind", n);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -1329,21 +1324,11 @@ impl UnaryFunctionKind {
 ///////////////////////////////
 
 impl Abs {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Abs, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Abs, t, input, output, loc)
     }
 
@@ -1403,21 +1388,11 @@ impl Add {
 }
 
 impl Ceil {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Ceil, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Ceil, t, input, output, loc)
     }
 
@@ -1479,7 +1454,9 @@ impl Copy {
 
     pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -1634,7 +1611,8 @@ impl ElementwiseBinary {
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_tensor(&Op::ElementwiseBinary, t, lhs, rhs, output, loc).as_operation();
+        let mut op =
+            Self::__new_tensor(&Op::ElementwiseBinary, t, lhs, rhs, output, loc).as_operation();
         let f = BinaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
         op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
@@ -1656,13 +1634,17 @@ impl ElementwiseBinary {
 
     pub fn get_binary_function(&self) -> BinaryFunction {
         let attr_name = StringBacked::from(BinaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         BinaryFunction::from(*attr.get())
     }
 
     pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -1680,8 +1662,8 @@ impl ElementwiseUnary {
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_memref(&Op::ElementwiseUnary, context, input, output, loc)
-            .as_operation();
+        let mut op =
+            Self::__new_memref(&Op::ElementwiseUnary, context, input, output, loc).as_operation();
         let f = UnaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
         op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
@@ -1697,7 +1679,8 @@ impl ElementwiseUnary {
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_tensor(&Op::ElementwiseUnary, t, input, output, loc).as_operation();
+        let mut op =
+            Self::__new_tensor(&Op::ElementwiseUnary, t, input, output, loc).as_operation();
         let f = UnaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
         op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
@@ -1719,7 +1702,9 @@ impl ElementwiseUnary {
 
     pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -1729,27 +1714,19 @@ impl ElementwiseUnary {
 
     pub fn get_unary_function(&self) -> UnaryFunction {
         let attr_name = StringBacked::from(UnaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         UnaryFunction::from(*attr.get())
     }
 }
 
 impl Erf {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Erf, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Erf, t, input, output, loc)
     }
 
@@ -1771,21 +1748,11 @@ impl Erf {
 }
 
 impl Exp {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Exp, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Exp, t, input, output, loc)
     }
 
@@ -1807,21 +1774,11 @@ impl Exp {
 }
 
 impl Floor {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Floor, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Floor, t, input, output, loc)
     }
 
@@ -1861,7 +1818,9 @@ impl Index {
 
     pub fn get_dimension(&self) -> Dimension {
         let attr_name = StringBacked::from(Dimension::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
 
@@ -1875,21 +1834,11 @@ impl Index {
 }
 
 impl Log {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Log, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Log, t, input, output, loc)
     }
 
@@ -1917,9 +1866,9 @@ impl Matmul {
         cast_kind: Option<CastKind>,
     ) -> Self {
         let context = op.get_context();
-        let index_maps_ = index_maps.unwrap_or(
-            &Self::get_default_indexing_maps(&context)
-        ).as_named_attribute();
+        let index_maps_ = index_maps
+            .unwrap_or(&Self::get_default_indexing_maps(&context))
+            .as_named_attribute();
         op.set_attribute_discardable(
             &index_maps_.get_identifier().as_string(),
             &index_maps_.as_attribute(),
@@ -1977,7 +1926,9 @@ impl Matmul {
 
     pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -1993,7 +1944,9 @@ impl Matmul {
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_discardable(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
@@ -2030,7 +1983,8 @@ impl MatmulTransposeA {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_memref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc)
+                .as_operation(),
             cast_kind,
         )
     }
@@ -2063,7 +2017,9 @@ impl MatmulTransposeA {
 
     pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -2079,7 +2035,9 @@ impl MatmulTransposeA {
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_discardable(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
@@ -2116,7 +2074,8 @@ impl MatmulTransposeB {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_memref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc)
+                .as_operation(),
             cast_kind,
         )
     }
@@ -2149,7 +2108,9 @@ impl MatmulTransposeB {
 
     pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
@@ -2165,7 +2126,9 @@ impl MatmulTransposeB {
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_discardable(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
@@ -2335,21 +2298,11 @@ impl Mul {
 }
 
 impl NegF {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::NegF, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::NegF, t, input, output, loc)
     }
 
@@ -2371,21 +2324,11 @@ impl NegF {
 }
 
 impl Reciprocal {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Reciprocal, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Reciprocal, t, input, output, loc)
     }
 
@@ -2407,21 +2350,11 @@ impl Reciprocal {
 }
 
 impl Round {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Round, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Round, t, input, output, loc)
     }
 
@@ -2443,21 +2376,11 @@ impl Round {
 }
 
 impl Rsqrt {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Rsqrt, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Rsqrt, t, input, output, loc)
     }
 
@@ -2479,21 +2402,11 @@ impl Rsqrt {
 }
 
 impl Sqrt {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Sqrt, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Sqrt, t, input, output, loc)
     }
 
@@ -2515,21 +2428,11 @@ impl Sqrt {
 }
 
 impl Square {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Square, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Square, t, input, output, loc)
     }
 
@@ -2589,21 +2492,11 @@ impl Sub {
 }
 
 impl Tanh {
-    pub fn new_memref(
-        context: &Context,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_memref(context: &Context, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_memref(&Op::Tanh, context, input, output, loc)
     }
 
-    pub fn new_tensor(
-        t: &RankedTensor,
-        input: &Value,
-        output: &Value,
-        loc: &Location,
-    ) -> Self {
+    pub fn new_tensor(t: &RankedTensor, input: &Value, output: &Value, loc: &Location) -> Self {
         Self::__new_tensor(&Op::Tanh, t, input, output, loc)
     }
 
@@ -2675,7 +2568,9 @@ impl Transpose {
 
     pub fn get_permutation(&self) -> Permutation {
         let attr_name = StringBacked::from(Permutation::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }
 }
@@ -2698,7 +2593,14 @@ impl Vecmat {
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::new_maps(&mut Self::__new_memref(&Op::Vecmat, context, lhs, rhs, output, loc))
+        Self::new_maps(&mut Self::__new_memref(
+            &Op::Vecmat,
+            context,
+            lhs,
+            rhs,
+            output,
+            loc,
+        ))
     }
 
     pub fn new_tensor(
@@ -2708,7 +2610,14 @@ impl Vecmat {
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::new_maps(&mut Self::__new_tensor(&Op::Vecmat, t, lhs, rhs, output, loc))
+        Self::new_maps(&mut Self::__new_tensor(
+            &Op::Vecmat,
+            t,
+            lhs,
+            rhs,
+            output,
+            loc,
+        ))
     }
 
     fn check_operands(lhs: &Value, rhs: &Value, output: &Value) -> () {
@@ -2734,7 +2643,9 @@ impl Vecmat {
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
@@ -2778,12 +2689,7 @@ impl Yield {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Abs);
 
 impl ElementwiseUnaryOperationGetBody for Abs {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -2842,18 +2748,13 @@ impl IROperation for Abs {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Add);
 
 impl ElementwiseBinaryOperationGetBody for Add {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
             let op = arith::AddF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::AddI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            let op = arith::AddI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             vec![op]
         } else {
             eprintln!("Expected float or integer element type for add operation");
@@ -2976,12 +2877,7 @@ impl NamedParsed for Cast {}
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Ceil);
 
 impl ElementwiseUnaryOperationGetBody for Ceil {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3040,12 +2936,7 @@ impl IROperation for Ceil {
 impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult!(Copy);
 
 impl ElementwiseUnaryOperationGetBody for Copy {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3104,13 +2995,7 @@ impl IROperation for Copy {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Div);
 
 impl ElementwiseBinaryOperationGetBody for Div {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
             let op = arith::DivF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             vec![op]
@@ -3178,13 +3063,7 @@ impl IROperation for Div {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(DivUnsigned);
 
 impl ElementwiseBinaryOperationGetBody for DivUnsigned {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_integer() {
             let op = arith::DivUI::new(t, lhs, rhs, loc).as_operation();
             vec![op]
@@ -3249,13 +3128,7 @@ impl IROperation for DivUnsigned {
 impl_ElementwiseBinaryOpPromotableTypeOperandsAndScalarResult!(Dot);
 
 impl ElementwiseBinaryOperationGetBody for Dot {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3315,13 +3188,7 @@ impl IROperation for Dot {
 impl_ElementwiseBinaryOpPromotableTypeOperandsAndShapedResult!(ElementwiseBinary);
 
 impl ElementwiseBinaryOperationGetBody for ElementwiseBinary {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3380,12 +3247,7 @@ impl IROperation for ElementwiseBinary {
 impl_ElementwiseUnaryOpPromotableTypeOperandsAndShapedResult!(ElementwiseUnary);
 
 impl ElementwiseUnaryOperationGetBody for ElementwiseUnary {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3444,12 +3306,7 @@ impl IROperation for ElementwiseUnary {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Erf);
 
 impl ElementwiseUnaryOperationGetBody for Erf {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3508,12 +3365,7 @@ impl IROperation for Erf {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Exp);
 
 impl ElementwiseUnaryOperationGetBody for Exp {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3572,12 +3424,7 @@ impl IROperation for Exp {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Floor);
 
 impl ElementwiseUnaryOperationGetBody for Floor {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3673,9 +3520,7 @@ impl IROperation for Index {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -3736,12 +3581,7 @@ impl NamedInteger for IteratorType {}
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Log);
 
 impl ElementwiseUnaryOperationGetBody for Log {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -3800,44 +3640,30 @@ impl IROperation for Log {
 impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult!(Matmul);
 
 impl ElementwiseBinaryOperationGetBody for Matmul {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul = arith::MulF::new(
-                t,
-                lhs,
-                rhs,
-                arith::FastMathFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul =
+                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::FastMathFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(
-                t,
-                lhs,
-                rhs,
-                arith::IntegerOverflowFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::IntegerOverflowFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else {
             eprintln!("Expected float or integer element type for matmul operation");
@@ -3901,44 +3727,30 @@ impl IROperation for Matmul {
 impl_ElementwiseBinaryOpMatmulTransposeATypeOperandsAndShapedResult!(MatmulTransposeA);
 
 impl ElementwiseBinaryOperationGetBody for MatmulTransposeA {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul = arith::MulF::new(
-                t,
-                lhs,
-                rhs,
-                arith::FastMathFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul =
+                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::FastMathFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(
-                t,
-                lhs,
-                rhs,
-                arith::IntegerOverflowFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::IntegerOverflowFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else {
             eprintln!("Expected float or integer element type for matmul operation");
@@ -4002,44 +3814,30 @@ impl IROperation for MatmulTransposeA {
 impl_ElementwiseBinaryOpMatmulTransposeBTypeOperandsAndShapedResult!(MatmulTransposeB);
 
 impl ElementwiseBinaryOperationGetBody for MatmulTransposeB {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul = arith::MulF::new(
-                t,
-                lhs,
-                rhs,
-                arith::FastMathFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul =
+                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::FastMathFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(
-                t,
-                lhs,
-                rhs,
-                arith::IntegerOverflowFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::IntegerOverflowFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else {
             eprintln!("Expected float or integer element type for matmul operation");
@@ -4103,44 +3901,30 @@ impl IROperation for MatmulTransposeB {
 impl_ElementwiseBinaryOpMatvecTypeOperandsAndShapedResult!(Matvec);
 
 impl ElementwiseBinaryOperationGetBody for Matvec {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul = arith::MulF::new(
-                t,
-                lhs,
-                rhs,
-                arith::FastMathFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul =
+                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::FastMathFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(
-                t,
-                lhs,
-                rhs,
-                arith::IntegerOverflowFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::IntegerOverflowFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else {
             eprintln!("Expected float or integer element type for matvec operation");
@@ -4204,13 +3988,7 @@ impl IROperation for Matvec {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Max);
 
 impl ElementwiseBinaryOperationGetBody for Max {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4269,13 +4047,7 @@ impl IROperation for Max {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Min);
 
 impl ElementwiseBinaryOperationGetBody for Min {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4334,18 +4106,13 @@ impl IROperation for Min {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Mul);
 
 impl ElementwiseBinaryOperationGetBody for Mul {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
             let op = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            let op = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             vec![op]
         } else {
             eprintln!("Expected float or integer element type for mul operation");
@@ -4408,12 +4175,7 @@ impl IROperation for Mul {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(NegF);
 
 impl ElementwiseUnaryOperationGetBody for NegF {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4473,16 +4235,16 @@ impl From<BinaryFunctionKind> for Op {
     /// NOTE: There is no unsigned equivalent `BinaryFunctionKind` for `Max` and `Min`
     fn from(k: BinaryFunctionKind) -> Self {
         match k {
-            BinaryFunctionKind::Add         => Op::Add,
-            BinaryFunctionKind::Sub         => Op::Sub,
-            BinaryFunctionKind::Mul         => Op::Mul,
-            BinaryFunctionKind::Div         => Op::Div,
+            BinaryFunctionKind::Add => Op::Add,
+            BinaryFunctionKind::Sub => Op::Sub,
+            BinaryFunctionKind::Mul => Op::Mul,
+            BinaryFunctionKind::Div => Op::Div,
             BinaryFunctionKind::DivUnsigned => Op::DivUnsigned,
-            BinaryFunctionKind::MaxSigned   => Op::Max,
-            BinaryFunctionKind::MinSigned   => Op::Min,
+            BinaryFunctionKind::MaxSigned => Op::Max,
+            BinaryFunctionKind::MinSigned => Op::Min,
             BinaryFunctionKind::MaxUnsigned => Op::Max,
             BinaryFunctionKind::MinUnsigned => Op::Min,
-            BinaryFunctionKind::PowF        => Op::PowF,
+            BinaryFunctionKind::PowF => Op::PowF,
         }
     }
 }
@@ -4490,19 +4252,19 @@ impl From<BinaryFunctionKind> for Op {
 impl From<UnaryFunctionKind> for Op {
     fn from(k: UnaryFunctionKind) -> Self {
         match k {
-            UnaryFunctionKind::Exp         => Op::Exp,
-            UnaryFunctionKind::Log         => Op::Log,
-            UnaryFunctionKind::Abs         => Op::Abs,
-            UnaryFunctionKind::Ceil        => Op::Ceil,
-            UnaryFunctionKind::Floor       => Op::Floor,
-            UnaryFunctionKind::NegF        => Op::NegF,
-            UnaryFunctionKind::Reciprocal  => Op::Reciprocal,
-            UnaryFunctionKind::Round       => Op::Round,
-            UnaryFunctionKind::Sqrt        => Op::Sqrt,
-            UnaryFunctionKind::Rsqrt       => Op::Rsqrt,
-            UnaryFunctionKind::Square      => Op::Sqrt,
-            UnaryFunctionKind::Tanh        => Op::Tanh,
-            UnaryFunctionKind::Erf         => Op::Erf,
+            UnaryFunctionKind::Exp => Op::Exp,
+            UnaryFunctionKind::Log => Op::Log,
+            UnaryFunctionKind::Abs => Op::Abs,
+            UnaryFunctionKind::Ceil => Op::Ceil,
+            UnaryFunctionKind::Floor => Op::Floor,
+            UnaryFunctionKind::NegF => Op::NegF,
+            UnaryFunctionKind::Reciprocal => Op::Reciprocal,
+            UnaryFunctionKind::Round => Op::Round,
+            UnaryFunctionKind::Sqrt => Op::Sqrt,
+            UnaryFunctionKind::Rsqrt => Op::Rsqrt,
+            UnaryFunctionKind::Square => Op::Sqrt,
+            UnaryFunctionKind::Tanh => Op::Tanh,
+            UnaryFunctionKind::Erf => Op::Erf,
         }
     }
 }
@@ -4540,12 +4302,7 @@ impl NamedI64DenseArray for Permutation {}
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Reciprocal);
 
 impl ElementwiseUnaryOperationGetBody for Reciprocal {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4604,12 +4361,7 @@ impl IROperation for Reciprocal {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Round);
 
 impl ElementwiseUnaryOperationGetBody for Round {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4668,12 +4420,7 @@ impl IROperation for Round {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Rsqrt);
 
 impl ElementwiseUnaryOperationGetBody for Rsqrt {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4732,12 +4479,7 @@ impl IROperation for Rsqrt {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Sqrt);
 
 impl ElementwiseUnaryOperationGetBody for Sqrt {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4796,12 +4538,7 @@ impl IROperation for Sqrt {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Square);
 
 impl ElementwiseUnaryOperationGetBody for Square {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4860,18 +4597,13 @@ impl IROperation for Square {
 impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Sub);
 
 impl ElementwiseBinaryOperationGetBody for Sub {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
             let op = arith::SubF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::SubI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc).as_operation();
+            let op = arith::SubI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             vec![op]
         } else {
             eprintln!("Expected float or integer element type for sub operation");
@@ -4934,12 +4666,7 @@ impl IROperation for Sub {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Tanh);
 
 impl ElementwiseUnaryOperationGetBody for Tanh {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         todo!()
     }
 }
@@ -4998,12 +4725,7 @@ impl IROperation for Tanh {
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndTransposeResult!(Transpose);
 
 impl ElementwiseUnaryOperationGetBody for Transpose {
-    fn get_body(
-        t: &Type,
-        input: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, input: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() || t.is_integer() {
             vec![]
         } else {
@@ -5097,44 +4819,30 @@ impl NamedInteger for UnaryFunction {}
 impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult!(Vecmat);
 
 impl ElementwiseBinaryOperationGetBody for Vecmat {
-    fn get_body(
-        t: &Type,
-        lhs: &Value,
-        rhs: &Value,
-        acc: &Value,
-        loc: &Location,
-    ) -> Vec<Operation> {
+    fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul = arith::MulF::new(
-                t,
-                lhs,
-                rhs,
-                arith::FastMathFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul =
+                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::FastMathFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(
-                t,
-                lhs,
-                rhs,
-                arith::IntegerOverflowFlags::None,
-                loc,
-            ).as_operation();
+            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+                .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
                 arith::IntegerOverflowFlags::None,
                 loc,
-            ).as_operation();
+            )
+            .as_operation();
             vec![op_mul, op_add]
         } else {
             eprintln!("Expected float or integer element type for vecmat operation");
@@ -5211,9 +4919,7 @@ impl IROperation for Yield {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -5245,7 +4951,7 @@ impl IROperation for Yield {
     }
 }
 
-impl <T: Shape> TransformShape for T {
+impl<T: Shape> TransformShape for T {
     fn matmul(&self, rhs: &Self) -> Option<Vec<i64>> {
         if self.rank() == 2 && rhs.rank() == 2 && self.get(1) == rhs.get(0) {
             Some(vec![self.get(0), rhs.get(1)])
@@ -5314,16 +5020,16 @@ impl <T: Shape> TransformShape for T {
 impl fmt::Display for BinaryFunctionKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            BinaryFunctionKind::Add         => "Add",
-            BinaryFunctionKind::Sub         => "Sub",
-            BinaryFunctionKind::Mul         => "Mul",
-            BinaryFunctionKind::Div         => "Div",
+            BinaryFunctionKind::Add => "Add",
+            BinaryFunctionKind::Sub => "Sub",
+            BinaryFunctionKind::Mul => "Mul",
+            BinaryFunctionKind::Div => "Div",
             BinaryFunctionKind::DivUnsigned => "DivUnsigned",
-            BinaryFunctionKind::MaxSigned   => "MaxSigned",
-            BinaryFunctionKind::MinSigned   => "MinSigned",
+            BinaryFunctionKind::MaxSigned => "MaxSigned",
+            BinaryFunctionKind::MinSigned => "MinSigned",
             BinaryFunctionKind::MaxUnsigned => "MaxUnsigned",
             BinaryFunctionKind::MinUnsigned => "MinUnsigned",
-            BinaryFunctionKind::PowF        => "PowF",
+            BinaryFunctionKind::PowF => "PowF",
         })
     }
 }
@@ -5331,8 +5037,8 @@ impl fmt::Display for BinaryFunctionKind {
 impl fmt::Display for CastKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            CastKind::Signed    => "Signed",
-            CastKind::Unsigned  => "Unsigned",
+            CastKind::Signed => "Signed",
+            CastKind::Unsigned => "Unsigned",
         })
     }
 }
@@ -5340,9 +5046,9 @@ impl fmt::Display for CastKind {
 impl fmt::Display for IteratorTypeKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            IteratorTypeKind::Parallel  => "Parallel",
+            IteratorTypeKind::Parallel => "Parallel",
             IteratorTypeKind::Reduction => "Reduction",
-            IteratorTypeKind::Window    => "Window",
+            IteratorTypeKind::Window => "Window",
         })
     }
 }
@@ -5350,103 +5056,103 @@ impl fmt::Display for IteratorTypeKind {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Abs                         => "AbsOp",
-            Op::Add                         => "AddOp",
-            Op::BatchMatmul                 => "BatchMatmulOp",
-            Op::BatchMatmulTransposeA       => "BatchMatmulTransposeAOp",
-            Op::BatchMatmulTransposeB       => "BatchMatmulTransposeBOp",
-            Op::BatchMatvec                 => "BatchMatvecOp",
-            Op::BatchMmt4D                  => "BatchMmt4DOp",
-            Op::BatchReduceMatmul           => "BatchReduceMatmulOp",
-            Op::BatchVecmat                 => "BatchVecmatOp",
-            Op::Broadcast                   => "BroadcastOp",
-            Op::Ceil                        => "CeilOp",
-            Op::Conv1DNcwFcw                => "Conv1DNcwFcwOp",
-            Op::Conv1DNwcWcf                => "Conv1DNwcWcfOp",
-            Op::Conv1D                      => "Conv1DOp",
-            Op::Conv2D                      => "Conv2DOp",
-            Op::Conv2DNchwFchw              => "Conv2DNchwFchwOp",
-            Op::Conv2DNgchwGfchw            => "Conv2DNgchwGfchwOp",
-            Op::Conv2DNgchwGfchwG           => "Conv2DNgchwGfchwGOp",
-            Op::Conv2DNhwcFhwc              => "Conv2DNhwcFhwcOp",
-            Op::Conv2DNhwcFhwcQ             => "Conv2DNhwcFhwcQOp",
-            Op::Conv2DNhwcHwcf              => "Conv2DNhwcHwcfOp",
-            Op::Conv2DNhwcHwcfQ             => "Conv2DNhwcHwcfQOp",
-            Op::Conv3D                      => "Conv3DOp",
-            Op::Conv3DNcdhwFcdhw            => "Conv3DNcdhwFcdhwOp",
-            Op::Conv3DNdhwcDhwcf            => "Conv3DNdhwcDhwcfOp",
-            Op::Conv3DNdhwcDhwcfQ           => "Conv3DNdhwcDhwcfQOp",
-            Op::Copy                        => "CopyOp",
-            Op::DepthwiseConv1DNcwCw        => "DepthwiseConv1DNcwCwOp",
-            Op::DepthwiseConv1DNwcWc        => "DepthwiseConv1DNwcWcOp",
-            Op::DepthwiseConv1DNwcWcm       => "DepthwiseConv1DNwcWcmOp",
-            Op::DepthwiseConv2DNchwChw      => "DepthwiseConv2DNchwChwOp",
-            Op::DepthwiseConv2DNhwcHwc      => "DepthwiseConv2DNhwcHwcOp",
-            Op::DepthwiseConv2DNhwcHwcQ     => "DepthwiseConv2DNhwcHwcQOp",
-            Op::DepthwiseConv2DNhwcHwcm     => "DepthwiseConv2DNhwcHwcmOp",
-            Op::DepthwiseConv2DNhwcHwcmQ    => "DepthwiseConv2DNhwcHwcmQOp",
-            Op::DepthwiseConv3DNcdhwCdhw    => "DepthwiseConv3DNcdhwCdhwOp",
-            Op::DepthwiseConv3DNdhwcDhwc    => "DepthwiseConv3DNdhwcDhwcOp",
-            Op::DepthwiseConv3DNdhwcDhwcm   => "DepthwiseConv3DNdhwcDhwcmOp",
-            Op::Div                         => "DivOp",
-            Op::DivUnsigned                 => "DivUnsignedOp",
-            Op::Dot                         => "DotOp",
-            Op::ElementwiseBinary           => "ElementwiseBinaryOp",
-            Op::ElementwiseUnary            => "ElementwiseUnaryOp",
-            Op::Erf                         => "ErfOp",
-            Op::Exp                         => "ExpOp",
-            Op::Fill                        => "FillOp",
-            Op::FillRng2D                   => "FillRng2DOp",
-            Op::Floor                       => "FloorOp",
-            Op::Generic                     => "GenericOp",
-            Op::Index                       => "IndexOp",
-            Op::Log                         => "LogOp",
-            Op::Map                         => "MapOp",
-            Op::Matmul                      => "MatmulOp",
-            Op::MatmulTransposeA            => "MatmulTransposeAOp",
-            Op::MatmulTransposeB            => "MatmulTransposeBOp",
-            Op::Matvec                      => "MatvecOp",
-            Op::Max                         => "MaxOp",
-            Op::Min                         => "MinOp",
-            Op::Mmt4D                       => "Mmt4DOp",
-            Op::Mul                         => "MulOp",
-            Op::NegF                        => "NegFOp",
-            Op::PoolingNchwMax              => "PoolingNchwMaxOp",
-            Op::PoolingNchwSum              => "PoolingNchwSumOp",
-            Op::PoolingNcwMax               => "PoolingNcwMaxOp",
-            Op::PoolingNcwSum               => "PoolingNcwSumOp",
-            Op::PoolingNdhwcMax             => "PoolingNdhwcMaxOp",
-            Op::PoolingNdhwcMin             => "PoolingNdhwcMinOp",
-            Op::PoolingNdhwcSum             => "PoolingNdhwcSumOp",
-            Op::PoolingNhwcMax              => "PoolingNhwcMaxOp",
-            Op::PoolingNhwcMaxUnsigned      => "PoolingNhwcMaxUnsignedOp",
-            Op::PoolingNhwcMin              => "PoolingNhwcMinOp",
-            Op::PoolingNhwcMinUnsigned      => "PoolingNhwcMinUnsignedOp",
-            Op::PoolingNhwcSum              => "PoolingNhwcSumOp",
-            Op::PoolingNwcMax               => "PoolingNwcMaxOp",
-            Op::PoolingNwcMaxUnsigned       => "PoolingNwcMaxUnsignedOp",
-            Op::PoolingNwcMin               => "PoolingNwcMinOp",
-            Op::PoolingNwcMinUnsigned       => "PoolingNwcMinUnsignedOp",
-            Op::PoolingNwcSum               => "PoolingNwcSumOp",
-            Op::PowF                        => "PowFOp",
-            Op::QuantizedBatchMatmul        => "QuantizedBatchMatmulOp",
-            Op::QuantizedMatmul             => "QuantizedMatmulOp",
-            Op::Reciprocal                  => "ReciprocalOp",
-            Op::Reduce                      => "ReduceOp",
-            Op::Round                       => "RoundOp",
-            Op::Rsqrt                       => "RsqrtOp",
-            Op::Select                      => "SelectOp",
-            Op::Softmax                     => "SoftmaxOp",
-            Op::Sqrt                        => "SqrtOp",
-            Op::Square                      => "SquareOp",
-            Op::Sub                         => "SubOp",
-            Op::Tanh                        => "TanhOp",
-            Op::Transpose                   => "TransposeOp",
-            Op::Vecmat                      => "VecmatOp",
-            Op::WinogradFilterTransform     => "WinogradFilterTransformOp",
-            Op::WinogradInputTransform      => "WinogradInputTransformOp",
-            Op::WinogradOutputTransform     => "WinogradOutputTransformOp",
-            Op::Yield                       => "YieldOp",
+            Op::Abs => "AbsOp",
+            Op::Add => "AddOp",
+            Op::BatchMatmul => "BatchMatmulOp",
+            Op::BatchMatmulTransposeA => "BatchMatmulTransposeAOp",
+            Op::BatchMatmulTransposeB => "BatchMatmulTransposeBOp",
+            Op::BatchMatvec => "BatchMatvecOp",
+            Op::BatchMmt4D => "BatchMmt4DOp",
+            Op::BatchReduceMatmul => "BatchReduceMatmulOp",
+            Op::BatchVecmat => "BatchVecmatOp",
+            Op::Broadcast => "BroadcastOp",
+            Op::Ceil => "CeilOp",
+            Op::Conv1DNcwFcw => "Conv1DNcwFcwOp",
+            Op::Conv1DNwcWcf => "Conv1DNwcWcfOp",
+            Op::Conv1D => "Conv1DOp",
+            Op::Conv2D => "Conv2DOp",
+            Op::Conv2DNchwFchw => "Conv2DNchwFchwOp",
+            Op::Conv2DNgchwGfchw => "Conv2DNgchwGfchwOp",
+            Op::Conv2DNgchwGfchwG => "Conv2DNgchwGfchwGOp",
+            Op::Conv2DNhwcFhwc => "Conv2DNhwcFhwcOp",
+            Op::Conv2DNhwcFhwcQ => "Conv2DNhwcFhwcQOp",
+            Op::Conv2DNhwcHwcf => "Conv2DNhwcHwcfOp",
+            Op::Conv2DNhwcHwcfQ => "Conv2DNhwcHwcfQOp",
+            Op::Conv3D => "Conv3DOp",
+            Op::Conv3DNcdhwFcdhw => "Conv3DNcdhwFcdhwOp",
+            Op::Conv3DNdhwcDhwcf => "Conv3DNdhwcDhwcfOp",
+            Op::Conv3DNdhwcDhwcfQ => "Conv3DNdhwcDhwcfQOp",
+            Op::Copy => "CopyOp",
+            Op::DepthwiseConv1DNcwCw => "DepthwiseConv1DNcwCwOp",
+            Op::DepthwiseConv1DNwcWc => "DepthwiseConv1DNwcWcOp",
+            Op::DepthwiseConv1DNwcWcm => "DepthwiseConv1DNwcWcmOp",
+            Op::DepthwiseConv2DNchwChw => "DepthwiseConv2DNchwChwOp",
+            Op::DepthwiseConv2DNhwcHwc => "DepthwiseConv2DNhwcHwcOp",
+            Op::DepthwiseConv2DNhwcHwcQ => "DepthwiseConv2DNhwcHwcQOp",
+            Op::DepthwiseConv2DNhwcHwcm => "DepthwiseConv2DNhwcHwcmOp",
+            Op::DepthwiseConv2DNhwcHwcmQ => "DepthwiseConv2DNhwcHwcmQOp",
+            Op::DepthwiseConv3DNcdhwCdhw => "DepthwiseConv3DNcdhwCdhwOp",
+            Op::DepthwiseConv3DNdhwcDhwc => "DepthwiseConv3DNdhwcDhwcOp",
+            Op::DepthwiseConv3DNdhwcDhwcm => "DepthwiseConv3DNdhwcDhwcmOp",
+            Op::Div => "DivOp",
+            Op::DivUnsigned => "DivUnsignedOp",
+            Op::Dot => "DotOp",
+            Op::ElementwiseBinary => "ElementwiseBinaryOp",
+            Op::ElementwiseUnary => "ElementwiseUnaryOp",
+            Op::Erf => "ErfOp",
+            Op::Exp => "ExpOp",
+            Op::Fill => "FillOp",
+            Op::FillRng2D => "FillRng2DOp",
+            Op::Floor => "FloorOp",
+            Op::Generic => "GenericOp",
+            Op::Index => "IndexOp",
+            Op::Log => "LogOp",
+            Op::Map => "MapOp",
+            Op::Matmul => "MatmulOp",
+            Op::MatmulTransposeA => "MatmulTransposeAOp",
+            Op::MatmulTransposeB => "MatmulTransposeBOp",
+            Op::Matvec => "MatvecOp",
+            Op::Max => "MaxOp",
+            Op::Min => "MinOp",
+            Op::Mmt4D => "Mmt4DOp",
+            Op::Mul => "MulOp",
+            Op::NegF => "NegFOp",
+            Op::PoolingNchwMax => "PoolingNchwMaxOp",
+            Op::PoolingNchwSum => "PoolingNchwSumOp",
+            Op::PoolingNcwMax => "PoolingNcwMaxOp",
+            Op::PoolingNcwSum => "PoolingNcwSumOp",
+            Op::PoolingNdhwcMax => "PoolingNdhwcMaxOp",
+            Op::PoolingNdhwcMin => "PoolingNdhwcMinOp",
+            Op::PoolingNdhwcSum => "PoolingNdhwcSumOp",
+            Op::PoolingNhwcMax => "PoolingNhwcMaxOp",
+            Op::PoolingNhwcMaxUnsigned => "PoolingNhwcMaxUnsignedOp",
+            Op::PoolingNhwcMin => "PoolingNhwcMinOp",
+            Op::PoolingNhwcMinUnsigned => "PoolingNhwcMinUnsignedOp",
+            Op::PoolingNhwcSum => "PoolingNhwcSumOp",
+            Op::PoolingNwcMax => "PoolingNwcMaxOp",
+            Op::PoolingNwcMaxUnsigned => "PoolingNwcMaxUnsignedOp",
+            Op::PoolingNwcMin => "PoolingNwcMinOp",
+            Op::PoolingNwcMinUnsigned => "PoolingNwcMinUnsignedOp",
+            Op::PoolingNwcSum => "PoolingNwcSumOp",
+            Op::PowF => "PowFOp",
+            Op::QuantizedBatchMatmul => "QuantizedBatchMatmulOp",
+            Op::QuantizedMatmul => "QuantizedMatmulOp",
+            Op::Reciprocal => "ReciprocalOp",
+            Op::Reduce => "ReduceOp",
+            Op::Round => "RoundOp",
+            Op::Rsqrt => "RsqrtOp",
+            Op::Select => "SelectOp",
+            Op::Softmax => "SoftmaxOp",
+            Op::Sqrt => "SqrtOp",
+            Op::Square => "SquareOp",
+            Op::Sub => "SubOp",
+            Op::Tanh => "TanhOp",
+            Op::Transpose => "TransposeOp",
+            Op::Vecmat => "VecmatOp",
+            Op::WinogradFilterTransform => "WinogradFilterTransformOp",
+            Op::WinogradInputTransform => "WinogradInputTransformOp",
+            Op::WinogradOutputTransform => "WinogradOutputTransformOp",
+            Op::Yield => "YieldOp",
         })
     }
 }
@@ -5454,19 +5160,19 @@ impl fmt::Display for Op {
 impl fmt::Display for UnaryFunctionKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            UnaryFunctionKind::Exp         => "Exp",
-            UnaryFunctionKind::Log         => "Log",
-            UnaryFunctionKind::Abs         => "Abs",
-            UnaryFunctionKind::Ceil        => "Ceil",
-            UnaryFunctionKind::Floor       => "Floor",
-            UnaryFunctionKind::NegF        => "NegF",
-            UnaryFunctionKind::Reciprocal  => "Reciprocal",
-            UnaryFunctionKind::Round       => "Round",
-            UnaryFunctionKind::Sqrt        => "Sqrt",
-            UnaryFunctionKind::Rsqrt       => "Rsqrt",
-            UnaryFunctionKind::Square      => "Square",
-            UnaryFunctionKind::Tanh        => "Tanh",
-            UnaryFunctionKind::Erf         => "Erf",
+            UnaryFunctionKind::Exp => "Exp",
+            UnaryFunctionKind::Log => "Log",
+            UnaryFunctionKind::Abs => "Abs",
+            UnaryFunctionKind::Ceil => "Ceil",
+            UnaryFunctionKind::Floor => "Floor",
+            UnaryFunctionKind::NegF => "NegF",
+            UnaryFunctionKind::Reciprocal => "Reciprocal",
+            UnaryFunctionKind::Round => "Round",
+            UnaryFunctionKind::Sqrt => "Sqrt",
+            UnaryFunctionKind::Rsqrt => "Rsqrt",
+            UnaryFunctionKind::Square => "Square",
+            UnaryFunctionKind::Tanh => "Tanh",
+            UnaryFunctionKind::Erf => "Erf",
         })
     }
 }

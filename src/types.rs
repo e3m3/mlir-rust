@@ -3,8 +3,8 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::mlirTypeEqual;
 use mlir_sys::MlirType;
+use mlir_sys::mlirTypeEqual;
 
 use std::cmp;
 
@@ -76,7 +76,7 @@ impl cmp::PartialEq for dyn IRType {
     }
 }
 
-impl <T: IRType> IsPromotableTo<T> for dyn IRType {
+impl<T: IRType> IsPromotableTo<T> for dyn IRType {
     fn is_promotable_to(&self, other: &T) -> bool {
         let t = self.as_type();
         let t_other = other.as_type();

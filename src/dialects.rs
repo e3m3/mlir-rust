@@ -15,8 +15,8 @@ use crate::traits;
 
 use effects::MemoryEffectList;
 use interfaces::Interface;
-use ir::Dialect;
 use ir::Destroy;
+use ir::Dialect;
 use ir::Operation;
 use traits::Trait;
 

@@ -7,20 +7,20 @@ use std::fmt;
 
 pub type MemoryEffectList = &'static [&'static MemoryEffect];
 
-#[derive(Clone,Copy,Default,PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub enum MemoryEffectType {
     #[default]
     None,
     Write,
 }
 
-#[derive(Clone,Copy,Default,PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub enum SideEffectResource {
     #[default]
     DefaultResource,
 }
 
-#[derive(Clone,Copy,Default,PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub struct MemoryEffect(MemoryEffectType, SideEffectResource);
 
 pub const MEFF_DEFAULT_WRITE: &MemoryEffect = &MemoryEffect::default_write();
@@ -53,8 +53,8 @@ impl MemoryEffect {
 impl fmt::Display for MemoryEffectType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            MemoryEffectType::None      => "None",
-            MemoryEffectType::Write     => "Write",
+            MemoryEffectType::None => "None",
+            MemoryEffectType::Write => "Write",
         })
     }
 }
@@ -69,7 +69,9 @@ impl fmt::Display for SideEffectResource {
 
 impl fmt::Display for MemoryEffect {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "MemoryEffects::Effect{{MemoryEffects::{} on ::mlir::SideEffects::{}}}",
+        write!(
+            f,
+            "MemoryEffects::Effect{{MemoryEffects::{} on ::mlir::SideEffects::{}}}",
             self.get_type(),
             self.get_resource(),
         )

@@ -2,15 +2,15 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::ExtractElement;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::integer::Integer as IntegerType;
-use mlir::types::IRType;
 use mlir::types::vector::Vector;
 
 mod common;
@@ -27,12 +27,8 @@ pub fn main() -> () {
     let f = get_empty_test_fn(&context, &[t_vec_in.clone(), t_int.clone()], &[t.clone()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_extract = ExtractElement::new(
-        &t,
-        &f_block.get_arg(0),
-        &f_block.get_arg(1),
-        &loc,
-    ).as_operation();
+    let mut op_extract =
+        ExtractElement::new(&t, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_extract.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_extract);
     f_block.append_operation(&mut op_ret);

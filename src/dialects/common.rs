@@ -15,10 +15,9 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::integer::Integer as IntegerAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
-use attributes::strided_layout::StridedLayout;
+use attributes::integer::Integer as IntegerAttr;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
@@ -26,9 +25,10 @@ use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedMemoryLayout;
 use attributes::specialized::NamedMemorySpace;
 use attributes::specialized::NamedString;
+use attributes::strided_layout::StridedLayout;
 use dialects::affine::Map as AffineMap;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::StringBacked;
 use types::integer::Integer as IntegerType;
@@ -77,7 +77,7 @@ pub struct SymbolVisibility(MlirAttribute);
 //  Enums
 ///////////////////////////////
 
-#[derive(Clone,Copy,Default,PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq)]
 pub enum SymbolVisibilityKind {
     #[default]
     None,
@@ -217,11 +217,11 @@ impl SymbolName {
 impl SymbolVisibility {
     pub fn new(context: &Context, k: SymbolVisibilityKind) -> Option<Self> {
         match k {
-            SymbolVisibilityKind::None      => None,
-            SymbolVisibilityKind::Private   => {
+            SymbolVisibilityKind::None => None,
+            SymbolVisibilityKind::Private => {
                 let s = StringBacked::from(k.to_string());
                 Some(<Self as NamedString>::new(context, &s.as_string_ref()))
-            },
+            }
         }
     }
 
@@ -573,9 +573,9 @@ impl FromStr for SymbolVisibilityKind {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            ""          => Ok(SymbolVisibilityKind::None),
-            "private"   => Ok(SymbolVisibilityKind::Private),
-            _           => Err(format!("Invalid symbol visibility kind: {}", s)),
+            "" => Ok(SymbolVisibilityKind::None),
+            "private" => Ok(SymbolVisibilityKind::Private),
+            _ => Err(format!("Invalid symbol visibility kind: {}", s)),
         }
     }
 }
@@ -605,8 +605,8 @@ impl NamedString for SymbolVisibility {}
 impl fmt::Display for SymbolVisibilityKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            SymbolVisibilityKind::None      => "none",
-            SymbolVisibilityKind::Private   => "private",
+            SymbolVisibilityKind::None => "none",
+            SymbolVisibilityKind::Private => "private",
         })
     }
 }

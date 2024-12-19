@@ -3,17 +3,17 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedBool;
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::NonTemporal;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::vector::Store;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 use mlir::types::vector::Vector;
 
@@ -44,7 +44,8 @@ pub fn main() -> () {
         &[f_block.get_arg(2)],
         &NonTemporal::new(&context, false),
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_store);
     f_block.append_operation(&mut op_ret);

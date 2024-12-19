@@ -9,10 +9,10 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::DivF;
 use mlir::dialects::arith::FastMathFlags;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
@@ -35,7 +35,8 @@ pub fn main() -> () {
         &f_block.get_arg(1),
         FastMathFlags::Fast,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_div.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_div);
     f_block.append_operation(&mut op_ret);

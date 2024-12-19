@@ -3,27 +3,27 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirIntegerAttrGet;
 use mlir_sys::mlirIntegerAttrGetTypeID;
 use mlir_sys::mlirIntegerAttrGetValueInt;
 use mlir_sys::mlirIntegerAttrGetValueSInt;
 use mlir_sys::mlirIntegerAttrGetValueUInt;
-use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
-use crate::ir;
 use crate::exit_code;
+use crate::ir;
 use crate::types;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::TypeID;
-use types::integer::Integer as IntegerType;
 use types::IRType;
+use types::integer::Integer as IntegerType;
 
 #[derive(Clone)]
 pub struct Integer(MlirAttribute);

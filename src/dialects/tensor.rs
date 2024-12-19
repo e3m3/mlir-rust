@@ -18,25 +18,25 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::array::Array;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::array::Array;
 use attributes::specialized::NamedArrayOfIntegerArrays;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedUnit;
+use dialects::IROp;
+use dialects::IROperation;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::StaticOffsets;
 use dialects::common::StaticSizes;
 use dialects::common::StaticStrides;
-use dialects::IROp;
-use dialects::IROperation;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Block;
@@ -50,8 +50,8 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::index::Index;
 use types::IRType;
+use types::index::Index;
 use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
 use types::unranked_tensor::UnrankedTensor;
@@ -98,7 +98,7 @@ pub struct Unique(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Bitcast,
     Cast,
@@ -276,8 +276,7 @@ impl StaticOutputShape {
         let a = self.as_dense_array();
         (0..a.num_elements())
             .filter(|&i| a.get_element_i64(i) == Shaped::dynamic_size())
-            .count()
-            as isize
+            .count() as isize
     }
 
     pub fn num_static_dims(&self) -> isize {
@@ -312,29 +311,29 @@ impl Unique {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::Bitcast             => "bitcast",
-            Op::Cast                => "cast",
-            Op::CollapseShape       => "collapse_shape",
-            Op::Concat              => "concat",
-            Op::Dim                 => "dim",
-            Op::Empty               => "empty",
-            Op::ExpandShape         => "expand_shape",
-            Op::Extract             => "extract",
-            Op::ExtractSlice        => "extract_slice",
-            Op::FromElements        => "from_elements",
-            Op::Gather              => "gather",
-            Op::Generate            => "generate",
-            Op::Insert              => "insert",
-            Op::InsertSlice         => "insert_slice",
-            Op::Pack                => "pack",
-            Op::Pad                 => "pad",
+            Op::Bitcast => "bitcast",
+            Op::Cast => "cast",
+            Op::CollapseShape => "collapse_shape",
+            Op::Concat => "concat",
+            Op::Dim => "dim",
+            Op::Empty => "empty",
+            Op::ExpandShape => "expand_shape",
+            Op::Extract => "extract",
+            Op::ExtractSlice => "extract_slice",
+            Op::FromElements => "from_elements",
+            Op::Gather => "gather",
+            Op::Generate => "generate",
+            Op::Insert => "insert",
+            Op::InsertSlice => "insert_slice",
+            Op::Pack => "pack",
+            Op::Pad => "pad",
             Op::ParallelInsertSlice => "parallel_insert_slice",
-            Op::Rank                => "rank",
-            Op::Reshape             => "reshape",
-            Op::Scatter             => "scatter",
-            Op::Splat               => "splat",
-            Op::Unpack              => "unpack",
-            Op::Yield               => "yield",
+            Op::Rank => "rank",
+            Op::Reshape => "reshape",
+            Op::Scatter => "scatter",
+            Op::Splat => "splat",
+            Op::Unpack => "unpack",
+            Op::Yield => "yield",
         }
     }
 }
@@ -417,7 +416,8 @@ impl Cast {
     /// [1]: https://mlir.llvm.org/docs/Dialects/TensorOps/#tensorcast-tensorcastop
     pub fn new(s: &Shaped, s_value: &Shaped, value: &Value, loc: &Location) -> Self {
         if s.get_element_type() != s_value.get_element_type() {
-            eprintln!("Expected matching element types for source and result tensor types of \
+            eprintln!(
+                "Expected matching element types for source and result tensor types of \
                 cast shape operation"
             );
             exit(ExitCode::DialectError);
@@ -489,7 +489,8 @@ impl CollapseShape {
     pub fn new(t: &RankedTensor, value: &Value, reassoc: &Reassociation, loc: &Location) -> Self {
         let t_value = value.get_type();
         if !t_value.is_tensor() {
-            eprintln!("Expected tensor type for result and source operand \
+            eprintln!(
+                "Expected tensor type for result and source operand \
                 of collapse shape operation"
             );
             exit(ExitCode::DialectError);
@@ -497,7 +498,8 @@ impl CollapseShape {
         let s = RankedTensor::from(*t.get()).as_shaped();
         let s_value = RankedTensor::from(*value.get_type().get()).as_shaped();
         if s.get_element_type() != s_value.get_element_type() {
-            eprintln!("Expected matching element types for source and result tensor types of \
+            eprintln!(
+                "Expected matching element types for source and result tensor types of \
                 collapse shape operation"
             );
             exit(ExitCode::DialectError);
@@ -540,7 +542,9 @@ impl CollapseShape {
 
     pub fn get_reassociation(&self) -> Reassociation {
         let attr_name = StringBacked::from(Reassociation::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Reassociation::from(*attr.get())
     }
 
@@ -568,12 +572,16 @@ impl Concat {
         let t_elem = s.get_element_type();
         let rank = s.rank().unwrap_or(-1);
         if d < 0 || d >= rank {
-            eprintln!("Expected concatenated dimension to fall within range [0..{})", rank);
+            eprintln!(
+                "Expected concatenated dimension to fall within range [0..{})",
+                rank
+            );
             exit(ExitCode::DialectError);
         }
         let s_values: Vec<Shaped> = t_values.iter().map(|t_| t_.as_shaped()).collect();
         if s_values.iter().any(|s_| t_elem != s_.get_element_type()) {
-            eprintln!("Expected matching element types for tensor values and result tensor type \
+            eprintln!(
+                "Expected matching element types for tensor values and result tensor type \
                 of concat operation"
             );
             exit(ExitCode::DialectError);
@@ -581,8 +589,13 @@ impl Concat {
         for i in 0..rank {
             let do_concat = i == d;
             let size = s.dim_size(i as isize);
-            if do_concat && s_values.iter().all(|s_| !s_.is_dynamic_dim(i as isize)) &&
-                size != s_values.iter().fold(0, |acc,s_| acc + s_.dim_size(i as isize)) {
+            if do_concat
+                && s_values.iter().all(|s_| !s_.is_dynamic_dim(i as isize))
+                && size
+                    != s_values
+                        .iter()
+                        .fold(0, |acc, s_| acc + s_.dim_size(i as isize))
+            {
                 eprintln!(
                     "Expected result dimension to equal sum of operand sizes \
                     along the concatenated dimension"
@@ -620,7 +633,9 @@ impl Concat {
 
     pub fn get_dimension(&self) -> Dimension {
         let attr_name = StringBacked::from(Dimension::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
 
@@ -683,7 +698,8 @@ impl Dim {
 impl Empty {
     pub fn new(t: &RankedTensor, sizes: &[Value], loc: &Location) -> Self {
         if t.as_shaped().num_dynamic_dims().unwrap_or(-1) != sizes.len() as i64 {
-            eprintln!("Expected matching arity of dynamic sizes and number of dynamic dimensions for \
+            eprintln!(
+                "Expected matching arity of dynamic sizes and number of dynamic dimensions for \
                 tensor type of empty tensor operation"
             );
             exit(ExitCode::DialectError);
@@ -751,7 +767,8 @@ impl ExpandShape {
         let s = t.as_shaped();
         let s_source = Shaped::from(*t_source.get());
         if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching element type for source and result tensor type \
+            eprintln!(
+                "Expected matching element type for source and result tensor type \
                 of expand shape operation"
             );
             exit(ExitCode::DialectError);
@@ -759,17 +776,18 @@ impl ExpandShape {
         let rank = s.rank().unwrap_or(-1);
         let rank_source = s_source.rank().unwrap_or(-1);
         if rank < rank_source {
-            eprintln!("Expected rank of result tensor type ({}) to be of equal or greater rank than \
+            eprintln!(
+                "Expected rank of result tensor type ({}) to be of equal or greater rank than \
                 the rank of th esource operand ({}) of expand shape operation",
-                rank,
-                rank_source,
+                rank, rank_source,
             );
             exit(ExitCode::DialectError);
         }
         let n_static_shape = static_shape.num_dynamic_dims();
         let n_dyn_sizes = shape.len() as isize;
         if n_static_shape != n_dyn_sizes {
-            eprintln!("Expected matching number of symbolic dimensions ({}) (length of output shape) \
+            eprintln!(
+                "Expected matching number of symbolic dimensions ({}) (length of output shape) \
                 to match number of dynamic dimensions (value '{}') in static output shape ({}) \
                 of expand shape operation",
                 n_dyn_sizes,
@@ -781,19 +799,19 @@ impl ExpandShape {
         let n_reassoc = reassoc.num_elements() as i64;
         let n_reassoc_flat = reassoc.num_elements_flattened() as i64;
         if rank != n_reassoc_flat {
-            eprintln!("Expected result tensor of rank ({}) equal to number of \
+            eprintln!(
+                "Expected result tensor of rank ({}) equal to number of \
                 total dimensions (flattened) specified by the reassociation map ({}) \
                 of expand shape operation",
-                rank,
-                n_reassoc_flat,
+                rank, n_reassoc_flat,
             );
             exit(ExitCode::DialectError);
         }
         if rank_source != n_reassoc {
-            eprintln!("Expected source tensor of rank equal ({}) to number of dimensional groupings \
+            eprintln!(
+                "Expected source tensor of rank equal ({}) to number of dimensional groupings \
                 specified by the reassociation map ({}) of expand shape operation",
-                rank_source,
-                n_reassoc,
+                rank_source, n_reassoc,
             );
             exit(ExitCode::DialectError);
         }
@@ -830,7 +848,9 @@ impl ExpandShape {
 
     pub fn get_reassociation(&self) -> Reassociation {
         let attr_name = StringBacked::from(Reassociation::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Reassociation::from(*attr.get())
     }
 
@@ -840,7 +860,9 @@ impl ExpandShape {
 
     pub fn get_static_output_shape(&self) -> StaticOutputShape {
         let attr_name = StringBacked::from(StaticOutputShape::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticOutputShape::from(*attr.get())
     }
 }
@@ -857,7 +879,8 @@ impl Extract {
         }
         let s_source = Shaped::from(*source.get_type().get());
         if *t != s_source.get_element_type() {
-            eprintln!("Expected matching result type and element type for source operand \
+            eprintln!(
+                "Expected matching result type and element type for source operand \
                 of extract operation"
             );
             exit(ExitCode::DialectError);
@@ -865,10 +888,10 @@ impl Extract {
         let rank_source = s_source.rank().unwrap_or(-1);
         let n_indices = indices.len() as i64;
         if rank_source != n_indices {
-            eprintln!("Expected matching arity of indices ({}) and rank ({}) for source operand \
+            eprintln!(
+                "Expected matching arity of indices ({}) and rank ({}) for source operand \
                 of extract operation",
-                n_indices,
-                rank_source,
+                n_indices, rank_source,
             );
             exit(ExitCode::DialectError);
         }
@@ -936,7 +959,8 @@ impl ExtractSlice {
         let s = t.as_shaped();
         let s_source = Shaped::from(*source.get_type().get());
         if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching result type and element type for source operand \
+            eprintln!(
+                "Expected matching result type and element type for source operand \
                 of extract slice operation"
             );
             exit(ExitCode::DialectError);
@@ -988,19 +1012,25 @@ impl ExtractSlice {
 
     pub fn get_static_offsets(&self) -> StaticOffsets {
         let attr_name = StringBacked::from(StaticOffsets::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticOffsets::from(*attr.get())
     }
 
     pub fn get_static_sizes(&self) -> StaticSizes {
         let attr_name = StringBacked::from(StaticSizes::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticSizes::from(*attr.get())
     }
 
     pub fn get_static_strides(&self) -> StaticStrides {
         let attr_name = StringBacked::from(StaticStrides::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticStrides::from(*attr.get())
     }
 }
@@ -1013,7 +1043,8 @@ impl FromElements {
             exit(ExitCode::DialectError);
         }
         if !s.has_rank() || elements.is_empty() {
-            eprintln!("Expected non-empty result tensor type and/or elements array of \
+            eprintln!(
+                "Expected non-empty result tensor type and/or elements array of \
                 from elements operation"
             );
             exit(ExitCode::DialectError);
@@ -1021,10 +1052,10 @@ impl FromElements {
         let n_elem = s.num_elements().unwrap_or(-1);
         let n_elem_inputs = elements.len() as i64;
         if n_elem != n_elem_inputs {
-            eprintln!("Expected matching elements size ({}) and inputs ({}) for tensor result type \
+            eprintln!(
+                "Expected matching elements size ({}) and inputs ({}) for tensor result type \
                 of from elements operation",
-                n_elem,
-                n_elem_inputs,
+                n_elem, n_elem_inputs,
             );
             exit(ExitCode::DialectError);
         }
@@ -1077,10 +1108,10 @@ impl Generate {
         let n_dyn_dims = s.num_dynamic_dims().unwrap_or(-1);
         let n_extents = extents.len() as i64;
         if n_dyn_dims != n_extents {
-            eprintln!("Expected one index type extent ({}) per dynamic dimension \
+            eprintln!(
+                "Expected one index type extent ({}) per dynamic dimension \
                 in result tensor type ({}) of generate operation",
-                n_extents,
-                n_dyn_dims,
+                n_extents, n_dyn_dims,
             );
             exit(ExitCode::DialectError);
         }
@@ -1150,7 +1181,8 @@ impl Pad {
         let t_source = RankedTensor::from(*source.get_type().get());
         let s_source = t_source.as_shaped();
         if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching element types for source opereand and result type \
+            eprintln!(
+                "Expected matching element types for source opereand and result type \
                 of pad operation"
             );
             exit(ExitCode::DialectError);
@@ -1167,18 +1199,18 @@ impl Pad {
         let n_low = static_low.num_elements() + values_low.len() as isize;
         let n_high = static_high.num_elements() + values_high.len() as isize;
         if rank != n_low {
-            eprintln!("Expected arity of low indices ({}) to match rank ({}) for result type \
+            eprintln!(
+                "Expected arity of low indices ({}) to match rank ({}) for result type \
                 of pad operation",
-                n_low,
-                rank,
+                n_low, rank,
             );
             exit(ExitCode::DialectError);
         }
         if rank != n_high {
-            eprintln!("Expected arity of high indices ({}) to match rank ({}) for result type \
+            eprintln!(
+                "Expected arity of high indices ({}) to match rank ({}) for result type \
                 of pad operation",
-                n_high,
-                rank,
+                n_high, rank,
             );
             exit(ExitCode::DialectError);
         }
@@ -1237,19 +1269,24 @@ impl Pad {
 
     pub fn get_static_high(&self) -> StaticHigh {
         let attr_name = StringBacked::from(StaticHigh::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticHigh::from(*attr.get())
     }
 
     pub fn get_static_low(&self) -> StaticLow {
         let attr_name = StringBacked::from(StaticLow::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         StaticLow::from(*attr.get())
     }
 
     pub fn is_no_fold(&self) -> bool {
         let attr_name = StringBacked::from(NoFold::get_name());
-        self.as_operation().has_attribute_inherent(&attr_name.as_string_ref())
+        self.as_operation()
+            .has_attribute_inherent(&attr_name.as_string_ref())
     }
 }
 
@@ -1322,7 +1359,8 @@ impl Reshape {
         }
         let s_shape = RankedTensor::from_type(&t_shape).as_shaped();
         if !s_shape.is_static() {
-            eprintln!("Expected statically sized shape operand for ranked tensor result \
+            eprintln!(
+                "Expected statically sized shape operand for ranked tensor result \
                 of reshape operation"
             );
             exit(ExitCode::DialectError);
@@ -1332,10 +1370,10 @@ impl Reshape {
         let n_elem = s.num_elements();
         let n_elem_value = s_value.num_elements();
         if s_shape.is_static() && n_elem != n_elem_value {
-            eprintln!("Expected matching number of elements for result ({:?}) and source ({:?}) \
+            eprintln!(
+                "Expected matching number of elements for result ({:?}) and source ({:?}) \
                 tensor types",
-                n_elem,
-                n_elem_value,
+                n_elem, n_elem_value,
             );
             exit(ExitCode::DialectError);
         }
@@ -1355,7 +1393,8 @@ impl Reshape {
         }
         let s_shape = RankedTensor::from_type(&t_shape).as_shaped();
         if s_shape.is_static() {
-            eprintln!("Expected dynamically sized shape operand for unranked tensor result \
+            eprintln!(
+                "Expected dynamically sized shape operand for unranked tensor result \
                 of reshape operation"
             );
             exit(ExitCode::DialectError);
@@ -1386,7 +1425,7 @@ impl Yield {
         parent: &MlirOperation,
         parent_op: &Op,
         dialect: &Dialect,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let name = StringBacked::from(format!(
             "{}.{}",
@@ -1406,18 +1445,24 @@ impl Yield {
             exit(ExitCode::DialectError);
         }
         let parent_op = match parent.get_op().get_name() {
-            "generate"  => Op::Generate,
-            "pad"       => Op::Pad,
-            _           => {
+            "generate" => Op::Generate,
+            "pad" => Op::Pad,
+            _ => {
                 eprintln!("Expected parent operation is a tensor generate or pad for yield");
                 exit(ExitCode::DialectError);
-            },
+            }
         };
         Self::__new(value, parent.get(), &parent_op, &dialect, loc)
     }
 
     pub fn new_generate(value: &Value, parent: &Generate, loc: &Location) -> Self {
-        Self::__new(value, parent.get(), &Op::Generate, &parent.get_dialect(), loc)
+        Self::__new(
+            value,
+            parent.get(),
+            &Op::Generate,
+            &parent.get_dialect(),
+            loc,
+        )
     }
 
     pub fn new_pad(value: &Value, parent: &Pad, loc: &Location) -> Self {
@@ -1463,9 +1508,7 @@ impl IROperation for Bitcast {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1489,9 +1532,7 @@ impl IROperation for Bitcast {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1505,9 +1546,7 @@ impl IROperation for Cast {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1532,9 +1571,7 @@ impl IROperation for Cast {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1548,9 +1585,7 @@ impl IROperation for Concat {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1575,9 +1610,7 @@ impl IROperation for Concat {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1591,9 +1624,7 @@ impl IROperation for CollapseShape {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1617,9 +1648,7 @@ impl IROperation for CollapseShape {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1633,9 +1662,7 @@ impl IROperation for Dim {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1675,9 +1702,7 @@ impl IROperation for Empty {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1701,9 +1726,7 @@ impl IROperation for Empty {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1717,9 +1740,7 @@ impl IROperation for ExpandShape {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1743,9 +1764,7 @@ impl IROperation for ExpandShape {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1759,9 +1778,7 @@ impl IROperation for Extract {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1786,9 +1803,7 @@ impl IROperation for Extract {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1802,9 +1817,7 @@ impl IROperation for ExtractSlice {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1847,9 +1860,7 @@ impl IROperation for FromElements {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1873,9 +1884,7 @@ impl IROperation for FromElements {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1913,9 +1922,7 @@ impl IROperation for Generate {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -2034,9 +2041,7 @@ impl IROperation for Pad {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -2079,9 +2084,7 @@ impl IROperation for Rank {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -2106,9 +2109,7 @@ impl IROperation for Rank {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -2146,9 +2147,7 @@ impl IROperation for Reshape {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -2172,9 +2171,7 @@ impl IROperation for Reshape {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -2332,9 +2329,7 @@ impl IROperation for Yield {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -2369,9 +2364,9 @@ impl IROperation for Yield {
 
 impl cmp::PartialEq for Yield {
     fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation() &&
-            self.get_parent_op() == rhs.get_parent_op() &&
-            Operation::from(*self.get_parent()) == Operation::from(*rhs.get_parent())
+        self.as_operation() == rhs.as_operation()
+            && self.get_parent_op() == rhs.get_parent_op()
+            && Operation::from(*self.get_parent()) == Operation::from(*rhs.get_parent())
     }
 }
 
@@ -2382,29 +2377,29 @@ impl cmp::PartialEq for Yield {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Bitcast             => "BitCastOp",
-            Op::Cast                => "CastOp",
-            Op::CollapseShape       => "CollapseShapeOp",
-            Op::Concat              => "ConcatOp",
-            Op::Dim                 => "DimOp",
-            Op::Empty               => "EmptyOp",
-            Op::ExpandShape         => "ExpandShapeOp",
-            Op::Extract             => "ExtractOp",
-            Op::ExtractSlice        => "ExtractSliceOp",
-            Op::FromElements        => "FromElementsOp",
-            Op::Gather              => "GatherOp",
-            Op::Generate            => "GenerateOp",
-            Op::Insert              => "InsertOp",
-            Op::InsertSlice         => "InsertSliceOp",
-            Op::Pack                => "PackOp",
-            Op::Pad                 => "PadOp",
+            Op::Bitcast => "BitCastOp",
+            Op::Cast => "CastOp",
+            Op::CollapseShape => "CollapseShapeOp",
+            Op::Concat => "ConcatOp",
+            Op::Dim => "DimOp",
+            Op::Empty => "EmptyOp",
+            Op::ExpandShape => "ExpandShapeOp",
+            Op::Extract => "ExtractOp",
+            Op::ExtractSlice => "ExtractSliceOp",
+            Op::FromElements => "FromElementsOp",
+            Op::Gather => "GatherOp",
+            Op::Generate => "GenerateOp",
+            Op::Insert => "InsertOp",
+            Op::InsertSlice => "InsertSliceOp",
+            Op::Pack => "PackOp",
+            Op::Pad => "PadOp",
             Op::ParallelInsertSlice => "ParallelInsertSliceOp",
-            Op::Rank                => "RankOp",
-            Op::Reshape             => "ReshapeOp",
-            Op::Scatter             => "ScatterOp",
-            Op::Splat               => "SplatOp",
-            Op::Unpack              => "UnpackOp",
-            Op::Yield               => "YieldOp",
+            Op::Rank => "RankOp",
+            Op::Reshape => "ReshapeOp",
+            Op::Scatter => "ScatterOp",
+            Op::Splat => "SplatOp",
+            Op::Unpack => "UnpackOp",
+            Op::Yield => "YieldOp",
         })
     }
 }

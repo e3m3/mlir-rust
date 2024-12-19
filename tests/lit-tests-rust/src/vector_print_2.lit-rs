@@ -2,8 +2,8 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::Print;
 use mlir::dialects::vector::PunctuationKind;
 use mlir::ir::Block;

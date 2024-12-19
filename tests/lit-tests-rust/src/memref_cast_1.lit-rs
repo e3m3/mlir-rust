@@ -2,15 +2,15 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Cast;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 use mlir::types::shaped::Shaped;
 
@@ -26,18 +26,11 @@ pub fn main() -> () {
     let s_out = ShapeImpl::from(vec![4; 2]);
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new());
     let t_mr_out = MemRef::new_contiguous(&s_out, &t, &DefaultMemorySpace::new());
-    let f = get_empty_test_fn(
-        &context,
-        &[t_mr_in.as_type()],
-        &[t_mr_out.as_type()],
-    );
+    let f = get_empty_test_fn(&context, &[t_mr_in.as_type()], &[t_mr_out.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_cast = Cast::new_ranked::<DefaultMemorySpace>(
-        &t_mr_out,
-        &f_block.get_arg(0),
-        &loc,
-    ).as_operation();
+    let mut op_cast =
+        Cast::new_ranked::<DefaultMemorySpace>(&t_mr_out, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_cast.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_cast);
     f_block.append_operation(&mut op_ret);

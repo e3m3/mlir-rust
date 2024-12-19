@@ -9,10 +9,10 @@
 
 extern crate mlir;
 
-use mlir::dialects::arith::MulI;
-use mlir::dialects::arith::IntegerOverflowFlags;
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::arith::IntegerOverflowFlags;
+use mlir::dialects::arith::MulI;
+use mlir::dialects::func::Return;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::integer::Integer as IntegerType;
@@ -34,7 +34,8 @@ pub fn main() -> () {
         &f_block.get_arg(1),
         IntegerOverflowFlags::NSW,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_mul.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_mul);
     f_block.append_operation(&mut op_ret);

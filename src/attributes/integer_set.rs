@@ -3,8 +3,8 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::mlirIntegerSetAttrGetTypeID;
 use mlir_sys::MlirAttribute;
+use mlir_sys::mlirIntegerSetAttrGetTypeID;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -12,8 +12,8 @@ use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::TypeID;
 

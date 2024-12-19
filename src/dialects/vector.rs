@@ -18,9 +18,9 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::bool::Bool as BoolAttr;
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::bool::Bool as BoolAttr;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedArrayOfBools;
@@ -29,23 +29,23 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedParsed;
 use attributes::specialized::NamedString;
-use dialects::common::NonTemporal;
-use dialects::common::OperandSegmentSizes;
 use dialects::IROp;
 use dialects::IROperation;
-use effects::MemoryEffectList;
+use dialects::common::NonTemporal;
+use dialects::common::OperandSegmentSizes;
 use effects::MEFF_DEFAULT_WRITE;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
-use ir::StringBacked;
 use ir::Shape;
+use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
@@ -88,7 +88,7 @@ pub struct StringLiteral(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Bitcast,
     Broadcast,
@@ -137,13 +137,13 @@ pub enum Op {
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum PunctuationKind {
-    NoPunctuation   = 0,
-    NewLine         = 1,
-    Comma           = 2,
-    Open            = 3,
-    Close           = 4,
+    NoPunctuation = 0,
+    NewLine = 1,
+    Comma = 2,
+    Open = 3,
+    Close = 4,
 }
 
 ///////////////////////////////
@@ -181,7 +181,7 @@ pub struct VectorMask(MlirOperation);
 //  Support
 ///////////////////////////////
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct VectorMaskShape(usize);
 
 ///////////////////////////////
@@ -190,7 +190,10 @@ pub struct VectorMaskShape(usize);
 
 impl InBounds {
     pub fn new(context: &Context, elements: &[bool]) -> Self {
-        let attrs: Vec<BoolAttr> = elements.iter().map(|&b| BoolAttr::new(context, b)).collect();
+        let attrs: Vec<BoolAttr> = elements
+            .iter()
+            .map(|&b| BoolAttr::new(context, b))
+            .collect();
         <Self as NamedArrayOfBools>::new(context, &attrs)
     }
 
@@ -276,7 +279,9 @@ impl StaticPosition {
 
     pub fn num_symbolic(&self) -> isize {
         let a = self.as_dense_array();
-        (0..a.num_elements()).filter(|&i| a.get_element_i64(i) == Self::symbolic_pos()).count() as isize
+        (0..a.num_elements())
+            .filter(|&i| a.get_element_i64(i) == Self::symbolic_pos())
+            .count() as isize
     }
 
     #[inline]
@@ -312,50 +317,50 @@ impl StringLiteral {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::Bitcast             => "bitcast",
-            Op::Broadcast           => "broadcast",
-            Op::CompressStore       => "compressstore",
-            Op::ConstantMask        => "constant_mask",
-            Op::Contract            => "contract",
-            Op::CreateMask          => "create_mask",
-            Op::Deinterleave        => "deinterleave",
-            Op::ExpandLoad          => "expandload",
-            Op::Extract             => "extract",
-            Op::ExtractElement      => "extractelement",
+            Op::Bitcast => "bitcast",
+            Op::Broadcast => "broadcast",
+            Op::CompressStore => "compressstore",
+            Op::ConstantMask => "constant_mask",
+            Op::Contract => "contract",
+            Op::CreateMask => "create_mask",
+            Op::Deinterleave => "deinterleave",
+            Op::ExpandLoad => "expandload",
+            Op::Extract => "extract",
+            Op::ExtractElement => "extractelement",
             Op::ExtractStridedSlice => "extract_strided_slice",
-            Op::Fma                 => "fma",
-            Op::FlatTranspose       => "flat_transpose",
-            Op::FromElements        => "from_elements",
-            Op::Gather              => "gather",
-            Op::Insert              => "insert",
-            Op::InsertElement       => "insertelement",
-            Op::InsertStridedSlice  => "insert_strided_slice",
-            Op::Interleave          => "interleave",
-            Op::Load                => "load",
-            Op::Mask                => "mask",
-            Op::MaskedLoad          => "maskedload",
-            Op::MaskedStore         => "maskedstore",
-            Op::MatrixMultiply      => "matrix_multiply",
-            Op::MultiReduction      => "multi_reduction",
-            Op::OuterProduct        => "outerproduct",
-            Op::Print               => "print",
-            Op::Reduction           => "reduction",
-            Op::ScalableExtract     => "scalable.extract",
-            Op::ScalableInsert      => "scalable.insert",
-            Op::Scan                => "scan",
-            Op::Scatter             => "scatter",
-            Op::ShapeCast           => "shape_cast",
-            Op::Shuffle             => "shuffle",
-            Op::Splat               => "splat",
-            Op::Step                => "step",
-            Op::Store               => "store",
-            Op::TransferRead        => "transfer_read",
-            Op::TransferWrite       => "transfer_write",
-            Op::Transpose           => "transpose",
-            Op::TypeCast            => "type_cast",
-            Op::VScale              => "vscale",
-            Op::WarpExecuteOnLane0  => "warp_execute_on_lane_0",
-            Op::Yield               => "yield",
+            Op::Fma => "fma",
+            Op::FlatTranspose => "flat_transpose",
+            Op::FromElements => "from_elements",
+            Op::Gather => "gather",
+            Op::Insert => "insert",
+            Op::InsertElement => "insertelement",
+            Op::InsertStridedSlice => "insert_strided_slice",
+            Op::Interleave => "interleave",
+            Op::Load => "load",
+            Op::Mask => "mask",
+            Op::MaskedLoad => "maskedload",
+            Op::MaskedStore => "maskedstore",
+            Op::MatrixMultiply => "matrix_multiply",
+            Op::MultiReduction => "multi_reduction",
+            Op::OuterProduct => "outerproduct",
+            Op::Print => "print",
+            Op::Reduction => "reduction",
+            Op::ScalableExtract => "scalable.extract",
+            Op::ScalableInsert => "scalable.insert",
+            Op::Scan => "scan",
+            Op::Scatter => "scatter",
+            Op::ShapeCast => "shape_cast",
+            Op::Shuffle => "shuffle",
+            Op::Splat => "splat",
+            Op::Step => "step",
+            Op::Store => "store",
+            Op::TransferRead => "transfer_read",
+            Op::TransferWrite => "transfer_write",
+            Op::Transpose => "transpose",
+            Op::TypeCast => "type_cast",
+            Op::VScale => "vscale",
+            Op::WarpExecuteOnLane0 => "warp_execute_on_lane_0",
+            Op::Yield => "yield",
         }
     }
 }
@@ -363,25 +368,25 @@ impl Op {
 impl PunctuationKind {
     pub fn from_i32(n: i32) -> Self {
         match n {
-            0   => PunctuationKind::NoPunctuation,
-            1   => PunctuationKind::NewLine,
-            2   => PunctuationKind::Comma,
-            3   => PunctuationKind::Open,
-            4   => PunctuationKind::Close,
-            _   => {
+            0 => PunctuationKind::NoPunctuation,
+            1 => PunctuationKind::NewLine,
+            2 => PunctuationKind::Comma,
+            3 => PunctuationKind::Open,
+            4 => PunctuationKind::Close,
+            _ => {
                 eprintln!("Invalid value '{}' for punctuation kind", n);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
     pub fn get_name(&self) -> &'static str {
         match self {
-            PunctuationKind::NoPunctuation  => "no_punctuation",
-            PunctuationKind::NewLine        => "newline",
-            PunctuationKind::Comma          => "comma",
-            PunctuationKind::Open           => "open",
-            PunctuationKind::Close          => "close",
+            PunctuationKind::NoPunctuation => "no_punctuation",
+            PunctuationKind::NewLine => "newline",
+            PunctuationKind::Comma => "comma",
+            PunctuationKind::Open => "open",
+            PunctuationKind::Close => "close",
         }
     }
 }
@@ -430,39 +435,40 @@ impl Extract {
         let n_static = static_pos.num_elements() as i64;
         let n_result = s_source_rank - n_static;
         if !t.is_vector() && n_result != 0 {
-            eprintln!("Expected element type result for source vector operand with rank ({}) \
+            eprintln!(
+                "Expected element type result for source vector operand with rank ({}) \
                 equal to the arity of the static position attribute ({}) of extract operation",
-                s_source_rank,
-                n_static,
+                s_source_rank, n_static,
             );
             exit(ExitCode::DialectError);
         } else if !t.is_vector() && *t != s_source.get_element_type() {
-            eprintln!("Expected matching element type for source operand and result type \
+            eprintln!(
+                "Expected matching element type for source operand and result type \
                 of extract operation"
             );
             exit(ExitCode::DialectError);
         } else if t.is_vector() {
             let s = Shaped::from(*t.get());
             if s.get_element_type() != s_source.get_element_type() {
-                eprintln!("Expected matching element type for source operand and result type \
+                eprintln!(
+                    "Expected matching element type for source operand and result type \
                     of extract operation"
                 );
                 exit(ExitCode::DialectError);
             }
             let s_rank = s.rank().unwrap_or(-1);
             if s_rank != n_result {
-                eprintln!("Expected rank of vector type result ({}) to be equal to the difference ({}) \
+                eprintln!(
+                    "Expected rank of vector type result ({}) to be equal to the difference ({}) \
                     of the rank of the source vector type ({}) and the arity of the \
                     static position attribute ({}) for extract operation",
-                    s_rank,
-                    n_result,
-                    s_source_rank,
-                    n_static,
+                    s_rank, n_result, s_source_rank, n_static,
                 );
                 exit(ExitCode::DialectError);
             }
         } else {
-            eprintln!("Expected vector type or element type of source operand for result type \
+            eprintln!(
+                "Expected vector type or element type of source operand for result type \
                 of extract operation"
             );
             exit(ExitCode::DialectError);
@@ -508,21 +514,27 @@ impl ExtractElement {
             eprintln!("Expected vector type for source operand of extract element operation");
             exit(ExitCode::DialectError);
         }
-        if !t_pos.is_index() && (!t_pos.is_integer() || !IntegerType::from(*t_pos.get()).is_signless()) {
-            eprintln!("Expected index or signless integer type for position operand \
+        if !t_pos.is_index()
+            && (!t_pos.is_integer() || !IntegerType::from(*t_pos.get()).is_signless())
+        {
+            eprintln!(
+                "Expected index or signless integer type for position operand \
                 of extract element operation"
             );
             exit(ExitCode::DialectError);
         }
         let s_source = Shaped::from(*t_source.get());
         if *t != s_source.get_element_type() {
-            eprintln!("Expected matching element type for source operand and result type \
+            eprintln!(
+                "Expected matching element type for source operand and result type \
                 of extract element operation"
             );
             exit(ExitCode::DialectError);
         }
         if s_source.rank().unwrap_or(-1) != 1 {
-            eprintln!("Expected matching 1-D vector for source operand of extract element operation");
+            eprintln!(
+                "Expected matching 1-D vector for source operand of extract element operation"
+            );
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -546,13 +558,16 @@ impl ExtractElement {
         }
         let s_source = Shaped::from(*t_source.get());
         if *t != s_source.get_element_type() {
-            eprintln!("Expected matching element type for source operand and result type \
+            eprintln!(
+                "Expected matching element type for source operand and result type \
                 of extract element operation"
             );
             exit(ExitCode::DialectError);
         }
         if s_source.rank().unwrap_or(-1) != 0 {
-            eprintln!("Expected matching 0-D vector for source operand of extract element operation");
+            eprintln!(
+                "Expected matching 0-D vector for source operand of extract element operation"
+            );
             exit(ExitCode::DialectError);
         }
         let context = t.get_context();
@@ -652,18 +667,19 @@ impl Load {
         let s_base = Shaped::from(*base.get_type().get());
         let t_base_elem = s_base.get_element_type();
         if s.get_element_type() != t_base_elem && t.as_type() != t_base_elem {
-            eprintln!("Expected matching types for element type of base operand and result type \
+            eprintln!(
+                "Expected matching types for element type of base operand and result type \
                 of load operation"
             );
             exit(ExitCode::DialectError);
         }
         let s_rank_base = s_base.rank().unwrap_or(-1);
-        let n_indices = indices.len() as i64 ;
+        let n_indices = indices.len() as i64;
         if s_rank_base != n_indices {
-            eprintln!("Expected number of indices ({}) to match rank of base operand ({}) \
+            eprintln!(
+                "Expected number of indices ({}) to match rank of base operand ({}) \
                 of load operation",
-                n_indices,
-                s_rank_base,
+                n_indices, s_rank_base,
             );
             exit(ExitCode::DialectError);
         }
@@ -745,7 +761,9 @@ impl Print {
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr_name = StringBacked::from(Punctuation::get_name());
-            let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+            let attr = self
+                .as_operation()
+                .get_attribute_inherent(&attr_name.as_string_ref());
             Some(Punctuation::from(*attr.get()))
         } else {
             None
@@ -762,7 +780,9 @@ impl Print {
         let s_ref = attr_name.as_string_ref();
         if op.has_attribute_inherent(&s_ref) {
             let attr_name = StringBacked::from(StringLiteral::get_name());
-            let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+            let attr = self
+                .as_operation()
+                .get_attribute_inherent(&attr_name.as_string_ref());
             Some(StringLiteral::from(*attr.get()))
         } else {
             None
@@ -796,7 +816,8 @@ impl Store {
         let s_base = Shaped::from(*base.get_type().get());
         let t_base_elem = s_base.get_element_type();
         if s.get_element_type() != t_base_elem && t != t_base_elem {
-            eprintln!("Expected matching element type of base operand and value operand type \
+            eprintln!(
+                "Expected matching element type of base operand and value operand type \
                 of store operation"
             );
             exit(ExitCode::DialectError);
@@ -804,19 +825,19 @@ impl Store {
         let rank_value = s.rank().unwrap_or(-1);
         let rank_base = s_base.rank().unwrap_or(-1);
         if rank_base < rank_value {
-            eprintln!("Expected rank of base operand ({}) to be greater than or equal to rank \
+            eprintln!(
+                "Expected rank of base operand ({}) to be greater than or equal to rank \
                 of value operand ({}) of store operation",
-                rank_base,
-                rank_value,
+                rank_base, rank_value,
             );
             exit(ExitCode::DialectError);
         }
         let n_indices = indices.len() as i64;
         if rank_base != n_indices {
-            eprintln!("Expected number of indices ({}) to match rank of base operand ({}) \
+            eprintln!(
+                "Expected number of indices ({}) to match rank of base operand ({}) \
                 of store operation",
-                n_indices,
-                rank_base,
+                n_indices, rank_base,
             );
             exit(ExitCode::DialectError);
         }
@@ -886,25 +907,29 @@ impl TransferRead {
             let s_source_elem = Vector::from(*t_source_elem.get()).as_shaped();
             if let Some(s_suffix) = s.get_matching_suffix(&s_source_elem) {
                 if s_suffix.unpack() != s_source_elem.unpack() {
-                    eprintln!("Expected matching source element type and result type suffix \
+                    eprintln!(
+                        "Expected matching source element type and result type suffix \
                         for transfer read operation"
                     );
                     exit(ExitCode::DialectError);
                 }
             } else {
-                eprintln!("Expected matching source element type and result type suffix \
+                eprintln!(
+                    "Expected matching source element type and result type suffix \
                     for transfer read operation"
                 );
                 exit(ExitCode::DialectError);
             }
         } else if t.as_type() != t_source_elem && s.get_element_type() != t_source_elem {
-            eprintln!("Expected matching source element type and result element type \
+            eprintln!(
+                "Expected matching source element type and result element type \
                 for transfer read operation"
             );
             exit(ExitCode::DialectError);
         }
         if padding.get_type() != s_source.get_element_type() {
-            eprintln!("Expected matching source element type and padding type for \
+            eprintln!(
+                "Expected matching source element type and padding type for \
                 transfer read operation"
             );
             exit(ExitCode::DialectError);
@@ -952,7 +977,9 @@ impl TransferRead {
 
     pub fn get_bounds_attribute(&self) -> InBounds {
         let attr_name = StringBacked::from(InBounds::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         InBounds::from(*attr.get())
     }
 
@@ -962,7 +989,9 @@ impl TransferRead {
 
     pub fn get_permuration_attribute(&self) -> PermutationMap {
         let attr_name = StringBacked::from(PermutationMap::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         PermutationMap::from(*attr.get())
     }
 
@@ -1099,29 +1128,35 @@ impl TransferWrite {
         if let Some(t_) = result {
             if t_.as_type() != t_source {
                 return Err("Expected matching source operand type and result type for \
-                    transfer write operation".to_string()
-                );
+                    transfer write operation"
+                    .to_string());
             }
         }
         if t_source_elem.is_vector() {
             let s_source_elem = Vector::from(*t_source_elem.get()).as_shaped();
             if let Some(s_suffix) = s_value.get_matching_suffix(&s_source_elem) {
                 return if s_suffix.unpack() != s_source_elem.unpack() {
-                    Err("Expected matching source element type and result type suffix \
-                        for transfer write operation".to_string()
+                    Err(
+                        "Expected matching source element type and result type suffix \
+                        for transfer write operation"
+                            .to_string(),
                     )
                 } else {
                     Ok(())
                 };
             } else {
-                return Err("Expected matching source element type and result type suffix \
-                    for transfer write operation".to_string()
+                return Err(
+                    "Expected matching source element type and result type suffix \
+                    for transfer write operation"
+                        .to_string(),
                 );
             }
         }
         if s_value.get_element_type() != s_source.get_element_type() {
-            return Err("Expected matching element types for source operand and value operand \
-                of transfer write operation".to_string()
+            return Err(
+                "Expected matching element types for source operand and value operand \
+                of transfer write operation"
+                    .to_string(),
             );
         }
         let rank_value = s_value.rank().unwrap_or(-1);
@@ -1133,8 +1168,7 @@ impl TransferWrite {
             Err(format!(
                 "Expected rank for source operand type ({}) to be greater than or equal to \
                 the rank of the value operand type ({}) of transfer write operation",
-                rank_source,
-                rank_value,
+                rank_source, rank_value,
             ))
         } else {
             Ok(())
@@ -1147,7 +1181,9 @@ impl TransferWrite {
 
     pub fn get_bounds_attribute(&self) -> InBounds {
         let attr_name = StringBacked::from(InBounds::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         InBounds::from(*attr.get())
     }
 
@@ -1157,7 +1193,9 @@ impl TransferWrite {
 
     pub fn get_permutation_attribute(&self) -> PermutationMap {
         let attr_name = StringBacked::from(PermutationMap::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         PermutationMap::from(*attr.get())
     }
 
@@ -1241,9 +1279,7 @@ impl IROperation for Extract {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1285,9 +1321,7 @@ impl IROperation for ExtractElement {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1312,9 +1346,7 @@ impl IROperation for ExtractElement {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1328,9 +1360,7 @@ impl IROperation for FromElements {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1353,9 +1383,7 @@ impl IROperation for FromElements {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1457,15 +1485,13 @@ impl IROperation for Print {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_DEFAULT_WRITE,
-        ]
+        &[MEFF_DEFAULT_WRITE]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::MemoryEffect(MemoryEffectOpInterface::MemoryEffect),
-        ]
+        &[Interface::MemoryEffect(
+            MemoryEffectOpInterface::MemoryEffect,
+        )]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1548,11 +1574,11 @@ impl From<String> for PunctuationKind {
 impl From<&String> for PunctuationKind {
     fn from(s: &String) -> Self {
         match PunctuationKind::from_str(s.as_str()) {
-            Ok(k)       => k,
-            Err(msg)    => {
+            Ok(k) => k,
+            Err(msg) => {
                 eprintln!("{}", msg);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -1562,14 +1588,12 @@ impl FromStr for PunctuationKind {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "no_punctuation"    => Ok(PunctuationKind::NoPunctuation),
-            "newline"           => Ok(PunctuationKind::NewLine),
-            "comma"             => Ok(PunctuationKind::Comma),
-            "open"              => Ok(PunctuationKind::Open),
-            "close"             => Ok(PunctuationKind::Close),
-            _   => {
-                Err(format!("Invalid value '{}' for punctuation kind", s))
-            },
+            "no_punctuation" => Ok(PunctuationKind::NoPunctuation),
+            "newline" => Ok(PunctuationKind::NewLine),
+            "comma" => Ok(PunctuationKind::Comma),
+            "open" => Ok(PunctuationKind::Open),
+            "close" => Ok(PunctuationKind::Close),
+            _ => Err(format!("Invalid value '{}' for punctuation kind", s)),
         }
     }
 }
@@ -1714,9 +1738,7 @@ impl IROperation for TransferRead {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1743,9 +1765,7 @@ impl IROperation for TransferRead {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AttrSizedOperandSegments,
-        ]
+        &[Trait::AttrSizedOperandSegments]
     }
 }
 
@@ -1759,9 +1779,7 @@ impl IROperation for TransferWrite {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1788,9 +1806,7 @@ impl IROperation for TransferWrite {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AttrSizedOperandSegments,
-        ]
+        &[Trait::AttrSizedOperandSegments]
     }
 }
 
@@ -1845,11 +1861,11 @@ impl Shape for VectorMaskShape {
 
     fn get(&self, i: isize) -> i64 {
         match i {
-            0   => self.get() as i64,
-            _   => {
+            0 => self.get() as i64,
+            _ => {
                 eprintln!("Index '{}' out of bounds for vector mask shape", i);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -1861,50 +1877,50 @@ impl Shape for VectorMaskShape {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Bitcast             => "BitcastOp",
-            Op::Broadcast           => "BroadcastOp",
-            Op::CompressStore       => "CompressStoreOp",
-            Op::ConstantMask        => "ConstantMaskOp",
-            Op::Contract            => "ContractOp",
-            Op::CreateMask          => "CreateMaskOp",
-            Op::Deinterleave        => "DeinterleaveOp",
-            Op::ExpandLoad          => "ExpandLoadOp",
-            Op::Extract             => "ExtractOp",
-            Op::ExtractElement      => "ExtractElementOp",
+            Op::Bitcast => "BitcastOp",
+            Op::Broadcast => "BroadcastOp",
+            Op::CompressStore => "CompressStoreOp",
+            Op::ConstantMask => "ConstantMaskOp",
+            Op::Contract => "ContractOp",
+            Op::CreateMask => "CreateMaskOp",
+            Op::Deinterleave => "DeinterleaveOp",
+            Op::ExpandLoad => "ExpandLoadOp",
+            Op::Extract => "ExtractOp",
+            Op::ExtractElement => "ExtractElementOp",
             Op::ExtractStridedSlice => "ExtractStridedSliceOp",
-            Op::Fma                 => "FmaOp",
-            Op::FlatTranspose       => "FlatTransposeOp",
-            Op::FromElements        => "FromElementsOp",
-            Op::Gather              => "GatherOp",
-            Op::Insert              => "InsertOp",
-            Op::InsertElement       => "InsertElementOp",
-            Op::InsertStridedSlice  => "InsertStridedSliceOp",
-            Op::Interleave          => "InterleaveOp",
-            Op::Load                => "LoadOp",
-            Op::Mask                => "MaskOp",
-            Op::MaskedLoad          => "MaskedLoadOp",
-            Op::MaskedStore         => "MaskedStoreOp",
-            Op::MatrixMultiply      => "MatrixMultiplyOp",
-            Op::MultiReduction      => "MultiReductionOp",
-            Op::OuterProduct        => "OuterProductOp",
-            Op::Print               => "PrintOp",
-            Op::Reduction           => "ReductionOp",
-            Op::ScalableExtract     => "ScalableExtractOp",
-            Op::ScalableInsert      => "ScalableInsertOp",
-            Op::Scan                => "ScanOp",
-            Op::Scatter             => "ScatterOp",
-            Op::ShapeCast           => "ShapeCastOp",
-            Op::Shuffle             => "ShuffleOp",
-            Op::Splat               => "SplatOp",
-            Op::Step                => "StepOp",
-            Op::Store               => "StoreOp",
-            Op::TransferRead        => "TransferReadOp",
-            Op::TransferWrite       => "TransferWriteOp",
-            Op::Transpose           => "TransposeOp",
-            Op::TypeCast            => "TypeCastOp",
-            Op::VScale              => "VScaleOp",
-            Op::WarpExecuteOnLane0  => "WarpExecuteOnLane0Op",
-            Op::Yield               => "YieldOp",
+            Op::Fma => "FmaOp",
+            Op::FlatTranspose => "FlatTransposeOp",
+            Op::FromElements => "FromElementsOp",
+            Op::Gather => "GatherOp",
+            Op::Insert => "InsertOp",
+            Op::InsertElement => "InsertElementOp",
+            Op::InsertStridedSlice => "InsertStridedSliceOp",
+            Op::Interleave => "InterleaveOp",
+            Op::Load => "LoadOp",
+            Op::Mask => "MaskOp",
+            Op::MaskedLoad => "MaskedLoadOp",
+            Op::MaskedStore => "MaskedStoreOp",
+            Op::MatrixMultiply => "MatrixMultiplyOp",
+            Op::MultiReduction => "MultiReductionOp",
+            Op::OuterProduct => "OuterProductOp",
+            Op::Print => "PrintOp",
+            Op::Reduction => "ReductionOp",
+            Op::ScalableExtract => "ScalableExtractOp",
+            Op::ScalableInsert => "ScalableInsertOp",
+            Op::Scan => "ScanOp",
+            Op::Scatter => "ScatterOp",
+            Op::ShapeCast => "ShapeCastOp",
+            Op::Shuffle => "ShuffleOp",
+            Op::Splat => "SplatOp",
+            Op::Step => "StepOp",
+            Op::Store => "StoreOp",
+            Op::TransferRead => "TransferReadOp",
+            Op::TransferWrite => "TransferWriteOp",
+            Op::Transpose => "TransposeOp",
+            Op::TypeCast => "TypeCastOp",
+            Op::VScale => "VScaleOp",
+            Op::WarpExecuteOnLane0 => "WarpExecuteOnLane0Op",
+            Op::Yield => "YieldOp",
         })
     }
 }
@@ -1912,11 +1928,11 @@ impl fmt::Display for Op {
 impl fmt::Display for PunctuationKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            PunctuationKind::NoPunctuation  => "NoPunctuation",
-            PunctuationKind::NewLine        => "NewLine",
-            PunctuationKind::Comma          => "Comma",
-            PunctuationKind::Open           => "Open",
-            PunctuationKind::Close          => "Close",
+            PunctuationKind::NoPunctuation => "NoPunctuation",
+            PunctuationKind::NewLine => "NewLine",
+            PunctuationKind::Comma => "Comma",
+            PunctuationKind::Open => "Open",
+            PunctuationKind::Close => "Close",
         })
     }
 }

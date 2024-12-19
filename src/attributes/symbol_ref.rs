@@ -3,6 +3,7 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirFlatSymbolRefAttrGet;
 use mlir_sys::mlirFlatSymbolRefAttrGetValue;
 use mlir_sys::mlirSymbolRefAttrGet;
@@ -11,7 +12,6 @@ use mlir_sys::mlirSymbolRefAttrGetNestedReference;
 use mlir_sys::mlirSymbolRefAttrGetNumNestedReferences;
 use mlir_sys::mlirSymbolRefAttrGetRootReference;
 use mlir_sys::mlirSymbolRefAttrGetTypeID;
-use mlir_sys::MlirAttribute;
 
 use std::cmp;
 use std::fmt;
@@ -22,8 +22,8 @@ use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::StringRef;
@@ -44,7 +44,10 @@ impl SymbolRef {
     }
 
     pub fn new_flat(context: &Context, sym: &StringRef) -> Self {
-        Self::from(do_unsafe!(mlirFlatSymbolRefAttrGet(*context.get(), *sym.get())))
+        Self::from(do_unsafe!(mlirFlatSymbolRefAttrGet(
+            *context.get(),
+            *sym.get()
+        )))
     }
 
     pub fn from(attr: MlirAttribute) -> Self {
@@ -72,7 +75,10 @@ impl SymbolRef {
 
     pub fn get_nested_reference(&self, i: isize) -> Attribute {
         if i >= self.num_nested_references() || i < 0 {
-            eprintln!("Index '{}' out of bounds for nested reference of symbol ref", i);
+            eprintln!(
+                "Index '{}' out of bounds for nested reference of symbol ref",
+                i
+            );
             exit(ExitCode::IRError);
         }
         Attribute::from(do_unsafe!(mlirSymbolRefAttrGetNestedReference(self.0, i)))
@@ -89,7 +95,9 @@ impl SymbolRef {
     /// If this is a flat symbol reference, return the referenced symbol.
     pub fn get_value(&self) -> Option<StringRef> {
         if self.as_attribute().is_flat_symbol_ref() {
-            Some(StringRef::from(do_unsafe!(mlirFlatSymbolRefAttrGetValue(self.0))))
+            Some(StringRef::from(do_unsafe!(mlirFlatSymbolRefAttrGetValue(
+                self.0
+            ))))
         } else {
             None
         }
@@ -103,7 +111,7 @@ impl SymbolRef {
 impl fmt::Display for SymbolRef {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self.get_value() {
-            None    => "".to_string(),
+            None => "".to_string(),
             Some(s) => s.to_string(),
         })
     }

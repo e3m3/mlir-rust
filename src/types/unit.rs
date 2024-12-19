@@ -12,8 +12,8 @@ use crate::types;
 
 use attributes::IRAttribute;
 use attributes::unit::Unit as UnitAttr;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;

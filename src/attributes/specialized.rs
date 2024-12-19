@@ -16,6 +16,8 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
+use attributes::IRAttribute;
+use attributes::IRAttributeNamed;
 use attributes::array::Array;
 use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
@@ -23,8 +25,6 @@ use attributes::dense_array::Layout as DenseArrayLayout;
 use attributes::dictionary::Dictionary;
 use attributes::elements::Elements;
 use attributes::float::Float as FloatAttr;
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::opaque::Opaque;
@@ -34,16 +34,16 @@ use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
 use attributes::unit::Unit;
 use dialects::affine::Map as AffineMap;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::StringBacked;
 use ir::StringRef;
 use ir::Type;
+use types::IRType;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
-use types::IRType;
 use types::memref::MemRef;
 
 ///////////////////////////////
@@ -106,7 +106,9 @@ pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized
 
     fn as_affine_maps(&self) -> Vec<AffineMap> {
         let args = self.as_array();
-        (0..args.num_elements()).map(|i| AffineMap::from(*args.get_element(i).get())).collect()
+        (0..args.num_elements())
+            .map(|i| AffineMap::from(*args.get_element(i).get()))
+            .collect()
     }
 
     fn num_elements(&self) -> isize {
@@ -141,7 +143,9 @@ pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_bools(&self) -> Vec<BoolAttr> {
         let args = self.as_array();
-        (0..args.num_elements()).map(|i| BoolAttr::from(*args.get_element(i).get())).collect()
+        (0..args.num_elements())
+            .map(|i| BoolAttr::from(*args.get_element(i).get()))
+            .collect()
     }
 
     fn num_elements(&self) -> isize {
@@ -176,7 +180,9 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Siz
 
     fn as_dictionaries(&self) -> Vec<Dictionary> {
         let args = self.as_array();
-        (0..args.num_elements()).map(|i| Dictionary::from(*args.get_element(i).get())).collect()
+        (0..args.num_elements())
+            .map(|i| Dictionary::from(*args.get_element(i).get()))
+            .collect()
     }
 
     fn num_elements(&self) -> isize {
@@ -211,7 +217,9 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
 
     fn as_integers(&self) -> Vec<IntegerAttr> {
         let args = self.as_array();
-        (0..args.num_elements()).map(|i| IntegerAttr::from(*args.get_element(i).get())).collect()
+        (0..args.num_elements())
+            .map(|i| IntegerAttr::from(*args.get_element(i).get()))
+            .collect()
     }
 
     fn num_elements(&self) -> isize {
@@ -260,7 +268,9 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
 
     fn as_integer_arrays(&self) -> Vec<Array> {
         let args = self.as_array();
-        (0..args.num_elements()).map(|i| Array::from(*args.get_element(i).get())).collect()
+        (0..args.num_elements())
+            .map(|i| Array::from(*args.get_element(i).get()))
+            .collect()
     }
 
     fn num_elements(&self) -> isize {
@@ -269,7 +279,7 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
 
     fn num_elements_flattened(&self) -> isize {
         let v = self.as_integer_arrays();
-        v.iter().fold(0, |acc,a| acc + a.num_elements())
+        v.iter().fold(0, |acc, a| acc + a.num_elements())
     }
 }
 
@@ -534,7 +544,9 @@ pub trait NamedMemoryLayout: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedMemorySpace: From<MlirAttribute> + IRAttributeNamed + cmp::PartialEq + Sized {
+pub trait NamedMemorySpace:
+    From<MlirAttribute> + IRAttributeNamed + cmp::PartialEq + Sized
+{
     fn from_checked(attr: MlirAttribute) -> Self;
 
     fn new_integer(attr: &IntegerAttr) -> Self {
@@ -555,29 +567,29 @@ pub trait NamedMemorySpace: From<MlirAttribute> + IRAttributeNamed + cmp::Partia
 
     fn as_integer(&self) -> Option<IntegerAttr> {
         match self.is_integer() {
-            false   => None,
-            true    => Some(IntegerAttr::from(*self.get())),
+            false => None,
+            true => Some(IntegerAttr::from(*self.get())),
         }
     }
 
     fn as_none(&self) -> Option<Attribute> {
         match self.is_none() {
-            false   => None,
-            true    => Some(Attribute::from(*self.get())),
+            false => None,
+            true => Some(Attribute::from(*self.get())),
         }
     }
 
     fn as_opaque(&self) -> Option<Opaque> {
         match self.is_opaque() {
-            false   => None,
-            true    => Some(Opaque::from(*self.get())),
+            false => None,
+            true => Some(Opaque::from(*self.get())),
         }
     }
 
     fn as_string(&self) -> Option<StringAttr> {
         match self.is_string() {
-            false   => None,
-            true    => Some(StringAttr::from(*self.get())),
+            false => None,
+            true => Some(StringAttr::from(*self.get())),
         }
     }
 
@@ -724,10 +736,10 @@ pub trait NamedSymbolRef: From<MlirAttribute> + IRAttributeNamed + Sized {
     fn as_string_ref(&self) -> StringRef {
         match self.as_symbol_ref().get_value() {
             Some(s) => s,
-            None    => {
+            None => {
                 eprintln!("Expected flat named symbol reference");
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
@@ -780,7 +792,11 @@ pub trait NamedUnit: From<MlirAttribute> + IRAttributeNamed + Sized {
 
 impl CustomAttributeData {
     pub fn new(name: String, namespace: String, data: Vec<String>) -> Self {
-        Self{name, namespace, data}
+        Self {
+            name,
+            namespace,
+            data,
+        }
     }
 
     pub fn get_data(&self) -> &[String] {
@@ -825,7 +841,13 @@ impl CustomAttributeData {
 
 impl fmt::Display for CustomAttributeData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "#{}.{}{}", self.get_namespace(), self.get_name(), self.get_data_joined())
+        write!(
+            f,
+            "#{}.{}{}",
+            self.get_namespace(),
+            self.get_name(),
+            self.get_data_joined()
+        )
     }
 }
 
@@ -838,11 +860,11 @@ impl From<String> for CustomAttributeData {
 impl From<&String> for CustomAttributeData {
     fn from(s: &String) -> Self {
         match Self::from_str(s.as_str()) {
-            Ok(cad)     => cad,
-            Err(msg)    => {
+            Ok(cad) => cad,
+            Err(msg) => {
                 eprintln!("{}", msg);
                 exit(ExitCode::IRError);
-            },
+            }
         }
     }
 }
@@ -868,6 +890,10 @@ impl FromStr for CustomAttributeData {
             Err("Expected prefix (e.g., #namespace.name) for custom attribute data")?
         }
         let (namespace, name) = Self::split_prefix(parts[0])?;
-        Ok(Self::new(namespace, name, parts[0..1].iter().map(|s_| s_.to_string()).collect()))
+        Ok(Self::new(
+            namespace,
+            name,
+            parts[0..1].iter().map(|s_| s_.to_string()).collect(),
+        ))
     }
 }

@@ -19,11 +19,14 @@ mod tests {
     }
 
     fn get_bin_dir() -> PathBuf {
-        env::current_exe().ok().map(|mut path: PathBuf| {
-            path.pop();
-            path.pop();
-            path
-        }).unwrap()
+        env::current_exe()
+            .ok()
+            .map(|mut path: PathBuf| {
+                path.pop();
+                path.pop();
+                path
+            })
+            .unwrap()
     }
 
     fn get_num_jobs() -> usize {
@@ -33,105 +36,99 @@ mod tests {
     fn get_num_jobs_cargo() -> usize {
         let n = get_num_jobs();
         match env::var("CARGO_JOBS") {
-            Ok(j)   => j.parse::<usize>().unwrap_or(n),
-            Err(_)  => n,
+            Ok(j) => j.parse::<usize>().unwrap_or(n),
+            Err(_) => n,
         }
     }
 
     fn get_num_jobs_lit() -> usize {
         let n = get_num_jobs();
         match env::var("LIT_JOBS") {
-            Ok(j)   => j.parse::<usize>().unwrap_or(n),
-            Err(_)  => n,
+            Ok(j) => j.parse::<usize>().unwrap_or(n),
+            Err(_) => n,
         }
     }
 
     fn get_tests_dir() -> PathBuf {
-        env::current_exe().ok().map(|mut path: PathBuf| {
-            path.pop();
-            path.pop();
-            path.pop();
-            path.pop();
-            path.push("tests");
-            path
-        }).unwrap()
+        env::current_exe()
+            .ok()
+            .map(|mut path: PathBuf| {
+                path.pop();
+                path.pop();
+                path.pop();
+                path.pop();
+                path.push("tests");
+                path
+            })
+            .unwrap()
     }
 
     fn get_shell(os_name: &String) -> String {
         String::from(match os_name.as_str() {
-            "linux"     => "bash",
-            "macos"     => "bash",
-            "windows"   => "cmd",
-            _           => {
+            "linux" => "bash",
+            "macos" => "bash",
+            "windows" => "cmd",
+            _ => {
                 eprintln!("Unexpected target_os");
                 assert!(false);
                 ""
-            },
+            }
         })
     }
 
     fn get_lit(os_name: &String) -> String {
-        let append_lit: fn(&Path) -> String = |path| {
-            String::from(path.join("bin").join("lit").to_str().unwrap())
-        };
+        let append_lit: fn(&Path) -> String =
+            |path| String::from(path.join("bin").join("lit").to_str().unwrap());
         match os_name.as_str() {
-            "linux"     =>
-                match env::var("PYTHON_VENV_PATH") {
-                    Ok(path)    => append_lit(Path::new(&path)),
-                    Err(_)      => append_lit(Path::new("/usr")),
+            "linux" => match env::var("PYTHON_VENV_PATH") {
+                Ok(path) => append_lit(Path::new(&path)),
+                Err(_) => append_lit(Path::new("/usr")),
+            },
+            "macos" => match env::var("HOMEBREW_HOME") {
+                Ok(path) => append_lit(Path::new(&path)),
+                Err(_) => match env::var("PYTHON_VENV_PATH") {
+                    Ok(path) => append_lit(Path::new(&path)),
+                    Err(_) => append_lit(Path::new("/usr")),
                 },
-            "macos"     =>
-                match env::var("HOMEBREW_HOME") {
-                    Ok(path)    => append_lit(Path::new(&path)),
-                    Err(_)      => match env::var("PYTHON_VENV_PATH") {
-                        Ok(path)    => append_lit(Path::new(&path)),
-                        Err(_)      => append_lit(Path::new("/usr")),
-                    }
-                },
-            "windows"   => {
-                match env::var("PYTHON_VENV_PATH") {
-                    Ok(path)    => append_lit(Path::new(&path)),
-                    Err(_)      => {
-                        eprintln!("No supported location for 'lit' found");
-                        assert!(false);
-                        String::new()
-                    },
+            },
+            "windows" => match env::var("PYTHON_VENV_PATH") {
+                Ok(path) => append_lit(Path::new(&path)),
+                Err(_) => {
+                    eprintln!("No supported location for 'lit' found");
+                    assert!(false);
+                    String::new()
                 }
             },
-            _           => {
+            _ => {
                 eprintln!("OS not supported");
                 assert!(false);
                 String::new()
-            },
+            }
         }
     }
 
     fn get_os() -> String {
-        String::from(
-            if cfg!(target_os = "linux") {
-                "linux"
-            } else if cfg!(target_os = "macos") {
-                "macos"
-            } else if cfg!(target_os = "windows") {
-                "windows"
-            } else {
-                ""
-            }
-        )
+        String::from(if cfg!(target_os = "linux") {
+            "linux"
+        } else if cfg!(target_os = "macos") {
+            "macos"
+        } else if cfg!(target_os = "windows") {
+            "windows"
+        } else {
+            ""
+        })
     }
 
     fn get_arch() -> String {
-        String::from(
-            if cfg!(target_arch = "x86") {
-                "x86"
-            } else if cfg!(target_arch = "x86_64") {
-                "x86_64"
-            } else if cfg!(target_arch = "aarch64") {
-                "aarch64"
-            } else {
-                ""
-            }
-        )
+        String::from(if cfg!(target_arch = "x86") {
+            "x86"
+        } else if cfg!(target_arch = "x86_64") {
+            "x86_64"
+        } else if cfg!(target_arch = "aarch64") {
+            "aarch64"
+        } else {
+            ""
+        })
     }
 
     #[test]
@@ -185,9 +182,7 @@ mod tests {
         let lit_dir_rust_tests_dir_str: String = pathbuf_to_string(&lit_dir_rust_tests_dir);
         let lit_dir_rust_manifest_str: String = pathbuf_to_string(&lit_dir_rust_manifest);
 
-        let env_path_str: String = [
-            bin_dir_str.clone(),
-        ].join(":");
+        let env_path_str: String = [bin_dir_str.clone()].join(":");
 
         let lit_args: String = [
             "--config-prefix=lit",
@@ -199,9 +194,13 @@ mod tests {
             format!("--param=CARGO_OUTDIR={}", bin_dir_str).as_str(),
             format!("--param=MLIR_TESTDIR={}", lit_dir_mlir_str).as_str(),
             format!("--path={}", env_path_str).as_str(),
-        ].join(" ");
+        ]
+        .join(" ");
 
-        println!("Building lit test binaries from tests in '{}':", lit_dir_rust_tests_dir_str);
+        println!(
+            "Building lit test binaries from tests in '{}':",
+            lit_dir_rust_tests_dir_str
+        );
         let output_cargo = Command::new(&shell)
             .arg("-c")
             .arg(format!(
@@ -216,26 +215,27 @@ mod tests {
         let stdout_cargo: &[u8] = output_cargo.stdout.as_slice();
 
         println!();
-        eprintln!("Cargo build '{}':\n{}",
+        eprintln!(
+            "Cargo build '{}':\n{}",
             lit_dir_rust_tests_dir_str,
             std::str::from_utf8(stderr_cargo).unwrap(),
         );
-        println!("Cargo build '{}':\n{}",
+        println!(
+            "Cargo build '{}':\n{}",
             lit_dir_rust_tests_dir_str,
             std::str::from_utf8(stdout_cargo).unwrap(),
         );
 
-        println!("Processing tests in directories: {}, {}",
+        println!(
+            "Processing tests in directories: {}, {}",
             pathbuf_to_string(&lit_dir_mlir),
             pathbuf_to_string(&lit_dir_rust),
         );
         let output = Command::new(&shell)
             .arg("-c")
-            .arg(format!("{} {} {} {}",
-                lit_bin_str,
-                lit_args,
-                lit_dir_mlir_str,
-                lit_dir_rust_tests_dir_str,
+            .arg(format!(
+                "{} {} {} {}",
+                lit_bin_str, lit_args, lit_dir_mlir_str, lit_dir_rust_tests_dir_str,
             ))
             .output()
             .expect("Failed lit tests");

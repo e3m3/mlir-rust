@@ -4,9 +4,9 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::func::Return;
 use mlir::dialects::ub::Poison;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::integer::Integer as IntegerType;

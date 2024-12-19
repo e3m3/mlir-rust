@@ -7,23 +7,23 @@ extern crate mlir_sys;
 
 use mlir_sys::MlirAttribute;
 
-use mlir::attributes::dictionary::Dictionary;
 use mlir::attributes::IRAttribute;
 use mlir::attributes::IRAttributeNamed;
+use mlir::attributes::dictionary::Dictionary;
 use mlir::attributes::specialized::CustomAttributeData;
 use mlir::attributes::specialized::NamedArrayOfDictionaries;
 use mlir::attributes::specialized::NamedInteger;
 use mlir::attributes::specialized::NamedOpaque;
+use mlir::dialects::IROperation;
 use mlir::dialects::func::Arguments;
 use mlir::dialects::func::Results;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::ir::Context;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
 use mlir::types::integer::Integer as IntegerType;
-use mlir::types::IRType;
 
 mod common;
 use crate::common::*;
@@ -47,9 +47,9 @@ pub fn main() -> () {
         Dictionary::new(&context, &[]),
         Dictionary::new(&context, &[]),
     ]);
-    let result_attrs = Results::new(&context, &[
-        Dictionary::new(&context, &[int_attr.as_named_attribute()]),
-    ]);
+    let result_attrs = Results::new(&context, &[Dictionary::new(&context, &[
+        int_attr.as_named_attribute()
+    ])]);
     let f = get_private_fn(
         &context,
         "test",
@@ -67,7 +67,9 @@ pub fn main() -> () {
 impl ClassNameAttribute {
     pub fn new(context: &Context, name: &str) -> Self {
         let t = Index::new(context).as_type();
-        let cad = CustomAttributeData::new("class".to_string(), "lang".to_string(), vec![name.to_string()]);
+        let cad = CustomAttributeData::new("class".to_string(), "lang".to_string(), vec![
+            name.to_string(),
+        ]);
         <Self as NamedOpaque>::new_custom(&t, &cad)
     }
 

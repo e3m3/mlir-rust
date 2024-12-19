@@ -2,19 +2,19 @@
 
 extern crate mlir;
 
+use mlir::attributes::IRAttribute;
 use mlir::attributes::array::Array;
 use mlir::attributes::integer::Integer as IntegerAttr;
-use mlir::attributes::IRAttribute;
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::tensor::CollapseShape;
 use mlir::dialects::tensor::Reassociation;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::integer::Integer as IntegerType;
-use mlir::types::IRType;
 use mlir::types::ranked_tensor::RankedTensor;
 use mlir::types::shaped::Shaped;
 
@@ -40,16 +40,10 @@ pub fn main() -> () {
             IntegerAttr::new(&t_int, 0).as_attribute(),
             IntegerAttr::new(&t_int, 1).as_attribute(),
         ]),
-        Array::new(&context, &[
-            IntegerAttr::new(&t_int, 2).as_attribute(),
-        ]),
+        Array::new(&context, &[IntegerAttr::new(&t_int, 2).as_attribute()]),
     ]);
-    let mut op_cs = CollapseShape::new(
-        &t_tnsr_out,
-        &f_block.get_arg(0),
-        &reassoc,
-        &loc,
-    ).as_operation();
+    let mut op_cs =
+        CollapseShape::new(&t_tnsr_out, &f_block.get_arg(0), &reassoc, &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_cs.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_cs);
     f_block.append_operation(&mut op_ret);

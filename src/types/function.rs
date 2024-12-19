@@ -3,21 +3,21 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirFunctionTypeGet;
 use mlir_sys::mlirFunctionTypeGetInput;
 use mlir_sys::mlirFunctionTypeGetNumInputs;
 use mlir_sys::mlirFunctionTypeGetNumResults;
 use mlir_sys::mlirFunctionTypeGetResult;
 use mlir_sys::mlirFunctionTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;

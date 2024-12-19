@@ -3,11 +3,11 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirUnrankedMemRefTypeGet;
 use mlir_sys::mlirUnrankedMemRefTypeGetChecked;
 use mlir_sys::mlirUnrankedMemRefTypeGetTypeID;
 use mlir_sys::mlirUnrankedMemrefGetMemorySpace;
-use mlir_sys::MlirType;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -16,8 +16,8 @@ use crate::ir;
 use crate::types;
 
 use attributes::specialized::NamedMemorySpace;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Location;
 use ir::Type;
 use ir::TypeID;
@@ -29,11 +29,18 @@ pub struct UnrankedMemRef(MlirType);
 
 impl UnrankedMemRef {
     pub fn new(t: &Type, memory_space: &impl NamedMemorySpace) -> Self {
-        Self::from(do_unsafe!(mlirUnrankedMemRefTypeGet(*t.get(), *memory_space.get())))
+        Self::from(do_unsafe!(mlirUnrankedMemRefTypeGet(
+            *t.get(),
+            *memory_space.get()
+        )))
     }
 
     pub fn new_checked(t: &Type, memory_space: &impl NamedMemorySpace, loc: &Location) -> Self {
-        Self::from(do_unsafe!(mlirUnrankedMemRefTypeGetChecked(*loc.get(), *t.get(), *memory_space.get())))
+        Self::from(do_unsafe!(mlirUnrankedMemRefTypeGetChecked(
+            *loc.get(),
+            *t.get(),
+            *memory_space.get()
+        )))
     }
 
     pub fn as_shaped(&self) -> Shaped {

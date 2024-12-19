@@ -2,13 +2,13 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::tensor::Bitcast;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
-use mlir::types::integer::Integer as IntegerType;
 use mlir::types::IRType;
+use mlir::types::integer::Integer as IntegerType;
 use mlir::types::ranked_tensor::RankedTensor;
 
 mod common;
@@ -26,11 +26,7 @@ pub fn main() -> () {
     let f = get_empty_test_fn(&context, &[t_tnsr_in.as_type()], &[t_tnsr_out.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_cast = Bitcast::new_ranked(
-        &t_tnsr_out,
-        &f_block.get_arg(0),
-        &loc,
-    ).as_operation();
+    let mut op_cast = Bitcast::new_ranked(&t_tnsr_out, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_cast.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_cast);
     f_block.append_operation(&mut op_ret);

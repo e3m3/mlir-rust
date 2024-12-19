@@ -3,6 +3,8 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
+use mlir_sys::mlirDenseArrayAttrGetTypeID;
 use mlir_sys::mlirDenseArrayGetNumElements;
 use mlir_sys::mlirDenseBoolArrayGet;
 use mlir_sys::mlirDenseBoolArrayGetElement;
@@ -18,8 +20,6 @@ use mlir_sys::mlirDenseI32ArrayGet;
 use mlir_sys::mlirDenseI32ArrayGetElement;
 use mlir_sys::mlirDenseI64ArrayGet;
 use mlir_sys::mlirDenseI64ArrayGetElement;
-use mlir_sys::mlirDenseArrayAttrGetTypeID;
-use mlir_sys::MlirAttribute;
 
 use std::ffi::c_int;
 use std::fmt;
@@ -30,15 +30,15 @@ use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::TypeID;
 
 #[derive(Clone)]
 pub struct DenseArray(MlirAttribute, Layout);
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Layout {
     Bool,
     F32,
@@ -46,56 +46,84 @@ pub enum Layout {
     I8,
     I16,
     I32,
-    I64
+    I64,
 }
 
 impl DenseArray {
     pub fn new_bool(context: &Context, elements: &[bool]) -> Self {
         let e: Vec<c_int> = elements.iter().map(|a| *a as c_int).collect();
         Self::from(
-            do_unsafe!(mlirDenseBoolArrayGet(*context.get(), e.len() as isize, e.as_ptr())),
+            do_unsafe!(mlirDenseBoolArrayGet(
+                *context.get(),
+                e.len() as isize,
+                e.as_ptr()
+            )),
             Layout::Bool,
         )
     }
 
     pub fn new_f32(context: &Context, elements: &[f32]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseF32ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseF32ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::F32,
         )
     }
 
     pub fn new_f64(context: &Context, elements: &[f64]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseF64ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseF64ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::F64,
         )
     }
 
     pub fn new_i8(context: &Context, elements: &[i8]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseI8ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseI8ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::I8,
         )
     }
 
     pub fn new_i16(context: &Context, elements: &[i16]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseI16ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseI16ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::I16,
         )
     }
 
     pub fn new_i32(context: &Context, elements: &[i32]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseI32ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseI32ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::I32,
         )
     }
 
     pub fn new_i64(context: &Context, elements: &[i64]) -> Self {
         Self::from(
-            do_unsafe!(mlirDenseI64ArrayGet(*context.get(), elements.len() as isize, elements.as_ptr())),
+            do_unsafe!(mlirDenseI64ArrayGet(
+                *context.get(),
+                elements.len() as isize,
+                elements.as_ptr()
+            )),
             Layout::I64,
         )
     }
@@ -184,15 +212,16 @@ impl DenseArray {
     }
 
     pub fn is(&self, layout: Layout) -> bool {
-        self.get_layout() == layout && match layout {
-            Layout::Bool    => self.as_attribute().is_dense_array_bool(),
-            Layout::F32     => self.as_attribute().is_dense_array_f32(),
-            Layout::F64     => self.as_attribute().is_dense_array_f64(),
-            Layout::I8      => self.as_attribute().is_dense_array_i8(),
-            Layout::I16     => self.as_attribute().is_dense_array_i16(),
-            Layout::I32     => self.as_attribute().is_dense_array_i32(),
-            Layout::I64     => self.as_attribute().is_dense_array_i64(),
-        }
+        self.get_layout() == layout
+            && match layout {
+                Layout::Bool => self.as_attribute().is_dense_array_bool(),
+                Layout::F32 => self.as_attribute().is_dense_array_f32(),
+                Layout::F64 => self.as_attribute().is_dense_array_f64(),
+                Layout::I8 => self.as_attribute().is_dense_array_i8(),
+                Layout::I16 => self.as_attribute().is_dense_array_i16(),
+                Layout::I32 => self.as_attribute().is_dense_array_i32(),
+                Layout::I64 => self.as_attribute().is_dense_array_i64(),
+            }
     }
 
     pub fn num_elements(&self) -> isize {
@@ -213,13 +242,13 @@ impl IRAttribute for DenseArray {
 impl fmt::Display for Layout {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Layout::Bool    => "bool",
-            Layout::F32     => "f32",
-            Layout::F64     => "f64",
-            Layout::I8      => "i8",
-            Layout::I16     => "i16",
-            Layout::I32     => "i32",
-            Layout::I64     => "i64",
+            Layout::Bool => "bool",
+            Layout::F32 => "f32",
+            Layout::F64 => "f64",
+            Layout::I8 => "i8",
+            Layout::I16 => "i16",
+            Layout::I32 => "i32",
+            Layout::I64 => "i64",
         })
     }
 }

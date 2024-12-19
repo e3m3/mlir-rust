@@ -2,8 +2,8 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::linalg::MatmulTransposeA;
 use mlir::dialects::linalg::TransformShape;
 use mlir::dialects::tensor::Empty;
@@ -28,7 +28,11 @@ pub fn main() -> () {
     let t_a = RankedTensor::new(&s_a, &t_elem.as_type());
     let t_b = RankedTensor::new(&s_b, &t_elem.as_type());
     let t_out = RankedTensor::new(&s_out, &t_elem.as_type());
-    let f = get_empty_test_fn(&context, &[t_a.as_type(), t_b.as_type()], &[t_out.as_type()]);
+    let f = get_empty_test_fn(
+        &context,
+        &[t_a.as_type(), t_b.as_type()],
+        &[t_out.as_type()],
+    );
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_empty = Empty::new(&t_out, &[], &loc).as_operation();
@@ -39,7 +43,8 @@ pub fn main() -> () {
         &op_empty.get_result(0),
         None,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_matmul.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_empty);
     f_block.append_operation(&mut op_matmul);

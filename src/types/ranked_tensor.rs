@@ -3,19 +3,19 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirRankedTensorTypeGet;
 use mlir_sys::mlirRankedTensorTypeGetChecked;
 use mlir_sys::mlirRankedTensorTypeGetEncoding;
 use mlir_sys::mlirRankedTensorTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Location;
 use ir::Shape;
@@ -31,12 +31,22 @@ impl RankedTensor {
     pub fn new(shape: &dyn Shape, t: &Type) -> Self {
         let (r, s) = shape.unpack();
         let encoding = Attribute::new();
-        Self::from(do_unsafe!(mlirRankedTensorTypeGet(r, s.as_ptr(), *t.get(), *encoding.get())))
+        Self::from(do_unsafe!(mlirRankedTensorTypeGet(
+            r,
+            s.as_ptr(),
+            *t.get(),
+            *encoding.get()
+        )))
     }
 
     pub fn new_encoded(shape: &dyn Shape, t: &Type, encoding: &Attribute) -> Self {
         let (r, s) = shape.unpack();
-        Self::from(do_unsafe!(mlirRankedTensorTypeGet(r, s.as_ptr(), *t.get(), *encoding.get())))
+        Self::from(do_unsafe!(mlirRankedTensorTypeGet(
+            r,
+            s.as_ptr(),
+            *t.get(),
+            *encoding.get()
+        )))
     }
 
     pub fn new_checked(shape: &dyn Shape, t: &Type, encoding: &Attribute, loc: &Location) -> Self {
@@ -109,8 +119,10 @@ impl RankedTensor {
         let rank = s.rank().unwrap_or(0);
         for i in 0..rank {
             let i_ = i as isize;
-            if !s.is_dynamic_dim(i_) && !s_other.is_dynamic_dim(i_) &&
-                s.dim_size(i_) != s_other.dim_size(i_) {
+            if !s.is_dynamic_dim(i_)
+                && !s_other.is_dynamic_dim(i_)
+                && s.dim_size(i_) != s_other.dim_size(i_)
+            {
                 return false;
             }
         }

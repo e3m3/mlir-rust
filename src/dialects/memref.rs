@@ -30,25 +30,25 @@ use attributes::specialized::NamedSymbolRef;
 use attributes::specialized::NamedType;
 use attributes::specialized::NamedUnit;
 use attributes::symbol_ref::SymbolRef;
+use dialects::IROp;
+use dialects::IROperation;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
 use dialects::common::SymbolVisibilityKind;
-use dialects::IROp;
-use dialects::IROperation;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
-use ir::StringBacked;
 use ir::Shape;
+use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
@@ -86,7 +86,7 @@ pub struct Permutation(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Alloc,
     Alloca,
@@ -246,38 +246,38 @@ impl Permutation {
 impl Op {
     fn get_name(&self) -> &'static str {
         match self {
-            Op::Alloc                           => "alloc",
-            Op::Alloca                          => "alloca",
-            Op::AllocaScope                     => "alloca_scope",
-            Op::AllocaScopeReturn               => "alloca_scope.return",
-            Op::AssumeAlignment                 => "assume_alignment",
-            Op::AtomicRMW                       => "atomic_rmw",
-            Op::AtomicYield                     => "atomic_yield",
-            Op::Cast                            => "cast",
-            Op::CollapseShape                   => "collapse_shape",
-            Op::Copy                            => "copy",
-            Op::Dealloc                         => "dealloc",
-            Op::Dim                             => "dim",
-            Op::DmaStart                        => "dma_start",
-            Op::DmaWait                         => "dma_wait",
-            Op::ExpandShape                     => "expand_shape",
-            Op::ExtractAlignedPointerAsIndex    => "extract_aligned_pointer_as_index",
-            Op::ExtractStridedMetadata          => "extract_strided_metadata",
-            Op::GenericAtomicRMW                => "generic_atomic_rmw",
-            Op::GetGlobal                       => "get_global",
-            Op::Global                          => "global",
-            Op::MemorySpaceCast                 => "memory_space_cast",
-            Op::Load                            => "load",
-            Op::Prefetch                        => "prefetch",
-            Op::Rank                            => "rank",
-            Op::Realloc                         => "realloc",
-            Op::ReinterpretCast                 => "reinterpret_cast",
-            Op::Reshape                         => "reshape",
-            Op::Store                           => "store",
-            Op::SubView                         => "subview",
-            Op::Transpose                       => "transpose",
-            Op::View                            => "view",
-            Op::Yield                           => "yield",
+            Op::Alloc => "alloc",
+            Op::Alloca => "alloca",
+            Op::AllocaScope => "alloca_scope",
+            Op::AllocaScopeReturn => "alloca_scope.return",
+            Op::AssumeAlignment => "assume_alignment",
+            Op::AtomicRMW => "atomic_rmw",
+            Op::AtomicYield => "atomic_yield",
+            Op::Cast => "cast",
+            Op::CollapseShape => "collapse_shape",
+            Op::Copy => "copy",
+            Op::Dealloc => "dealloc",
+            Op::Dim => "dim",
+            Op::DmaStart => "dma_start",
+            Op::DmaWait => "dma_wait",
+            Op::ExpandShape => "expand_shape",
+            Op::ExtractAlignedPointerAsIndex => "extract_aligned_pointer_as_index",
+            Op::ExtractStridedMetadata => "extract_strided_metadata",
+            Op::GenericAtomicRMW => "generic_atomic_rmw",
+            Op::GetGlobal => "get_global",
+            Op::Global => "global",
+            Op::MemorySpaceCast => "memory_space_cast",
+            Op::Load => "load",
+            Op::Prefetch => "prefetch",
+            Op::Rank => "rank",
+            Op::Realloc => "realloc",
+            Op::ReinterpretCast => "reinterpret_cast",
+            Op::Reshape => "reshape",
+            Op::Store => "store",
+            Op::SubView => "subview",
+            Op::Transpose => "transpose",
+            Op::View => "view",
+            Op::Yield => "yield",
         }
     }
 }
@@ -292,7 +292,7 @@ impl Alloc {
         dyn_sizes: &[Value],
         syms: &[Value],
         align: Option<&Alignment>,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         if dyn_sizes.iter().any(|v| !v.get_type().is_index()) {
             eprintln!("Expected index type for dynamic sizes operands");
@@ -306,15 +306,16 @@ impl Alloc {
         let n_dyn_inputs = dyn_sizes.len() as i64;
         if let Some(n_dyn) = s.num_dynamic_dims() {
             if n_dyn != n_dyn_inputs {
-                eprintln!("Expected number of dynamic sizes ({}) to match number \
+                eprintln!(
+                    "Expected number of dynamic sizes ({}) to match number \
                     of dynamic dimensions ({}) of the result memory reference type for alloc operation",
-                    n_dyn_inputs,
-                    n_dyn,
+                    n_dyn_inputs, n_dyn,
                 );
                 exit(ExitCode::DialectError);
             }
         } else if !dyn_sizes.is_empty() {
-            eprintln!("Expected no dynamic sizes to match number of dynamic dimensions \
+            eprintln!(
+                "Expected no dynamic sizes to match number of dynamic dimensions \
                 of the result memory reference type for alloc operation"
             );
             exit(ExitCode::DialectError);
@@ -322,10 +323,10 @@ impl Alloc {
         let n_syms = t.get_affine_map().num_symbols();
         let n_syms_inputs = syms.len() as isize;
         if n_syms != n_syms_inputs {
-            eprintln!("Expected number of symbols ({}) to match number of symbols in the affine map ({}) \
+            eprintln!(
+                "Expected number of symbols ({}) to match number of symbols in the affine map ({}) \
                 of the result memory reference type for alloc operation",
-                n_syms_inputs,
-                n_syms,
+                n_syms_inputs, n_syms,
             );
             exit(ExitCode::DialectError);
         }
@@ -339,7 +340,8 @@ impl Alloc {
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
+        let opseg_attr =
+            OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
         let mut attrs = vec![opseg_attr.as_named_attribute()];
         if let Some(align_attr) = align {
             attrs.push(align_attr.as_named_attribute());
@@ -386,7 +388,7 @@ impl Alloca {
         dyn_sizes: &[Value],
         syms: &[Value],
         align: Option<&Alignment>,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         if dyn_sizes.iter().any(|v| !v.get_type().is_index()) {
             eprintln!("Expected index type for dynamic sizes operands");
@@ -399,19 +401,22 @@ impl Alloca {
         let s = t.as_shaped();
         if let Some(n_dyn) = s.num_dynamic_dims() {
             if n_dyn != dyn_sizes.len() as i64 {
-                eprintln!("Expected number of dynamic sizes to match number of dynamic dimensions \
+                eprintln!(
+                    "Expected number of dynamic sizes to match number of dynamic dimensions \
                     of the result memory reference type for alloca operation"
                 );
                 exit(ExitCode::DialectError);
             }
         } else if !dyn_sizes.is_empty() {
-            eprintln!("Expected number of dynamic sizes to match number of dynamic dimensions \
+            eprintln!(
+                "Expected number of dynamic sizes to match number of dynamic dimensions \
                 of the result memory reference type for alloca operation"
             );
             exit(ExitCode::DialectError);
         }
         if t.get_affine_map().num_symbols() != syms.len() as isize {
-            eprintln!("Expected number of symbols to match number of symbols in the affine map \
+            eprintln!(
+                "Expected number of symbols to match number of symbols in the affine map \
                 of the result memory reference type for alloca operation"
             );
             exit(ExitCode::DialectError);
@@ -426,7 +431,8 @@ impl Alloca {
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
-        let opseg_attr = OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
+        let opseg_attr =
+            OperandSegmentSizes::new(&context, &[dyn_sizes.len() as i32, syms.len() as i32]);
         let mut attrs = vec![opseg_attr.as_named_attribute()];
         if let Some(align_attr) = align {
             attrs.push(align_attr.as_named_attribute());
@@ -493,7 +499,8 @@ impl Cast {
         let is_ranked = t_source.is_memref();
         let is_unranked = t_source.is_unranked_memref();
         if !is_ranked && !is_unranked {
-            eprintln!("Expected ranked or unranked memory reference for source operand \
+            eprintln!(
+                "Expected ranked or unranked memory reference for source operand \
                 of cast operation"
             );
             exit(ExitCode::DialectError);
@@ -501,31 +508,35 @@ impl Cast {
         let s = t.as_shaped();
         let s_source = Shaped::from(*t_source.get());
         if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching element types for source and target operands of cast operation");
+            eprintln!(
+                "Expected matching element types for source and target operands of cast operation"
+            );
             exit(ExitCode::DialectError);
         }
         if is_ranked {
             let t_ranked = MemRef::from(*t_source.get());
             if t.get_memory_space::<T>() != t_ranked.get_memory_space::<T>() {
-                eprintln!("Expected matching memory space for source and target operands \
+                eprintln!(
+                    "Expected matching memory space for source and target operands \
                     of cast operation"
                 );
                 exit(ExitCode::DialectError);
             }
             let rank = s.rank().unwrap_or(-1);
             let rank_source = s_source.rank().unwrap_or(-1);
-            if rank != rank_source  {
-                eprintln!("Expected matching ranks for ranked memory reference \
+            if rank != rank_source {
+                eprintln!(
+                    "Expected matching ranks for ranked memory reference \
                     source ({}) and target ({}) operands of cast operation",
-                    rank_source,
-                    rank,
+                    rank_source, rank,
                 );
                 exit(ExitCode::DialectError);
             }
         } else {
             let t_unranked = UnrankedMemRef::from(*t_source.get());
             if t.get_memory_space::<T>() != t_unranked.get_memory_space::<T>() {
-                eprintln!("Expected matching memory space for source and target operands \
+                eprintln!(
+                    "Expected matching memory space for source and target operands \
                     of cast operation"
                 );
                 exit(ExitCode::DialectError);
@@ -534,12 +545,17 @@ impl Cast {
         Self::new(&t.as_type(), source, loc)
     }
 
-    pub fn new_unranked<T: NamedMemorySpace>(t: &UnrankedMemRef, source: &Value, loc: &Location) -> Self {
+    pub fn new_unranked<T: NamedMemorySpace>(
+        t: &UnrankedMemRef,
+        source: &Value,
+        loc: &Location,
+    ) -> Self {
         let t_source = source.get_type();
         let is_ranked = t_source.is_memref();
         let is_unranked = t_source.is_unranked_memref();
         if !is_ranked && !is_unranked {
-            eprintln!("Expected ranked or unranked memory reference for source operand \
+            eprintln!(
+                "Expected ranked or unranked memory reference for source operand \
                 of cast operation"
             );
             exit(ExitCode::DialectError);
@@ -547,13 +563,16 @@ impl Cast {
         let s = t.as_shaped();
         let s_source = Shaped::from(*t_source.get());
         if s.get_element_type() != s_source.get_element_type() {
-            eprintln!("Expected matching element types for source and target operands of copy operation");
+            eprintln!(
+                "Expected matching element types for source and target operands of copy operation"
+            );
             exit(ExitCode::DialectError);
         }
         if is_ranked {
             let t_ranked = MemRef::from(*t_source.get());
             if t.get_memory_space::<T>() != t_ranked.get_memory_space::<T>() {
-                eprintln!("Expected matching memory space for source and target operands \
+                eprintln!(
+                    "Expected matching memory space for source and target operands \
                     of cast operation"
                 );
                 exit(ExitCode::DialectError);
@@ -561,7 +580,8 @@ impl Cast {
         } else {
             let t_unranked = UnrankedMemRef::from(*t_source.get());
             if t.get_memory_space::<T>() != t_unranked.get_memory_space::<T>() {
-                eprintln!("Expected matching memory space for source and target operands \
+                eprintln!(
+                    "Expected matching memory space for source and target operands \
                     of ast operation"
                 );
                 exit(ExitCode::DialectError);
@@ -592,13 +612,15 @@ impl Copy {
         let t_source = source.get_type();
         let t_target = target.get_type();
         if !t_source.is_memref() && !t_source.is_unranked_memref() {
-            eprintln!("Expected ranked or unranked memory reference for source operand \
+            eprintln!(
+                "Expected ranked or unranked memory reference for source operand \
                 of copy operation"
             );
             exit(ExitCode::DialectError);
         }
         if !t_target.is_memref() && !t_target.is_unranked_memref() {
-            eprintln!("Expected ranked or unranked memory reference for target operand \
+            eprintln!(
+                "Expected ranked or unranked memory reference for target operand \
                 of copy operation"
             );
             exit(ExitCode::DialectError);
@@ -606,7 +628,9 @@ impl Copy {
         let s_source = Shaped::from(*t_source.get());
         let s_target = Shaped::from(*t_target.get());
         if s_source.get_element_type() != s_target.get_element_type() {
-            eprintln!("Expected matching element types for source and target operands of copy operation");
+            eprintln!(
+                "Expected matching element types for source and target operands of copy operation"
+            );
             exit(ExitCode::DialectError);
         }
         if s_source.unpack() != s_target.unpack() {
@@ -673,10 +697,11 @@ impl Dim {
     pub fn new(context: &Context, source: &Value, index: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let is_unranked = t_source.is_unranked_memref();
-        let is_non_0_ranked = t_source.is_memref() &&
-            Shaped::from(*t_source.get()).rank().unwrap_or(0) > 0;
+        let is_non_0_ranked =
+            t_source.is_memref() && Shaped::from(*t_source.get()).rank().unwrap_or(0) > 0;
         if !is_unranked && !is_non_0_ranked {
-            eprintln!("Expected unranked or non-0-ranked memory reference type \
+            eprintln!(
+                "Expected unranked or non-0-ranked memory reference type \
                 for source operand of dim operaton"
             );
             exit(ExitCode::DialectError);
@@ -718,7 +743,8 @@ impl Dim {
 impl GetGlobal {
     pub fn new(t: &MemRef, global_ref: &GlobalRef, loc: &Location) -> Self {
         if !t.as_shaped().is_static() {
-            eprintln!("Expected statically shaped memory reference type for result \
+            eprintln!(
+                "Expected statically shaped memory reference type for result \
                 of get global operation"
             );
             exit(ExitCode::DialectError);
@@ -771,10 +797,7 @@ impl Global {
             dialect.get_namespace(),
             Op::Global.get_name(),
         ));
-        let mut attrs = vec![
-            sym_name.as_named_attribute(),
-            t.as_named_attribute(),
-        ];
+        let mut attrs = vec![sym_name.as_named_attribute(), t.as_named_attribute()];
         if let Some(visibility_) = SymbolVisibility::new(&context, visibility) {
             attrs.push(visibility_.as_named_attribute());
         }
@@ -854,23 +877,32 @@ impl Global {
 
     pub fn get_symbol_name(&self) -> SymbolName {
         let attr_name = StringBacked::from(SymbolName::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         SymbolName::from(*attr.get())
     }
 
     pub fn get_symbol_ref(&self) -> SymbolRef {
-        SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
+        SymbolRef::new_flat(
+            &self.get_context(),
+            &self.get_symbol_name().as_string().get_string(),
+        )
     }
 
     pub fn get_symbol_visibility(&self) -> SymbolVisibility {
         let attr_name = StringBacked::from(SymbolVisibility::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         SymbolVisibility::from(*attr.get())
     }
 
     pub fn get_type_attribute(&self) -> GlobalType {
         let attr_name = StringBacked::from(GlobalType::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         GlobalType::from(*attr.get())
     }
 
@@ -884,14 +916,20 @@ impl Global {
 
     pub fn is_initialized(&self) -> bool {
         match self.get_initial_value() {
-            None    => false,
+            None => false,
             Some(v) => v.is_initialized(),
         }
     }
 }
 
 impl Load {
-    pub fn new(t: &Type, source: &Value, indices: &[Value], is_nt: &NonTemporal, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        source: &Value,
+        indices: &[Value],
+        is_nt: &NonTemporal,
+        loc: &Location,
+    ) -> Self {
         if !source.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for source operand of load operation");
             exit(ExitCode::DialectError);
@@ -902,16 +940,18 @@ impl Load {
         }
         let s_source = Shaped::from(*source.get_type().get());
         if *t != s_source.get_element_type() {
-            eprintln!("Expected matching types for source element type and result of load operation");
+            eprintln!(
+                "Expected matching types for source element type and result of load operation"
+            );
             exit(ExitCode::DialectError);
         }
         let n_indices = indices.len() as i64;
         let rank_source = s_source.rank().unwrap_or(0);
         if rank_source != n_indices {
-            eprintln!("Expected matching arity of indices ({}) and source memory reference rank ({}) \
+            eprintln!(
+                "Expected matching arity of indices ({}) and source memory reference rank ({}) \
                 of load operation",
-                n_indices,
-                rank_source,
+                n_indices, rank_source,
             );
             exit(ExitCode::DialectError);
         }
@@ -945,7 +985,9 @@ impl Load {
 
     pub fn get_non_temporal_attribute(&self) -> NonTemporal {
         let attr_name = StringBacked::from(NonTemporal::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         NonTemporal::from(*attr.get())
     }
 
@@ -960,7 +1002,8 @@ impl Rank {
         let is_unranked = t_source.is_unranked_memref();
         let is_ranked = t_source.is_memref();
         if !is_unranked && !is_ranked {
-            eprintln!("Expected unranked or ranked memory reference type \
+            eprintln!(
+                "Expected unranked or ranked memory reference type \
                 for source operand of rank operaton"
             );
             exit(ExitCode::DialectError);
@@ -1002,10 +1045,12 @@ impl Store {
         target: &Value,
         indices: &[Value],
         is_nt: &NonTemporal,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         if !target.get_type().is_memref() {
-            eprintln!("Expected ranked memory reference type for target operand of store operation");
+            eprintln!(
+                "Expected ranked memory reference type for target operand of store operation"
+            );
             exit(ExitCode::DialectError);
         }
         if indices.iter().any(|v| !v.get_type().is_index()) {
@@ -1014,16 +1059,18 @@ impl Store {
         }
         let s_target = Shaped::from(*target.get_type().get());
         if value.get_type() != s_target.get_element_type() {
-            eprintln!("Expected matching types for target element type and result of store operation");
+            eprintln!(
+                "Expected matching types for target element type and result of store operation"
+            );
             exit(ExitCode::DialectError);
         }
         let rank_target = s_target.rank().unwrap_or(0);
         let n_indices = indices.len() as i64;
         if rank_target != n_indices {
-            eprintln!("Expected matching arity of indices ({}) and target memory reference rank ({}) \
+            eprintln!(
+                "Expected matching arity of indices ({}) and target memory reference rank ({}) \
                 of store operation",
-                n_indices,
-                rank_target,
+                n_indices, rank_target,
             );
             exit(ExitCode::DialectError);
         }
@@ -1057,12 +1104,15 @@ impl Store {
 impl Transpose {
     pub fn new(t: &MemRef, source: &Value, p: &Permutation, loc: &Location) -> Self {
         if !source.get_type().is_memref() {
-            eprintln!("Expected ranked memory reference type for source operand of transpose operation");
+            eprintln!(
+                "Expected ranked memory reference type for source operand of transpose operation"
+            );
             exit(ExitCode::DialectError);
         }
         let t_source = MemRef::from(*source.get_type().get());
         if t.as_shaped().get_element_type() != t_source.as_shaped().get_element_type() {
-            eprintln!("Expected matching element types for source operand and \
+            eprintln!(
+                "Expected matching element types for source operand and \
                 result memory reference types of transpose operation"
             );
             exit(ExitCode::DialectError);
@@ -1071,11 +1121,10 @@ impl Transpose {
         let n_perm = p.as_affine_map().num_dims();
         let n_source = t_source.get_affine_map().num_dims();
         if n_result != n_perm || n_result != n_source {
-            eprintln!("Expected matching number of dimensions for result ({}), source ({}), \
+            eprintln!(
+                "Expected matching number of dimensions for result ({}), source ({}), \
                 and permutation ({}) of transpose operation",
-                n_result,
-                n_source,
-                n_perm,
+                n_result, n_source, n_perm,
             );
             exit(ExitCode::DialectError);
         }
@@ -1107,7 +1156,9 @@ impl Transpose {
 
     pub fn get_permutation(&self) -> Permutation {
         let attr_name = StringBacked::from(Permutation::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }
 
@@ -1117,7 +1168,13 @@ impl Transpose {
 }
 
 impl View {
-    pub fn new(t: &MemRef, source: &Value, byte_shift: &Value, sizes: &[Value], loc: &Location) -> Self {
+    pub fn new(
+        t: &MemRef,
+        source: &Value,
+        byte_shift: &Value,
+        sizes: &[Value],
+        loc: &Location,
+    ) -> Self {
         if !source.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for source operand of view operation");
             exit(ExitCode::DialectError);
@@ -1125,7 +1182,8 @@ impl View {
         let s_source = Shaped::from(*source.get_type().get());
         let rank_source = s_source.rank().unwrap_or(-1);
         if rank_source != 1 {
-            eprintln!("Expected 1-D ranked memory reference type for source operand ({}) \
+            eprintln!(
+                "Expected 1-D ranked memory reference type for source operand ({}) \
                 of view operation",
                 rank_source,
             );
@@ -1133,7 +1191,8 @@ impl View {
         }
         let t_elem = s_source.get_element_type();
         if !t_elem.is_integer() {
-            eprintln!("Expected integer element memory reference type for source operand \
+            eprintln!(
+                "Expected integer element memory reference type for source operand \
                 of view operation"
             );
             exit(ExitCode::DialectError);
@@ -1142,10 +1201,10 @@ impl View {
         let t_int = IntegerType::from(*t_elem.get());
         let width_elem = t_int.get_width();
         if !t_int.is_signless() || width_elem != WIDTH {
-            eprintln!("Expected signless {}-bit integer elements for memory reference type \
+            eprintln!(
+                "Expected signless {}-bit integer elements for memory reference type \
                 for source operand ({}-bit elements) of view operation",
-                WIDTH,
-                width_elem,
+                WIDTH, width_elem,
             );
             exit(ExitCode::DialectError);
         }
@@ -1231,9 +1290,7 @@ impl IROperation for Alloc {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::OpAsmOpInterface,
-        ]
+        &[Interface::OpAsmOpInterface]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1249,9 +1306,7 @@ impl IROperation for Alloc {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AttrSizedOperandSegments,
-        ]
+        &[Trait::AttrSizedOperandSegments]
     }
 }
 
@@ -1289,9 +1344,7 @@ impl IROperation for Alloca {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AttrSizedOperandSegments,
-        ]
+        &[Trait::AttrSizedOperandSegments]
     }
 }
 
@@ -1305,9 +1358,7 @@ impl IROperation for Cast {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1355,9 +1406,7 @@ impl IROperation for Copy {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::CopyOpInterface,
-        ]
+        &[Interface::CopyOpInterface]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1373,10 +1422,7 @@ impl IROperation for Copy {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::SameOperandsElementType,
-            Trait::SameOperandsShape,
-        ]
+        &[Trait::SameOperandsElementType, Trait::SameOperandsShape]
     }
 }
 
@@ -1410,9 +1456,7 @@ impl IROperation for Dealloc {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::MemRefsNormalizable,
-        ]
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -1426,9 +1470,7 @@ impl IROperation for Dim {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1454,9 +1496,7 @@ impl IROperation for Dim {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::MemRefsNormalizable,
-        ]
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -1470,9 +1510,7 @@ impl IROperation for GetGlobal {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1496,9 +1534,7 @@ impl IROperation for GetGlobal {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1516,9 +1552,7 @@ impl IROperation for Global {
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::Symbol,
-        ]
+        &[Interface::Symbol]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1620,9 +1654,7 @@ impl IROperation for Load {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::MemRefsNormalizable,
-        ]
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -1666,9 +1698,7 @@ impl IROperation for Rank {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1692,9 +1722,7 @@ impl IROperation for Rank {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1731,9 +1759,7 @@ impl IROperation for Store {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::MemRefsNormalizable,
-        ]
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -1747,9 +1773,7 @@ impl IROperation for Transpose {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1773,9 +1797,7 @@ impl IROperation for Transpose {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1837,9 +1859,7 @@ impl IROperation for View {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1864,9 +1884,7 @@ impl IROperation for View {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -1877,38 +1895,38 @@ impl IROperation for View {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Alloc                           => "AllocOp",
-            Op::Alloca                          => "AllocaOp",
-            Op::AllocaScope                     => "AllocaScopeOp",
-            Op::AllocaScopeReturn               => "AllocaScopeReturnOp",
-            Op::AssumeAlignment                 => "AssumeAlignmentOp",
-            Op::AtomicRMW                       => "AtomicRMWOp",
-            Op::AtomicYield                     => "AtomicYieldOp",
-            Op::Cast                            => "CastOp",
-            Op::CollapseShape                   => "CollapseShapeOp",
-            Op::Copy                            => "CopyOp",
-            Op::Dealloc                         => "DeallocOp",
-            Op::Dim                             => "DimOp",
-            Op::DmaStart                        => "DmaStartOp",
-            Op::DmaWait                         => "DmaWaitOp",
-            Op::ExpandShape                     => "ExpandShapeOp",
-            Op::ExtractAlignedPointerAsIndex    => "ExtractAlignedPointerAsIndexOp",
-            Op::ExtractStridedMetadata          => "ExtractStridedMetadataOp",
-            Op::GenericAtomicRMW                => "GenericAtomicRMWOp",
-            Op::GetGlobal                       => "GetGlobalOp",
-            Op::Global                          => "GlobalOp",
-            Op::MemorySpaceCast                 => "MemorySpaceCastOp",
-            Op::Load                            => "LoadOp",
-            Op::Prefetch                        => "PrefetchOp",
-            Op::Rank                            => "RankOp",
-            Op::Realloc                         => "ReallocOp",
-            Op::ReinterpretCast                 => "ReinterpretCastOp",
-            Op::Reshape                         => "ReshapeOp",
-            Op::Store                           => "StoreOp",
-            Op::SubView                         => "SubViewOp",
-            Op::Transpose                       => "TransposeOp",
-            Op::View                            => "ViewOp",
-            Op::Yield                           => "YieldOp",
+            Op::Alloc => "AllocOp",
+            Op::Alloca => "AllocaOp",
+            Op::AllocaScope => "AllocaScopeOp",
+            Op::AllocaScopeReturn => "AllocaScopeReturnOp",
+            Op::AssumeAlignment => "AssumeAlignmentOp",
+            Op::AtomicRMW => "AtomicRMWOp",
+            Op::AtomicYield => "AtomicYieldOp",
+            Op::Cast => "CastOp",
+            Op::CollapseShape => "CollapseShapeOp",
+            Op::Copy => "CopyOp",
+            Op::Dealloc => "DeallocOp",
+            Op::Dim => "DimOp",
+            Op::DmaStart => "DmaStartOp",
+            Op::DmaWait => "DmaWaitOp",
+            Op::ExpandShape => "ExpandShapeOp",
+            Op::ExtractAlignedPointerAsIndex => "ExtractAlignedPointerAsIndexOp",
+            Op::ExtractStridedMetadata => "ExtractStridedMetadataOp",
+            Op::GenericAtomicRMW => "GenericAtomicRMWOp",
+            Op::GetGlobal => "GetGlobalOp",
+            Op::Global => "GlobalOp",
+            Op::MemorySpaceCast => "MemorySpaceCastOp",
+            Op::Load => "LoadOp",
+            Op::Prefetch => "PrefetchOp",
+            Op::Rank => "RankOp",
+            Op::Realloc => "ReallocOp",
+            Op::ReinterpretCast => "ReinterpretCastOp",
+            Op::Reshape => "ReshapeOp",
+            Op::Store => "StoreOp",
+            Op::SubView => "SubViewOp",
+            Op::Transpose => "TransposeOp",
+            Op::View => "ViewOp",
+            Op::Yield => "YieldOp",
         })
     }
 }

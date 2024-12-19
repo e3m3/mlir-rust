@@ -3,14 +3,14 @@
 extern crate mlir;
 
 use mlir::attributes::index::Index as IndexAttr;
-use mlir::attributes::strided_layout::StridedLayout;
 use mlir::attributes::specialized::NamedBool;
+use mlir::attributes::strided_layout::StridedLayout;
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::Constant;
 use mlir::dialects::common::IntegerMemorySpace;
 use mlir::dialects::common::MemoryLayout;
 use mlir::dialects::common::NonTemporal;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Store;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
@@ -32,21 +32,16 @@ pub fn main() -> () {
     let t_index = IndexType::new(&context).as_type();
     let dyn_size = Shaped::dynamic_size();
     let s_in = ShapeImpl::from(vec![4, dyn_size]);
-    let layout = MemoryLayout::from(StridedLayout::new(&context, dyn_size, &[dyn_size, dyn_size]));
+    let layout = MemoryLayout::from(StridedLayout::new(&context, dyn_size, &[
+        dyn_size, dyn_size,
+    ]));
     let t_mr_in = MemRef::new(&s_in, &t, &layout, &IntegerMemorySpace::new(&context, 0));
-    let f = get_empty_test_fn(
-        &context,
-        &[t_mr_in.as_type(), t_index, t.clone()],
-        &[],
-    );
+    let f = get_empty_test_fn(&context, &[t_mr_in.as_type(), t_index, t.clone()], &[]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let index_j = IndexAttr::new(&context, 1023);
     let is_nt = NonTemporal::new(&context, false);
-    let mut op_const = Constant::new_index(
-        &index_j,
-        &loc,
-    ).as_operation();
+    let mut op_const = Constant::new_index(&index_j, &loc).as_operation();
     let mut op_store = Store::new(
         &context,
         &f_block.get_arg(2),
@@ -54,7 +49,8 @@ pub fn main() -> () {
         &[f_block.get_arg(1), op_const.get_result(0)],
         &is_nt,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_const);
     f_block.append_operation(&mut op_store);

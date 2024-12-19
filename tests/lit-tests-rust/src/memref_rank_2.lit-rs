@@ -2,9 +2,9 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Rank;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
@@ -27,18 +27,10 @@ pub fn main() -> () {
     let dyn_size = Shaped::dynamic_size();
     let s_in = ShapeImpl::from(vec![dyn_size, dyn_size]);
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new());
-    let f = get_empty_test_fn(
-        &context,
-        &[t_mr_in.as_type()],
-        &[t_index],
-    );
+    let f = get_empty_test_fn(&context, &[t_mr_in.as_type()], &[t_index]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_rank = Rank::new(
-        &context,
-        &f_block.get_arg(0),
-        &loc,
-    ).as_operation();
+    let mut op_rank = Rank::new(&context, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_rank.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_rank);
     f_block.append_operation(&mut op_ret);

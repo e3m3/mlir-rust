@@ -3,9 +3,9 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::mlirNamedAttributeGet;
 use mlir_sys::MlirAttribute;
 use mlir_sys::MlirNamedAttribute;
+use mlir_sys::mlirNamedAttributeGet;
 
 use std::cmp;
 

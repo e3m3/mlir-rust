@@ -3,19 +3,19 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirTupleTypeGet;
 use mlir_sys::mlirTupleTypeGetNumTypes;
 use mlir_sys::mlirTupleTypeGetType;
 use mlir_sys::mlirTupleTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
@@ -27,7 +27,11 @@ pub struct Tuple(MlirType);
 impl Tuple {
     pub fn new(context: &Context, elements: &[Type]) -> Self {
         let e: Vec<MlirType> = elements.iter().map(|t| *t.get()).collect();
-        Self::from(do_unsafe!(mlirTupleTypeGet(*context.get(), elements.len() as isize, e.as_ptr())))
+        Self::from(do_unsafe!(mlirTupleTypeGet(
+            *context.get(),
+            elements.len() as isize,
+            e.as_ptr()
+        )))
     }
 
     pub fn from(t: MlirType) -> Self {

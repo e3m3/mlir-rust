@@ -3,9 +3,9 @@
 extern crate mlir;
 
 use mlir::attributes::index::Index as IndexAttr;
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::Constant;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::index::Index as IndexType;

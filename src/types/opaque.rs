@@ -3,19 +3,19 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirOpaqueTypeGet;
 use mlir_sys::mlirOpaqueTypeGetData;
 use mlir_sys::mlirOpaqueTypeGetDialectNamespace;
 use mlir_sys::mlirOpaqueTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::StringRef;
 use ir::Type;
@@ -27,7 +27,11 @@ pub struct Opaque(MlirType);
 
 impl Opaque {
     pub fn new(context: &Context, namespace: &StringRef, data: &StringRef) -> Self {
-        Self::from(do_unsafe!(mlirOpaqueTypeGet(*context.get(), *namespace.get(), *data.get())))
+        Self::from(do_unsafe!(mlirOpaqueTypeGet(
+            *context.get(),
+            *namespace.get(),
+            *data.get()
+        )))
     }
 
     pub fn from(t: MlirType) -> Self {

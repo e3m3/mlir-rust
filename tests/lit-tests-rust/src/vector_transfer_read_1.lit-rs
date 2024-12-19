@@ -3,23 +3,23 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedAffineMap;
+use mlir::dialects::IROperation;
 use mlir::dialects::affine::AffineExpr;
 use mlir::dialects::affine::Constant as AffineConstant;
 use mlir::dialects::affine::Dim as AffineDim;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::vector::InBounds;
 use mlir::dialects::vector::PermutationMap;
 use mlir::dialects::vector::TransferRead;
 use mlir::ir::Block;
 use mlir::ir::Shape;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::memref::MemRef;
 use mlir::types::shaped::Shaped;
 use mlir::types::vector::Vector;
@@ -40,7 +40,14 @@ pub fn main() -> () {
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new()).as_type();
     let f = get_empty_test_fn(
         &context,
-        &[t_mr_in.clone(), t_index.clone(), t_index.clone(), t_index.clone(), t_index.clone(), t.clone()],
+        &[
+            t_mr_in.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t.clone(),
+        ],
         &[t_vec_out.as_type()],
     );
     let f_region = f.as_operation().iter().next().unwrap_or_default();
@@ -56,11 +63,17 @@ pub fn main() -> () {
         &bounds_attr,
         &perm_attr,
         &f_block.get_arg(0),
-        &[f_block.get_arg(1), f_block.get_arg(2), f_block.get_arg(3), f_block.get_arg(4)],
+        &[
+            f_block.get_arg(1),
+            f_block.get_arg(2),
+            f_block.get_arg(3),
+            f_block.get_arg(4),
+        ],
         &f_block.get_arg(5),
         None,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_read.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_read);
     f_block.append_operation(&mut op_ret);

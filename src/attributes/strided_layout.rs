@@ -3,12 +3,12 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirStridedLayoutAttrGet;
-use mlir_sys::mlirStridedLayoutAttrGetOffset;
 use mlir_sys::mlirStridedLayoutAttrGetNumStrides;
+use mlir_sys::mlirStridedLayoutAttrGetOffset;
 use mlir_sys::mlirStridedLayoutAttrGetStride;
 use mlir_sys::mlirStridedLayoutAttrGetTypeID;
-use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -17,8 +17,8 @@ use crate::ir;
 use crate::types;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::TypeID;

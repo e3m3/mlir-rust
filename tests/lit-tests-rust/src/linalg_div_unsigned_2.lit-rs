@@ -2,9 +2,9 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::linalg::DivUnsigned;
 use mlir::dialects::memref::Alloc;
 use mlir::ir::Block;
@@ -34,7 +34,8 @@ pub fn main() -> () {
         &f_block.get_arg(1),
         &op_alloc.get_result(0),
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_alloc.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_alloc);
     f_block.append_operation(&mut op_div);

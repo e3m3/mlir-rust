@@ -21,10 +21,10 @@ use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedOpaque;
 use dialects::IROp;
 use dialects::IROperation;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Context;
@@ -33,8 +33,8 @@ use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
 use traits::Trait;
-use types::integer::Integer as IntegerType;
 use types::IRType;
+use types::integer::Integer as IntegerType;
 use types::none::None as NoneType;
 
 use std::fmt;
@@ -51,9 +51,9 @@ pub struct PoisonValue(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
-    Poison  = 0,
+    Poison = 0,
 }
 
 ///////////////////////////////
@@ -90,7 +90,7 @@ impl PoisonValue {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::Poison  => "poison",
+            Op::Poison => "poison",
         }
     }
 }
@@ -122,10 +122,10 @@ impl Poison {
     fn get_dialect(context: &Context) -> Dialect {
         match context.load_dialect("ub") {
             Some(d) => d,
-            None    => {
+            None => {
                 eprintln!("Failed to load ub dialect");
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
@@ -160,9 +160,7 @@ impl IROperation for Poison {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -185,10 +183,7 @@ impl IROperation for Poison {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::ConstantLike,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
     }
 }
 
@@ -223,7 +218,7 @@ impl NamedOpaque for PoisonValue {}
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Poison  => "PoisonOp",
+            Op::Poison => "PoisonOp",
         })
     }
 }

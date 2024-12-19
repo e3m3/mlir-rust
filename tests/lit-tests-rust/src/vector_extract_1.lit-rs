@@ -3,16 +3,16 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedI64DenseArray;
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::Extract;
 use mlir::dialects::vector::StaticPosition;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::vector::Vector;
 
 mod common;
@@ -29,7 +29,9 @@ pub fn main() -> () {
     let t_vec_in = Vector::new(&s_in, &t).as_type();
     let t_vec_out = Vector::new(&s_out, &t).as_type();
     let static_pos = StaticPosition::new(&context, &[2, StaticPosition::symbolic_pos()]);
-    let f = get_empty_test_fn(&context, &[t_vec_in.clone(), t_index.clone()], &[t_vec_out.clone()]);
+    let f = get_empty_test_fn(&context, &[t_vec_in.clone(), t_index.clone()], &[
+        t_vec_out.clone()
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_extract = Extract::new(
@@ -38,7 +40,8 @@ pub fn main() -> () {
         &[f_block.get_arg(1)],
         &static_pos,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_extract.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_extract);
     f_block.append_operation(&mut op_ret);

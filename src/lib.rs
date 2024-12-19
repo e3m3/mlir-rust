@@ -14,5 +14,5 @@ pub mod types;
 macro_rules! do_unsafe {
     ($expression:expr) => {
         unsafe { $expression }
-    }
+    };
 }

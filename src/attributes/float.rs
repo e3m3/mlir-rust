@@ -3,10 +3,10 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirFloatAttrDoubleGet;
 use mlir_sys::mlirFloatAttrDoubleGetChecked;
 use mlir_sys::mlirFloatAttrGetValueDouble;
-use mlir_sys::MlirAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -15,12 +15,12 @@ use crate::ir;
 use crate::types;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Location;
-use types::float::Float as FloatType;
 use types::IRType;
+use types::float::Float as FloatType;
 
 #[derive(Clone)]
 pub struct Float(MlirAttribute);
@@ -28,11 +28,19 @@ pub struct Float(MlirAttribute);
 impl Float {
     pub fn new(t: &FloatType, value: f64) -> Self {
         let context = t.as_type().get_context();
-        Self::from(do_unsafe!(mlirFloatAttrDoubleGet(*context.get(), *t.get(), value)))
+        Self::from(do_unsafe!(mlirFloatAttrDoubleGet(
+            *context.get(),
+            *t.get(),
+            value
+        )))
     }
 
     pub fn new_checked(t: &FloatType, value: f64, loc: &Location) -> Self {
-        Self::from(do_unsafe!(mlirFloatAttrDoubleGetChecked(*loc.get(), *t.get(), value)))
+        Self::from(do_unsafe!(mlirFloatAttrDoubleGetChecked(
+            *loc.get(),
+            *t.get(),
+            value
+        )))
     }
 
     pub fn from(attr: MlirAttribute) -> Self {

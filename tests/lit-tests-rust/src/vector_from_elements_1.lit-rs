@@ -2,14 +2,14 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::FromElements;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::vector::Vector;
 
 mod common;
@@ -22,18 +22,22 @@ pub fn main() -> () {
     let t = FloatType::new(&context, FloatLayout::F32).as_type();
     let s_out = ShapeImpl::from(vec![4]);
     let t_vec_out = Vector::new(&s_out, &t);
-    let f = get_empty_test_fn(
-        &context,
-        &[t.clone(), t.clone(), t.clone(), t.clone()],
-        &[t_vec_out.as_type()],
-    );
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone(), t.clone(), t.clone()], &[
+        t_vec_out.as_type(),
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_from_elem = FromElements::new(
         &t_vec_out,
-        &[f_block.get_arg(0), f_block.get_arg(1), f_block.get_arg(2), f_block.get_arg(3)],
+        &[
+            f_block.get_arg(0),
+            f_block.get_arg(1),
+            f_block.get_arg(2),
+            f_block.get_arg(3),
+        ],
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_from_elem.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_from_elem);
     f_block.append_operation(&mut op_ret);

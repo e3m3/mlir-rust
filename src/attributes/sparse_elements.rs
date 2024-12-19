@@ -3,11 +3,11 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::mlirSparseElementsAttribute;
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirSparseElementsAttrGetIndices;
 use mlir_sys::mlirSparseElementsAttrGetTypeID;
 use mlir_sys::mlirSparseElementsAttrGetValues;
-use mlir_sys::MlirAttribute;
+use mlir_sys::mlirSparseElementsAttribute;
 
 use crate::attributes;
 use crate::do_unsafe;
@@ -16,8 +16,8 @@ use crate::ir;
 use crate::types;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::TypeID;
 use types::shaped::Shaped;
@@ -31,7 +31,11 @@ impl SparseElements {
             eprintln!("Wrong type(s) for sparse elements indices or values");
             exit(ExitCode::IRError);
         }
-        Self::from(do_unsafe!(mlirSparseElementsAttribute(*t.get(), *indices.get(), *values.get())))
+        Self::from(do_unsafe!(mlirSparseElementsAttribute(
+            *t.get(),
+            *indices.get(),
+            *values.get()
+        )))
     }
 
     pub fn from(attr: MlirAttribute) -> Self {

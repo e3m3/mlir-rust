@@ -2,15 +2,15 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::tensor::Rank;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::ranked_tensor::RankedTensor;
 use mlir::types::shaped::Shaped;
 
@@ -26,18 +26,10 @@ pub fn main() -> () {
     let dyn_size = Shaped::dynamic_size();
     let s_in = ShapeImpl::from(vec![dyn_size, dyn_size]);
     let t_tnsr_in = RankedTensor::new(&s_in, &t);
-    let f = get_empty_test_fn(
-        &context,
-        &[t_tnsr_in.as_type()],
-        &[t_index.clone()],
-    );
+    let f = get_empty_test_fn(&context, &[t_tnsr_in.as_type()], &[t_index.clone()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_rank = Rank::new(
-        &context,
-        &f_block.get_arg(0),
-        &loc,
-    ).as_operation();
+    let mut op_rank = Rank::new(&context, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_rank.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_rank);
     f_block.append_operation(&mut op_ret);

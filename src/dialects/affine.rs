@@ -3,6 +3,9 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAffineExpr;
+use mlir_sys::MlirAffineMap;
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirAffineAddExprGet;
 use mlir_sys::mlirAffineBinaryOpExprGetLHS;
 use mlir_sys::mlirAffineBinaryOpExprGetRHS;
@@ -31,12 +34,12 @@ use mlir_sys::mlirAffineExprIsPureAffine;
 use mlir_sys::mlirAffineExprIsSymbolicOrConstant;
 use mlir_sys::mlirAffineFloorDivExprGet;
 use mlir_sys::mlirAffineMapAttrGet;
-use mlir_sys::mlirAffineMapAttrGetValue;
 use mlir_sys::mlirAffineMapAttrGetTypeID;
+use mlir_sys::mlirAffineMapAttrGetValue;
 use mlir_sys::mlirAffineMapConstantGet;
 use mlir_sys::mlirAffineMapDump;
-use mlir_sys::mlirAffineMapEqual;
 use mlir_sys::mlirAffineMapEmptyGet;
+use mlir_sys::mlirAffineMapEqual;
 use mlir_sys::mlirAffineMapGet;
 use mlir_sys::mlirAffineMapGetContext;
 use mlir_sys::mlirAffineMapGetMajorSubMap;
@@ -63,9 +66,6 @@ use mlir_sys::mlirAffineModExprGet;
 use mlir_sys::mlirAffineMulExprGet;
 use mlir_sys::mlirAffineSymbolExprGet;
 use mlir_sys::mlirAffineSymbolExprGetPosition;
-use mlir_sys::MlirAttribute;
-use mlir_sys::MlirAffineExpr;
-use mlir_sys::MlirAffineMap;
 
 use std::cmp;
 use std::ffi::c_uint;
@@ -74,8 +74,8 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::TypeID;
@@ -85,7 +85,7 @@ pub trait AffineExpr {
     fn get(&self) -> &MlirAffineExpr;
 }
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum BinOp {
     Add,
     Mod,
@@ -94,43 +94,58 @@ pub enum BinOp {
     FloorDiv,
 }
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Binary(MlirAffineExpr, BinOp);
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Constant(MlirAffineExpr);
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Dim(MlirAffineExpr);
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Expr(MlirAffineExpr);
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Map(MlirAffineMap);
 
-#[derive(Clone,Copy)]
+#[derive(Clone, Copy)]
 pub struct Symbol(MlirAffineExpr);
 
 impl Binary {
     pub fn new_add(lhs: &Expr, rhs: &Expr) -> Self {
-        Self::from(do_unsafe!(mlirAffineAddExprGet(*lhs.get(), *rhs.get())), BinOp::Add)
+        Self::from(
+            do_unsafe!(mlirAffineAddExprGet(*lhs.get(), *rhs.get())),
+            BinOp::Add,
+        )
     }
 
     pub fn new_mod(lhs: &Expr, rhs: &Expr) -> Self {
-        Self::from(do_unsafe!(mlirAffineModExprGet(*lhs.get(), *rhs.get())), BinOp::Mod)
+        Self::from(
+            do_unsafe!(mlirAffineModExprGet(*lhs.get(), *rhs.get())),
+            BinOp::Mod,
+        )
     }
 
     pub fn new_mul(lhs: &Expr, rhs: &Expr) -> Self {
-        Self::from(do_unsafe!(mlirAffineMulExprGet(*lhs.get(), *rhs.get())), BinOp::Mul)
+        Self::from(
+            do_unsafe!(mlirAffineMulExprGet(*lhs.get(), *rhs.get())),
+            BinOp::Mul,
+        )
     }
 
     pub fn new_ceil_div(lhs: &Expr, rhs: &Expr) -> Self {
-        Self::from(do_unsafe!(mlirAffineCeilDivExprGet(*lhs.get(), *rhs.get())), BinOp::CeilDiv)
+        Self::from(
+            do_unsafe!(mlirAffineCeilDivExprGet(*lhs.get(), *rhs.get())),
+            BinOp::CeilDiv,
+        )
     }
 
     pub fn new_floor_div(lhs: &Expr, rhs: &Expr) -> Self {
-        Self::from(do_unsafe!(mlirAffineFloorDivExprGet(*lhs.get(), *rhs.get())), BinOp::FloorDiv)
+        Self::from(
+            do_unsafe!(mlirAffineFloorDivExprGet(*lhs.get(), *rhs.get())),
+            BinOp::FloorDiv,
+        )
     }
 
     pub fn from(expr: MlirAffineExpr, op: BinOp) -> Self {
@@ -163,7 +178,10 @@ impl Binary {
 
 impl Constant {
     pub fn new(context: &Context, constant: i64) -> Self {
-        Self::from(do_unsafe!(mlirAffineConstantExprGet(*context.get(), constant)))
+        Self::from(do_unsafe!(mlirAffineConstantExprGet(
+            *context.get(),
+            constant
+        )))
     }
 
     pub fn from(expr: MlirAffineExpr) -> Self {
@@ -344,15 +362,25 @@ impl Map {
     }
 
     pub fn new_constant(context: &Context, constant: i64) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapConstantGet(*context.get(), constant)))
+        Self::from(do_unsafe!(mlirAffineMapConstantGet(
+            *context.get(),
+            constant
+        )))
     }
 
     pub fn new_minor_identity(context: &Context, num_dims: isize, num_results: isize) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapMinorIdentityGet(*context.get(), num_dims, num_results)))
+        Self::from(do_unsafe!(mlirAffineMapMinorIdentityGet(
+            *context.get(),
+            num_dims,
+            num_results
+        )))
     }
 
     pub fn new_identity(context: &Context, num_dims: isize) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapMultiDimIdentityGet(*context.get(), num_dims)))
+        Self::from(do_unsafe!(mlirAffineMapMultiDimIdentityGet(
+            *context.get(),
+            num_dims
+        )))
     }
 
     pub fn new_permutation(context: &Context, permutation: &mut [c_uint]) -> Self {
@@ -380,7 +408,11 @@ impl Map {
     }
 
     pub fn new_zero_result(context: &Context, num_dims: isize, num_syms: isize) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapZeroResultGet(*context.get(), num_dims, num_syms)))
+        Self::from(do_unsafe!(mlirAffineMapZeroResultGet(
+            *context.get(),
+            num_dims,
+            num_syms
+        )))
     }
 
     pub fn from_attribute(attr: &Attribute) -> Self {
@@ -415,7 +447,10 @@ impl Map {
         } else if num_results >= self.num_results() {
             Some(*self)
         } else {
-            Some(Self::from(do_unsafe!(mlirAffineMapGetMajorSubMap(self.0, num_results))))
+            Some(Self::from(do_unsafe!(mlirAffineMapGetMajorSubMap(
+                self.0,
+                num_results
+            ))))
         }
     }
 
@@ -425,7 +460,10 @@ impl Map {
         } else if num_results >= self.num_results() {
             Some(*self)
         } else {
-            Some(Self::from(do_unsafe!(mlirAffineMapGetMinorSubMap(self.0, num_results))))
+            Some(Self::from(do_unsafe!(mlirAffineMapGetMinorSubMap(
+                self.0,
+                num_results
+            ))))
         }
     }
 
@@ -444,7 +482,11 @@ impl Map {
     }
 
     pub fn get_sub_map(&self, pos: &mut [isize]) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapGetSubMap(self.0, pos.len() as isize, pos.as_mut_ptr())))
+        Self::from(do_unsafe!(mlirAffineMapGetSubMap(
+            self.0,
+            pos.len() as isize,
+            pos.as_mut_ptr()
+        )))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -492,8 +534,20 @@ impl Map {
         do_unsafe!(mlirAffineMapGetNumSymbols(self.0))
     }
 
-    pub fn replace_expr(&mut self, old: &Expr, new: &Expr, num_dims: isize, num_syms: isize) -> Self {
-        Self::from(do_unsafe!(mlirAffineMapReplace(self.0, *old.get(), *new.get(), num_dims, num_syms)))
+    pub fn replace_expr(
+        &mut self,
+        old: &Expr,
+        new: &Expr,
+        num_dims: isize,
+        num_syms: isize,
+    ) -> Self {
+        Self::from(do_unsafe!(mlirAffineMapReplace(
+            self.0,
+            *old.get(),
+            *new.get(),
+            num_dims,
+            num_syms
+        )))
     }
 }
 

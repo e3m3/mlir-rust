@@ -60,9 +60,14 @@ pub trait IRAttribute {
 }
 
 pub trait IRAttributeNamed: IRAttribute {
-    fn get_name() -> &'static str where Self: Sized;
+    fn get_name() -> &'static str
+    where
+        Self: Sized;
 
-    fn as_named_attribute(&self) -> Named where Self: Sized {
+    fn as_named_attribute(&self) -> Named
+    where
+        Self: Sized,
+    {
         let attr = self.as_attribute();
         let context = attr.get_context();
         let name = StringBacked::from(Self::get_name());

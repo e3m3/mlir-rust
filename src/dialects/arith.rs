@@ -17,20 +17,20 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
+use attributes::IRAttribute;
+use attributes::IRAttributeNamed;
 use attributes::float::Float as FloatAttr;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedFloatOrIndexOrInteger;
 use attributes::specialized::NamedParsed;
 use dialects::IROp;
 use dialects::IROperation;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Context;
@@ -41,8 +41,8 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::integer::Integer as IntegerType;
 use types::IRType;
+use types::integer::Integer as IntegerType;
 
 ///////////////////////////////
 //  Attributes
@@ -62,51 +62,51 @@ pub struct IntegerOverflow(MlirAttribute);
 ///////////////////////////////
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum AtomicRMWKind {
-    AddF        = 0,
-    AddI        = 1,
-    Assign      = 2,
-    MaximumF    = 3,
-    MaxS        = 4,
-    MaxU        = 5,
-    MinimumF    = 6,
-    MinS        = 7,
-    MinU        = 8,
-    MulF        = 9,
-    MulI        = 10,
-    OrI         = 11,
-    AndI        = 12,
-    MaxNumF     = 13,
-    MinNumF     = 14,
+    AddF = 0,
+    AddI = 1,
+    Assign = 2,
+    MaximumF = 3,
+    MaxS = 4,
+    MaxU = 5,
+    MinimumF = 6,
+    MinS = 7,
+    MinU = 8,
+    MulF = 9,
+    MulI = 10,
+    OrI = 11,
+    AndI = 12,
+    MaxNumF = 13,
+    MinNumF = 14,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum CmpFPPredicate {
     AlwaysFalse = 0,
-    OEQ         = 1,
-    OGT         = 2,
-    OGE         = 3,
-    OLT         = 4,
-    OLE         = 5,
-    ONE         = 6,
-    ORD         = 7,
-    UEQ         = 8,
-    UGT         = 9,
-    UGE         = 10,
-    ULT         = 11,
-    ULE         = 12,
-    UNE         = 13,
-    UNO         = 14,
-    AlwaysTrue  = 15,
+    OEQ = 1,
+    OGT = 2,
+    OGE = 3,
+    OLT = 4,
+    OLE = 5,
+    ONE = 6,
+    ORD = 7,
+    UEQ = 8,
+    UGT = 9,
+    UGE = 10,
+    ULT = 11,
+    ULE = 12,
+    UNE = 13,
+    UNO = 14,
+    AlwaysTrue = 15,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum CmpIPredicate {
-    Eq  = 0,
-    Ne  = 1,
+    Eq = 0,
+    Ne = 1,
     Slt = 2,
     Sle = 3,
     Sgt = 4,
@@ -118,38 +118,38 @@ pub enum CmpIPredicate {
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum FastMathFlags {
-    None        = 0,
-    ReAssoc     = 1,
-    NNaN        = 2,
-    NInf        = 4,
-    NSz         = 8,
-    ARcp        = 16,
-    Contract    = 32,
-    AFn         = 64,
-    Fast        = 127,
+    None = 0,
+    ReAssoc = 1,
+    NNaN = 2,
+    NInf = 4,
+    NSz = 8,
+    ARcp = 16,
+    Contract = 32,
+    AFn = 64,
+    Fast = 127,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum IntegerOverflowFlags {
-    None    = 0,
-    NSW     = 1,
-    NUW     = 2,
+    None = 0,
+    NSW = 1,
+    NUW = 2,
 }
 
 #[repr(C)]
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum RoundingMode {
-    ToNearestEven   = 0,
-    Downward        = 1,
-    Upward          = 2,
-    TowardZero      = 3,
-    ToNearestAway   = 4,
+    ToNearestEven = 0,
+    Downward = 1,
+    Upward = 2,
+    TowardZero = 3,
+    ToNearestAway = 4,
 }
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     AddF,
     AddI,
@@ -304,25 +304,25 @@ impl IntegerOverflow {
 impl AtomicRMWKind {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => AtomicRMWKind::AddF,
-            1   => AtomicRMWKind::AddI,
-            2   => AtomicRMWKind::Assign,
-            3   => AtomicRMWKind::MaximumF,
-            4   => AtomicRMWKind::MaxS,
-            5   => AtomicRMWKind::MaxU,
-            6   => AtomicRMWKind::MinimumF,
-            7   => AtomicRMWKind::MinS,
-            8   => AtomicRMWKind::MinU,
-            9   => AtomicRMWKind::MulF,
-            10  => AtomicRMWKind::MulI,
-            11  => AtomicRMWKind::OrI,
-            12  => AtomicRMWKind::AndI,
-            13  => AtomicRMWKind::MaxNumF,
-            14  => AtomicRMWKind::MinNumF,
-            _   => {
+            0 => AtomicRMWKind::AddF,
+            1 => AtomicRMWKind::AddI,
+            2 => AtomicRMWKind::Assign,
+            3 => AtomicRMWKind::MaximumF,
+            4 => AtomicRMWKind::MaxS,
+            5 => AtomicRMWKind::MaxU,
+            6 => AtomicRMWKind::MinimumF,
+            7 => AtomicRMWKind::MinS,
+            8 => AtomicRMWKind::MinU,
+            9 => AtomicRMWKind::MulF,
+            10 => AtomicRMWKind::MulI,
+            11 => AtomicRMWKind::OrI,
+            12 => AtomicRMWKind::AndI,
+            13 => AtomicRMWKind::MaxNumF,
+            14 => AtomicRMWKind::MinNumF,
+            _ => {
                 eprintln!("Invalid value for AtomicRMWKind: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -330,26 +330,26 @@ impl AtomicRMWKind {
 impl CmpFPPredicate {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => CmpFPPredicate::AlwaysFalse,
-            1   => CmpFPPredicate::OEQ,
-            2   => CmpFPPredicate::OGT,
-            3   => CmpFPPredicate::OGE,
-            4   => CmpFPPredicate::OLT,
-            5   => CmpFPPredicate::OLE,
-            6   => CmpFPPredicate::ONE,
-            7   => CmpFPPredicate::ORD,
-            8   => CmpFPPredicate::UEQ,
-            9   => CmpFPPredicate::UGT,
-            10  => CmpFPPredicate::UGE,
-            11  => CmpFPPredicate::ULT,
-            12  => CmpFPPredicate::ULE,
-            13  => CmpFPPredicate::UNE,
-            14  => CmpFPPredicate::UNO,
-            15  => CmpFPPredicate::AlwaysTrue,
-            _   => {
+            0 => CmpFPPredicate::AlwaysFalse,
+            1 => CmpFPPredicate::OEQ,
+            2 => CmpFPPredicate::OGT,
+            3 => CmpFPPredicate::OGE,
+            4 => CmpFPPredicate::OLT,
+            5 => CmpFPPredicate::OLE,
+            6 => CmpFPPredicate::ONE,
+            7 => CmpFPPredicate::ORD,
+            8 => CmpFPPredicate::UEQ,
+            9 => CmpFPPredicate::UGT,
+            10 => CmpFPPredicate::UGE,
+            11 => CmpFPPredicate::ULT,
+            12 => CmpFPPredicate::ULE,
+            13 => CmpFPPredicate::UNE,
+            14 => CmpFPPredicate::UNO,
+            15 => CmpFPPredicate::AlwaysTrue,
+            _ => {
                 eprintln!("Invalid value for CmpFPPredicate: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -357,20 +357,20 @@ impl CmpFPPredicate {
 impl CmpIPredicate {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => CmpIPredicate::Eq,
-            1   => CmpIPredicate::Ne,
-            2   => CmpIPredicate::Slt,
-            3   => CmpIPredicate::Sle,
-            4   => CmpIPredicate::Sgt,
-            5   => CmpIPredicate::Sge,
-            6   => CmpIPredicate::Ult,
-            7   => CmpIPredicate::Ule,
-            8   => CmpIPredicate::Ugt,
-            9   => CmpIPredicate::Uge,
-            _   => {
+            0 => CmpIPredicate::Eq,
+            1 => CmpIPredicate::Ne,
+            2 => CmpIPredicate::Slt,
+            3 => CmpIPredicate::Sle,
+            4 => CmpIPredicate::Sgt,
+            5 => CmpIPredicate::Sge,
+            6 => CmpIPredicate::Ult,
+            7 => CmpIPredicate::Ule,
+            8 => CmpIPredicate::Ugt,
+            9 => CmpIPredicate::Uge,
+            _ => {
                 eprintln!("Invalid value for CmpIPredicate: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -378,33 +378,33 @@ impl CmpIPredicate {
 impl FastMathFlags {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => FastMathFlags::None,
-            1   => FastMathFlags::ReAssoc,
-            2   => FastMathFlags::NNaN,
-            4   => FastMathFlags::NInf,
-            8   => FastMathFlags::NSz,
-            16  => FastMathFlags::ARcp,
-            32  => FastMathFlags::Contract,
-            64  => FastMathFlags::AFn,
+            0 => FastMathFlags::None,
+            1 => FastMathFlags::ReAssoc,
+            2 => FastMathFlags::NNaN,
+            4 => FastMathFlags::NInf,
+            8 => FastMathFlags::NSz,
+            16 => FastMathFlags::ARcp,
+            32 => FastMathFlags::Contract,
+            64 => FastMathFlags::AFn,
             127 => FastMathFlags::Fast,
-            _   => {
+            _ => {
                 eprintln!("Invalid value for FastMathFlags: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
     pub fn get_name(&self) -> &'static str {
         match self {
-            FastMathFlags::None     => "none",
-            FastMathFlags::ReAssoc  => "reassoc",
-            FastMathFlags::NNaN     => "nnan",
-            FastMathFlags::NInf     => "ninf",
-            FastMathFlags::NSz      => "nsz",
-            FastMathFlags::ARcp     => "arcp",
+            FastMathFlags::None => "none",
+            FastMathFlags::ReAssoc => "reassoc",
+            FastMathFlags::NNaN => "nnan",
+            FastMathFlags::NInf => "ninf",
+            FastMathFlags::NSz => "nsz",
+            FastMathFlags::ARcp => "arcp",
             FastMathFlags::Contract => "contract",
-            FastMathFlags::AFn      => "afn",
-            FastMathFlags::Fast     => "fast",
+            FastMathFlags::AFn => "afn",
+            FastMathFlags::Fast => "fast",
         }
     }
 }
@@ -412,21 +412,21 @@ impl FastMathFlags {
 impl IntegerOverflowFlags {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => IntegerOverflowFlags::None,
-            1   => IntegerOverflowFlags::NSW,
-            2   => IntegerOverflowFlags::NUW,
-            _   => {
+            0 => IntegerOverflowFlags::None,
+            1 => IntegerOverflowFlags::NSW,
+            2 => IntegerOverflowFlags::NUW,
+            _ => {
                 eprintln!("Invalid value for IntegerOverflowFlags: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 
     pub fn get_name(&self) -> &'static str {
         match self {
-            IntegerOverflowFlags::None  => "none",
-            IntegerOverflowFlags::NSW   => "nsw",
-            IntegerOverflowFlags::NUW   => "nuw",
+            IntegerOverflowFlags::None => "none",
+            IntegerOverflowFlags::NSW => "nsw",
+            IntegerOverflowFlags::NUW => "nuw",
         }
     }
 }
@@ -434,55 +434,55 @@ impl IntegerOverflowFlags {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::AddF            => "addf",
-            Op::AddI            => "addi",
-            Op::AddUIExtended   => "addui_extended",
-            Op::AndI            => "andi",
-            Op::Bitcast         => "bitcast",
-            Op::CeilDivSI       => "ceildivsi",
-            Op::CeilDivUI       => "ceildivui",
-            Op::CmpF            => "cmpf",
-            Op::CmpI            => "cmpi",
-            Op::Constant        => "constant",
-            Op::DivF            => "divf",
-            Op::DivSI           => "divsi",
-            Op::DivUI           => "divui",
-            Op::ExtF            => "extf",
-            Op::ExtSI           => "extsi",
-            Op::ExtUI           => "extui",
-            Op::FloorDivSI      => "floordivsi",
-            Op::FPToSI          => "fptosi",
-            Op::FPToUI          => "fptoui",
-            Op::IndexCast       => "index_cast",
-            Op::IndexCastUI     => "index_castui",
-            Op::MaximumF        => "maximumf",
-            Op::MaxNumF         => "maxnumf",
-            Op::MaxSI           => "maxsi",
-            Op::MaxUI           => "maxui",
-            Op::MinimumF        => "minimumf",
-            Op::MinNumF         => "minnumf",
-            Op::MinSI           => "minsi",
-            Op::MinUI           => "minui",
-            Op::MulF            => "mulf",
-            Op::MulI            => "muli",
-            Op::MulSIExtended   => "mulsi_extended",
-            Op::MulUIExtended   => "mului_extended",
-            Op::NegF            => "negf",
-            Op::OrI             => "ori",
-            Op::RemF            => "remf",
-            Op::RemSI           => "remsi",
-            Op::RemUI           => "remui",
-            Op::Select          => "select",
-            Op::ShlI            => "shli",
-            Op::ShrSI           => "shrsi",
-            Op::ShrUI           => "shrui",
-            Op::SIToFP          => "sitofp",
-            Op::SubF            => "subf",
-            Op::SubI            => "subi",
-            Op::TruncF          => "truncf",
-            Op::TruncI          => "trunci",
-            Op::UIToFP          => "uitofp",
-            Op::XorI            => "xori",
+            Op::AddF => "addf",
+            Op::AddI => "addi",
+            Op::AddUIExtended => "addui_extended",
+            Op::AndI => "andi",
+            Op::Bitcast => "bitcast",
+            Op::CeilDivSI => "ceildivsi",
+            Op::CeilDivUI => "ceildivui",
+            Op::CmpF => "cmpf",
+            Op::CmpI => "cmpi",
+            Op::Constant => "constant",
+            Op::DivF => "divf",
+            Op::DivSI => "divsi",
+            Op::DivUI => "divui",
+            Op::ExtF => "extf",
+            Op::ExtSI => "extsi",
+            Op::ExtUI => "extui",
+            Op::FloorDivSI => "floordivsi",
+            Op::FPToSI => "fptosi",
+            Op::FPToUI => "fptoui",
+            Op::IndexCast => "index_cast",
+            Op::IndexCastUI => "index_castui",
+            Op::MaximumF => "maximumf",
+            Op::MaxNumF => "maxnumf",
+            Op::MaxSI => "maxsi",
+            Op::MaxUI => "maxui",
+            Op::MinimumF => "minimumf",
+            Op::MinNumF => "minnumf",
+            Op::MinSI => "minsi",
+            Op::MinUI => "minui",
+            Op::MulF => "mulf",
+            Op::MulI => "muli",
+            Op::MulSIExtended => "mulsi_extended",
+            Op::MulUIExtended => "mului_extended",
+            Op::NegF => "negf",
+            Op::OrI => "ori",
+            Op::RemF => "remf",
+            Op::RemSI => "remsi",
+            Op::RemUI => "remui",
+            Op::Select => "select",
+            Op::ShlI => "shli",
+            Op::ShrSI => "shrsi",
+            Op::ShrUI => "shrui",
+            Op::SIToFP => "sitofp",
+            Op::SubF => "subf",
+            Op::SubI => "subi",
+            Op::TruncF => "truncf",
+            Op::TruncI => "trunci",
+            Op::UIToFP => "uitofp",
+            Op::XorI => "xori",
         }
     }
 }
@@ -490,15 +490,15 @@ impl Op {
 impl RoundingMode {
     pub fn from_i64(k: i64) -> Self {
         match k {
-            0   => RoundingMode::ToNearestEven,
-            1   => RoundingMode::Downward,
-            2   => RoundingMode::Upward,
-            3   => RoundingMode::TowardZero,
-            4   => RoundingMode::ToNearestAway,
-            _   => {
+            0 => RoundingMode::ToNearestEven,
+            1 => RoundingMode::Downward,
+            2 => RoundingMode::Upward,
+            3 => RoundingMode::TowardZero,
+            4 => RoundingMode::ToNearestAway,
+            _ => {
                 eprintln!("Invalid value for RoundingMode: {}", k);
                 exit(ExitCode::DialectError);
-            },
+            }
         }
     }
 }
@@ -529,7 +529,7 @@ impl AddF {
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
-        Self::from(*op_state.create_operation().get()) 
+        Self::from(*op_state.create_operation().get())
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -542,7 +542,9 @@ impl AddF {
 
     pub fn get_flags(&self) -> FastMath {
         let attr_name = StringBacked::from(FastMath::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
 
@@ -564,7 +566,13 @@ impl AddF {
 }
 
 impl AddI {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: IntegerOverflowFlags,
+        loc: &Location,
+    ) -> Self {
         if !t.is_integer() {
             eprintln!("Expected integer types for AddI operands and result");
             exit(ExitCode::DialectError);
@@ -598,7 +606,9 @@ impl AddI {
 
     pub fn get_flags(&self) -> IntegerOverflow {
         let attr_name = StringBacked::from(IntegerOverflow::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
 
@@ -727,7 +737,9 @@ impl Constant {
 
     pub fn get_value(&self) -> ArithValue {
         let attr_name = StringBacked::from(ArithValue::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         ArithValue::from(*attr.get())
     }
 
@@ -779,7 +791,9 @@ impl DivF {
 
     pub fn get_flags(&self) -> FastMath {
         let attr_name = StringBacked::from(FastMath::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
 
@@ -918,7 +932,7 @@ impl MulF {
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
-        Self::from(*op_state.create_operation().get()) 
+        Self::from(*op_state.create_operation().get())
     }
 
     pub fn from(op: MlirOperation) -> Self {
@@ -931,7 +945,9 @@ impl MulF {
 
     pub fn get_flags(&self) -> FastMath {
         let attr_name = StringBacked::from(FastMath::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
 
@@ -953,7 +969,13 @@ impl MulF {
 }
 
 impl MulI {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: IntegerOverflowFlags,
+        loc: &Location,
+    ) -> Self {
         if !t.is_integer() {
             eprintln!("Expected integer types for MulI operands and result");
             exit(ExitCode::DialectError);
@@ -987,7 +1009,9 @@ impl MulI {
 
     pub fn get_flags(&self) -> IntegerOverflow {
         let attr_name = StringBacked::from(IntegerOverflow::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
 
@@ -1147,7 +1171,9 @@ impl SubF {
 
     pub fn get_flags(&self) -> FastMath {
         let attr_name = StringBacked::from(FastMath::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         FastMath::from(*attr.get())
     }
 
@@ -1169,7 +1195,13 @@ impl SubF {
 }
 
 impl SubI {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: IntegerOverflowFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: IntegerOverflowFlags,
+        loc: &Location,
+    ) -> Self {
         if !t.is_integer() {
             eprintln!("Expected integer types for SubI operands and result");
             exit(ExitCode::DialectError);
@@ -1203,7 +1235,9 @@ impl SubI {
 
     pub fn get_flags(&self) -> IntegerOverflow {
         let attr_name = StringBacked::from(IntegerOverflow::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         IntegerOverflow::from(*attr.get())
     }
 
@@ -1238,9 +1272,7 @@ impl IROperation for AddF {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1288,9 +1320,7 @@ impl IROperation for AddI {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1339,9 +1369,7 @@ impl IROperation for AddUIExtended {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1410,9 +1438,7 @@ impl IROperation for Constant {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1438,10 +1464,7 @@ impl IROperation for Constant {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::ConstantLike,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
     }
 }
 
@@ -1455,9 +1478,7 @@ impl IROperation for DivF {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1504,9 +1525,7 @@ impl IROperation for DivSI {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1552,9 +1571,7 @@ impl IROperation for DivUI {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1654,9 +1671,7 @@ impl IROperation for MulF {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1694,7 +1709,6 @@ impl IROperation for MulF {
     }
 }
 
-
 impl IROperation for MulI {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1705,9 +1719,7 @@ impl IROperation for MulI {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1757,9 +1769,7 @@ impl IROperation for MulSIExtended {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1805,9 +1815,7 @@ impl IROperation for MulUIExtended {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1853,9 +1861,7 @@ impl IROperation for SubF {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1902,9 +1908,7 @@ impl IROperation for SubI {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -1949,21 +1953,21 @@ impl IROperation for SubI {
 impl fmt::Display for AtomicRMWKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            AtomicRMWKind::AddF     => "addf",
-            AtomicRMWKind::AddI     => "addi",
-            AtomicRMWKind::Assign   => "assign",
+            AtomicRMWKind::AddF => "addf",
+            AtomicRMWKind::AddI => "addi",
+            AtomicRMWKind::Assign => "assign",
             AtomicRMWKind::MaximumF => "maximumf",
-            AtomicRMWKind::MaxS     => "maxs",
-            AtomicRMWKind::MaxU     => "maxu",
+            AtomicRMWKind::MaxS => "maxs",
+            AtomicRMWKind::MaxU => "maxu",
             AtomicRMWKind::MinimumF => "minumumf",
-            AtomicRMWKind::MinS     => "mins",
-            AtomicRMWKind::MinU     => "minu",
-            AtomicRMWKind::MulF     => "mulf",
-            AtomicRMWKind::MulI     => "muli",
-            AtomicRMWKind::OrI      => "ori",
-            AtomicRMWKind::AndI     => "andi",
-            AtomicRMWKind::MaxNumF  => "maxnumf",
-            AtomicRMWKind::MinNumF  => "minnumf",
+            AtomicRMWKind::MinS => "mins",
+            AtomicRMWKind::MinU => "minu",
+            AtomicRMWKind::MulF => "mulf",
+            AtomicRMWKind::MulI => "muli",
+            AtomicRMWKind::OrI => "ori",
+            AtomicRMWKind::AndI => "andi",
+            AtomicRMWKind::MaxNumF => "maxnumf",
+            AtomicRMWKind::MinNumF => "minnumf",
         })
     }
 }
@@ -1972,21 +1976,21 @@ impl fmt::Display for CmpFPPredicate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
             CmpFPPredicate::AlwaysFalse => "false",
-            CmpFPPredicate::OEQ         => "oeq",
-            CmpFPPredicate::OGT         => "ogt",
-            CmpFPPredicate::OGE         => "oge",
-            CmpFPPredicate::OLT         => "olt",
-            CmpFPPredicate::OLE         => "ole",
-            CmpFPPredicate::ONE         => "one",
-            CmpFPPredicate::ORD         => "ord",
-            CmpFPPredicate::UEQ         => "ueq",
-            CmpFPPredicate::UGT         => "ugt",
-            CmpFPPredicate::UGE         => "uge",
-            CmpFPPredicate::ULT         => "ult",
-            CmpFPPredicate::ULE         => "ule",
-            CmpFPPredicate::UNE         => "une",
-            CmpFPPredicate::UNO         => "uno",
-            CmpFPPredicate::AlwaysTrue  => "true",
+            CmpFPPredicate::OEQ => "oeq",
+            CmpFPPredicate::OGT => "ogt",
+            CmpFPPredicate::OGE => "oge",
+            CmpFPPredicate::OLT => "olt",
+            CmpFPPredicate::OLE => "ole",
+            CmpFPPredicate::ONE => "one",
+            CmpFPPredicate::ORD => "ord",
+            CmpFPPredicate::UEQ => "ueq",
+            CmpFPPredicate::UGT => "ugt",
+            CmpFPPredicate::UGE => "uge",
+            CmpFPPredicate::ULT => "ult",
+            CmpFPPredicate::ULE => "ule",
+            CmpFPPredicate::UNE => "une",
+            CmpFPPredicate::UNO => "uno",
+            CmpFPPredicate::AlwaysTrue => "true",
         })
     }
 }
@@ -1994,16 +1998,16 @@ impl fmt::Display for CmpFPPredicate {
 impl fmt::Display for CmpIPredicate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            CmpIPredicate::Eq   => "eq",
-            CmpIPredicate::Ne   => "ne",
-            CmpIPredicate::Slt  => "slt",
-            CmpIPredicate::Sle  => "sle",
-            CmpIPredicate::Sgt  => "sgt",
-            CmpIPredicate::Sge  => "sge",
-            CmpIPredicate::Ult  => "ult",
-            CmpIPredicate::Ule  => "ule",
-            CmpIPredicate::Ugt  => "ugt",
-            CmpIPredicate::Uge  => "uge",
+            CmpIPredicate::Eq => "eq",
+            CmpIPredicate::Ne => "ne",
+            CmpIPredicate::Slt => "slt",
+            CmpIPredicate::Sle => "sle",
+            CmpIPredicate::Sgt => "sgt",
+            CmpIPredicate::Sge => "sge",
+            CmpIPredicate::Ult => "ult",
+            CmpIPredicate::Ule => "ule",
+            CmpIPredicate::Ugt => "ugt",
+            CmpIPredicate::Uge => "uge",
         })
     }
 }
@@ -2023,55 +2027,55 @@ impl fmt::Display for IntegerOverflowFlags {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::AddF            => "AddFOp",
-            Op::AddI            => "AddIOp",
-            Op::AddUIExtended   => "AddUIExtendedOp",
-            Op::AndI            => "AndIOp",
-            Op::Bitcast         => "BitcastOp",
-            Op::CeilDivSI       => "CeilDivSIOp",
-            Op::CeilDivUI       => "CeilDivUIOp",
-            Op::CmpF            => "CmpFOp",
-            Op::CmpI            => "CmpIOp",
-            Op::Constant        => "ConstantOp",
-            Op::DivF            => "DivFOp",
-            Op::DivSI           => "DivSIOp",
-            Op::DivUI           => "DivUIOp",
-            Op::ExtF            => "ExtFOp",
-            Op::ExtSI           => "ExtSIOp",
-            Op::ExtUI           => "ExtUIOp",
-            Op::FloorDivSI      => "FloorDivSIOp",
-            Op::FPToSI          => "FPToSIOp",
-            Op::FPToUI          => "FPToUIOp",
-            Op::IndexCast       => "IndexCastOp",
-            Op::IndexCastUI     => "IndexCastUIOp",
-            Op::MaximumF        => "MaximumFOp",
-            Op::MaxNumF         => "MaxNumFOp",
-            Op::MaxSI           => "MaxSIOp",
-            Op::MaxUI           => "MaxUIOp",
-            Op::MinimumF        => "MinimumFOp",
-            Op::MinNumF         => "MinNumFOp",
-            Op::MinSI           => "MinSIOp",
-            Op::MinUI           => "MinUIOp",
-            Op::MulF            => "MulFOp",
-            Op::MulI            => "MulIOp",
-            Op::MulSIExtended   => "MulSIExtendedOp",
-            Op::MulUIExtended   => "MulUIExtendedOp",
-            Op::NegF            => "NegFOp",
-            Op::OrI             => "OrIOp",
-            Op::RemF            => "RemFOp",
-            Op::RemSI           => "RemSIOp",
-            Op::RemUI           => "RemUIOp",
-            Op::Select          => "SelectOp",
-            Op::ShlI            => "ShlIOp",
-            Op::ShrSI           => "ShrSIOp",
-            Op::ShrUI           => "ShrUIOp",
-            Op::SIToFP          => "SIToFPOp",
-            Op::SubF            => "SubFOp",
-            Op::SubI            => "SubIOp",
-            Op::TruncF          => "TruncFOp",
-            Op::TruncI          => "TruncIOp",
-            Op::UIToFP          => "UIToFPOp",
-            Op::XorI            => "XorIOp",
+            Op::AddF => "AddFOp",
+            Op::AddI => "AddIOp",
+            Op::AddUIExtended => "AddUIExtendedOp",
+            Op::AndI => "AndIOp",
+            Op::Bitcast => "BitcastOp",
+            Op::CeilDivSI => "CeilDivSIOp",
+            Op::CeilDivUI => "CeilDivUIOp",
+            Op::CmpF => "CmpFOp",
+            Op::CmpI => "CmpIOp",
+            Op::Constant => "ConstantOp",
+            Op::DivF => "DivFOp",
+            Op::DivSI => "DivSIOp",
+            Op::DivUI => "DivUIOp",
+            Op::ExtF => "ExtFOp",
+            Op::ExtSI => "ExtSIOp",
+            Op::ExtUI => "ExtUIOp",
+            Op::FloorDivSI => "FloorDivSIOp",
+            Op::FPToSI => "FPToSIOp",
+            Op::FPToUI => "FPToUIOp",
+            Op::IndexCast => "IndexCastOp",
+            Op::IndexCastUI => "IndexCastUIOp",
+            Op::MaximumF => "MaximumFOp",
+            Op::MaxNumF => "MaxNumFOp",
+            Op::MaxSI => "MaxSIOp",
+            Op::MaxUI => "MaxUIOp",
+            Op::MinimumF => "MinimumFOp",
+            Op::MinNumF => "MinNumFOp",
+            Op::MinSI => "MinSIOp",
+            Op::MinUI => "MinUIOp",
+            Op::MulF => "MulFOp",
+            Op::MulI => "MulIOp",
+            Op::MulSIExtended => "MulSIExtendedOp",
+            Op::MulUIExtended => "MulUIExtendedOp",
+            Op::NegF => "NegFOp",
+            Op::OrI => "OrIOp",
+            Op::RemF => "RemFOp",
+            Op::RemSI => "RemSIOp",
+            Op::RemUI => "RemUIOp",
+            Op::Select => "SelectOp",
+            Op::ShlI => "ShlIOp",
+            Op::ShrSI => "ShrSIOp",
+            Op::ShrUI => "ShrUIOp",
+            Op::SIToFP => "SIToFPOp",
+            Op::SubF => "SubFOp",
+            Op::SubI => "SubIOp",
+            Op::TruncF => "TruncFOp",
+            Op::TruncI => "TruncIOp",
+            Op::UIToFP => "UIToFPOp",
+            Op::XorI => "XorIOp",
         })
     }
 }
@@ -2080,9 +2084,9 @@ impl fmt::Display for RoundingMode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
             RoundingMode::ToNearestEven => "to_nearest_even",
-            RoundingMode::Downward      => "downward",
-            RoundingMode::Upward        => "upward",
-            RoundingMode::TowardZero    => "toward_zero",
+            RoundingMode::Downward => "downward",
+            RoundingMode::Upward => "upward",
+            RoundingMode::TowardZero => "toward_zero",
             RoundingMode::ToNearestAway => "to_nearest_away",
         })
     }

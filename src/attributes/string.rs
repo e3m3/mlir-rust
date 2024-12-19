@@ -3,11 +3,11 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::mlirStringAttrGet;
-use mlir_sys::mlirStringAttrGetValue;
-use mlir_sys::mlirStringAttrGetTypeID;
-use mlir_sys::mlirStringAttrTypedGet;
 use mlir_sys::MlirAttribute;
+use mlir_sys::mlirStringAttrGet;
+use mlir_sys::mlirStringAttrGetTypeID;
+use mlir_sys::mlirStringAttrGetValue;
+use mlir_sys::mlirStringAttrTypedGet;
 
 use std::fmt;
 
@@ -17,8 +17,8 @@ use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::StringRef;

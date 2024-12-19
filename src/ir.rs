@@ -3,6 +3,29 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAffineExpr;
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirBlock;
+use mlir_sys::MlirContext;
+use mlir_sys::MlirDialect;
+use mlir_sys::MlirDialectRegistry;
+use mlir_sys::MlirIdentifier;
+use mlir_sys::MlirIntegerSet;
+use mlir_sys::MlirLocation;
+use mlir_sys::MlirLogicalResult;
+use mlir_sys::MlirModule;
+use mlir_sys::MlirNamedAttribute;
+use mlir_sys::MlirOpOperand;
+use mlir_sys::MlirOperation;
+use mlir_sys::MlirOperationState;
+use mlir_sys::MlirPass;
+use mlir_sys::MlirRegion;
+use mlir_sys::MlirStringCallback;
+use mlir_sys::MlirStringRef;
+use mlir_sys::MlirSymbolTable;
+use mlir_sys::MlirType;
+use mlir_sys::MlirTypeID;
+use mlir_sys::MlirValue;
 use mlir_sys::mlirAttributeDump;
 use mlir_sys::mlirAttributeEqual;
 use mlir_sys::mlirAttributeGetContext;
@@ -14,14 +37,14 @@ use mlir_sys::mlirAttributeIsAAffineMap;
 use mlir_sys::mlirAttributeIsAArray;
 use mlir_sys::mlirAttributeIsABool;
 use mlir_sys::mlirAttributeIsADenseBoolArray;
+use mlir_sys::mlirAttributeIsADenseElements;
 use mlir_sys::mlirAttributeIsADenseF32Array;
 use mlir_sys::mlirAttributeIsADenseF64Array;
+use mlir_sys::mlirAttributeIsADenseFPElements;
 use mlir_sys::mlirAttributeIsADenseI8Array;
 use mlir_sys::mlirAttributeIsADenseI16Array;
 use mlir_sys::mlirAttributeIsADenseI32Array;
 use mlir_sys::mlirAttributeIsADenseI64Array;
-use mlir_sys::mlirAttributeIsADenseElements;
-use mlir_sys::mlirAttributeIsADenseFPElements;
 use mlir_sys::mlirAttributeIsADenseIntElements;
 use mlir_sys::mlirAttributeIsADenseResourceElements;
 use mlir_sys::mlirAttributeIsADictionary;
@@ -41,8 +64,8 @@ use mlir_sys::mlirAttributeIsAUnit;
 use mlir_sys::mlirAttributeParseGet;
 use mlir_sys::mlirBlockAddArgument;
 use mlir_sys::mlirBlockAppendOwnedOperation;
-use mlir_sys::mlirBlockArgumentGetOwner;
 use mlir_sys::mlirBlockArgumentGetArgNumber;
+use mlir_sys::mlirBlockArgumentGetOwner;
 use mlir_sys::mlirBlockArgumentSetType;
 use mlir_sys::mlirBlockCreate;
 use mlir_sys::mlirBlockDestroy;
@@ -96,8 +119,8 @@ use mlir_sys::mlirIdentifierGet;
 use mlir_sys::mlirIdentifierGetContext;
 use mlir_sys::mlirIdentifierStr;
 use mlir_sys::mlirIntegerSetDump;
-use mlir_sys::mlirIntegerSetEqual;
 use mlir_sys::mlirIntegerSetEmptyGet;
+use mlir_sys::mlirIntegerSetEqual;
 use mlir_sys::mlirIntegerSetGet;
 use mlir_sys::mlirIntegerSetGetContext;
 use mlir_sys::mlirLocationCallSiteGet;
@@ -113,6 +136,11 @@ use mlir_sys::mlirModuleDestroy;
 use mlir_sys::mlirModuleFromOperation;
 use mlir_sys::mlirModuleGetBody;
 use mlir_sys::mlirModuleGetOperation;
+use mlir_sys::mlirOpOperandGetNextUse;
+use mlir_sys::mlirOpOperandGetOperandNumber;
+use mlir_sys::mlirOpOperandGetValue;
+use mlir_sys::mlirOpOperandIsNull;
+use mlir_sys::mlirOpResultGetOwner;
 use mlir_sys::mlirOperationClone;
 use mlir_sys::mlirOperationCreate;
 use mlir_sys::mlirOperationCreateParse;
@@ -149,7 +177,6 @@ use mlir_sys::mlirOperationSetInherentAttributeByName;
 use mlir_sys::mlirOperationSetOperand;
 use mlir_sys::mlirOperationSetOperands;
 use mlir_sys::mlirOperationSetSuccessor;
-use mlir_sys::mlirOperationVerify;
 use mlir_sys::mlirOperationStateAddAttributes;
 use mlir_sys::mlirOperationStateAddOperands;
 use mlir_sys::mlirOperationStateAddOwnedRegions;
@@ -157,11 +184,7 @@ use mlir_sys::mlirOperationStateAddResults;
 use mlir_sys::mlirOperationStateAddSuccessors;
 use mlir_sys::mlirOperationStateEnableResultTypeInference;
 use mlir_sys::mlirOperationStateGet;
-use mlir_sys::mlirOpOperandGetNextUse;
-use mlir_sys::mlirOpOperandGetOperandNumber;
-use mlir_sys::mlirOpOperandGetValue;
-use mlir_sys::mlirOpOperandIsNull;
-use mlir_sys::mlirOpResultGetOwner;
+use mlir_sys::mlirOperationVerify;
 use mlir_sys::mlirRegionAppendOwnedBlock;
 use mlir_sys::mlirRegionCreate;
 use mlir_sys::mlirRegionDestroy;
@@ -188,6 +211,9 @@ use mlir_sys::mlirTypeEqual;
 use mlir_sys::mlirTypeGetContext;
 use mlir_sys::mlirTypeGetDialect;
 use mlir_sys::mlirTypeGetTypeID;
+use mlir_sys::mlirTypeIDCreate;
+use mlir_sys::mlirTypeIDEqual;
+use mlir_sys::mlirTypeIDHashValue;
 use mlir_sys::mlirTypeIsAComplex;
 use mlir_sys::mlirTypeIsAFloat;
 use mlir_sys::mlirTypeIsAFunction;
@@ -200,13 +226,10 @@ use mlir_sys::mlirTypeIsARankedTensor;
 use mlir_sys::mlirTypeIsAShaped;
 use mlir_sys::mlirTypeIsATensor;
 use mlir_sys::mlirTypeIsATuple;
-use mlir_sys::mlirTypeIsAVector;
 use mlir_sys::mlirTypeIsAUnrankedMemRef;
 use mlir_sys::mlirTypeIsAUnrankedTensor;
+use mlir_sys::mlirTypeIsAVector;
 use mlir_sys::mlirTypeParseGet;
-use mlir_sys::mlirTypeIDCreate;
-use mlir_sys::mlirTypeIDEqual;
-use mlir_sys::mlirTypeIDHashValue;
 use mlir_sys::mlirValueDump;
 use mlir_sys::mlirValueEqual;
 use mlir_sys::mlirValueGetFirstUse;
@@ -215,35 +238,12 @@ use mlir_sys::mlirValueIsABlockArgument;
 use mlir_sys::mlirValueIsAOpResult;
 use mlir_sys::mlirValueReplaceAllUsesOfWith;
 use mlir_sys::mlirValueSetType;
-use mlir_sys::MlirAffineExpr;
-use mlir_sys::MlirAttribute;
-use mlir_sys::MlirBlock;
-use mlir_sys::MlirContext;
-use mlir_sys::MlirDialect;
-use mlir_sys::MlirDialectRegistry;
-use mlir_sys::MlirIdentifier;
-use mlir_sys::MlirIntegerSet;
-use mlir_sys::MlirLocation;
-use mlir_sys::MlirLogicalResult;
-use mlir_sys::MlirModule;
-use mlir_sys::MlirNamedAttribute;
-use mlir_sys::MlirPass;
-use mlir_sys::MlirOperation;
-use mlir_sys::MlirOperationState;
-use mlir_sys::MlirOpOperand;
-use mlir_sys::MlirRegion;
-use mlir_sys::MlirStringCallback;
-use mlir_sys::MlirStringRef;
-use mlir_sys::MlirSymbolTable;
-use mlir_sys::MlirType;
-use mlir_sys::MlirTypeID;
-use mlir_sys::MlirValue;
 
 use std::cmp;
+use std::ffi::CString;
 use std::ffi::c_char;
 use std::ffi::c_uint;
 use std::ffi::c_void;
-use std::ffi::CString;
 use std::fmt;
 use std::mem;
 use std::ptr;
@@ -258,8 +258,8 @@ use crate::types;
 use attributes::IRAttribute;
 use attributes::named::Named;
 use dialects::affine;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use types::GetWidth;
 use types::IRType;
 use types::IsPromotableTo;
@@ -576,7 +576,11 @@ impl Block {
         assert!(num_args == locs.len() as isize);
         let args_raw: Vec<MlirType> = args.iter().map(|a| *a.get()).collect();
         let locs_raw: Vec<MlirLocation> = locs.iter().map(|m| *m.get()).collect();
-        Self::from(do_unsafe!(mlirBlockCreate(num_args, args_raw.as_ptr(), locs_raw.as_ptr())))
+        Self::from(do_unsafe!(mlirBlockCreate(
+            num_args,
+            args_raw.as_ptr(),
+            locs_raw.as_ptr()
+        )))
     }
 
     pub fn new_empty() -> Self {
@@ -590,11 +594,18 @@ impl Block {
     }
 
     pub fn add_arg(&mut self, t: &Type, loc: &Location) -> Value {
-        Value::from(do_unsafe!(mlirBlockAddArgument(*self.get_mut(), *t.get(), *loc.get())))
+        Value::from(do_unsafe!(mlirBlockAddArgument(
+            *self.get_mut(),
+            *t.get(),
+            *loc.get()
+        )))
     }
 
     pub fn append_operation(&mut self, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockAppendOwnedOperation(*self.get_mut(), *op.get_mut()));
+        do_unsafe!(mlirBlockAppendOwnedOperation(
+            *self.get_mut(),
+            *op.get_mut()
+        ));
         *self.num_operations_mut() += 1;
     }
 
@@ -644,17 +655,29 @@ impl Block {
     }
 
     pub fn insert_operation(&mut self, op: &mut Operation, i: usize) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperation(*self.get_mut(), i as isize, *op.get_mut()));
+        do_unsafe!(mlirBlockInsertOwnedOperation(
+            *self.get_mut(),
+            i as isize,
+            *op.get_mut()
+        ));
         *self.num_operations_mut() += 1;
     }
 
     pub fn insert_operation_after(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationAfter(*self.get_mut(), *anchor.get(), *op.get_mut()));
+        do_unsafe!(mlirBlockInsertOwnedOperationAfter(
+            *self.get_mut(),
+            *anchor.get(),
+            *op.get_mut()
+        ));
         *self.num_operations_mut() += 1;
     }
 
     pub fn insert_operation_before(&mut self, anchor: &Operation, op: &mut Operation) -> () {
-        do_unsafe!(mlirBlockInsertOwnedOperationBefore(*self.get_mut(), *anchor.get(), *op.get_mut()));
+        do_unsafe!(mlirBlockInsertOwnedOperationBefore(
+            *self.get_mut(),
+            *anchor.get(),
+            *op.get_mut()
+        ));
         *self.num_operations_mut() += 1;
     }
 
@@ -675,7 +698,7 @@ impl Block {
     }
 
     fn __num_operations(&self) -> usize {
-        self.iter().fold(0, |acc,_op| acc + 1) as usize
+        self.iter().fold(0, |acc, _op| acc + 1) as usize
     }
 
     pub fn num_operations(&self) -> usize {
@@ -698,7 +721,7 @@ impl Iterator for BlockIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
-            None            => {
+            None => {
                 if self.0.is_null() {
                     return None;
                 }
@@ -709,16 +732,16 @@ impl Iterator for BlockIter<'_> {
                     self.1 = Some(op);
                     self.1.clone()
                 }
-            },
+            }
             Some(ref mut o) => match o.next() {
-                None        => {
+                None => {
                     self.1 = None;
                     None
-                },
-                Some(o_)    => {
+                }
+                Some(o_) => {
                     self.1 = Some(Operation::from(o_));
                     self.1.clone()
-                },
+                }
             },
         }
     }
@@ -738,11 +761,17 @@ impl Context {
     }
 
     pub fn from_registry(registry: &Registry) -> Self {
-        Self::from(do_unsafe!(mlirContextCreateWithRegistry(*registry.get(), false)))
+        Self::from(do_unsafe!(mlirContextCreateWithRegistry(
+            *registry.get(),
+            false
+        )))
     }
 
     pub fn append_regsitry(&mut self, registry: &Registry) -> () {
-        do_unsafe!(mlirContextAppendDialectRegistry(*self.get_mut(), *registry.get()))
+        do_unsafe!(mlirContextAppendDialectRegistry(
+            *self.get_mut(),
+            *registry.get()
+        ))
     }
 
     pub fn get(&self) -> &MlirContext {
@@ -848,7 +877,7 @@ impl Context {
         let string = StringBacked::from_str(name).unwrap();
         let dialect = do_unsafe!(mlirContextGetOrLoadDialect(*self.get(), *string.get()));
         if dialect.ptr.is_null() {
-            None 
+            None
         } else {
             Some(Dialect::from(dialect))
         }
@@ -863,7 +892,10 @@ impl Context {
     }
 
     pub fn set_allow_unregistered_dialects(&mut self, allow: bool) -> () {
-        do_unsafe!(mlirContextSetAllowUnregisteredDialects(*self.get_mut(), allow))
+        do_unsafe!(mlirContextSetAllowUnregisteredDialects(
+            *self.get_mut(),
+            allow
+        ))
     }
 
     pub fn set_enable_multithreading(&mut self, allow: bool) -> () {
@@ -988,7 +1020,10 @@ impl IntegerSet {
         let c_len = constraints.len();
         let f_len = flags.len();
         if c_len != f_len {
-            eprintln!("Mismatched constraints ('{}') and flags ('{}') sizes", c_len, f_len);
+            eprintln!(
+                "Mismatched constraints ('{}') and flags ('{}') sizes",
+                c_len, f_len
+            );
             exit(ExitCode::IRError);
         }
         let c: Vec<MlirAffineExpr> = constraints.iter().map(|e| *e.get()).collect();
@@ -1003,7 +1038,11 @@ impl IntegerSet {
     }
 
     pub fn new_empty(context: &Context, num_dims: isize, num_syms: isize) -> Self {
-        Self::from(do_unsafe!(mlirIntegerSetEmptyGet(*context.get(), num_dims, num_syms)))
+        Self::from(do_unsafe!(mlirIntegerSetEmptyGet(
+            *context.get(),
+            num_dims,
+            num_syms
+        )))
     }
 
     pub fn from(set: MlirIntegerSet) -> Self {
@@ -1056,7 +1095,10 @@ impl Location {
     }
 
     pub fn from_call_site(callee: &Location, caller: &Location) -> Self {
-        Self::from(do_unsafe!(mlirLocationCallSiteGet(*callee.get(), *caller.get())))
+        Self::from(do_unsafe!(mlirLocationCallSiteGet(
+            *callee.get(),
+            *caller.get()
+        )))
     }
 
     pub fn get(&self) -> &MlirLocation {
@@ -1128,7 +1170,10 @@ impl Module {
     }
 
     pub fn from_parse(context: &Context, string: &StringRef) -> Self {
-        Self::from(do_unsafe!(mlirModuleCreateParse(*context.get(), *string.get())))
+        Self::from(do_unsafe!(mlirModuleCreateParse(
+            *context.get(),
+            *string.get()
+        )))
     }
 
     pub fn from_operation(op: &Operation) -> Self {
@@ -1216,7 +1261,11 @@ impl Operation {
     }
 
     pub fn from_parse(context: &Context, op: &StringRef, src_name: &StringRef) -> Self {
-        Self::from(do_unsafe!(mlirOperationCreateParse(*context.get(), *op.get(), *src_name.get())))
+        Self::from(do_unsafe!(mlirOperationCreateParse(
+            *context.get(),
+            *op.get(),
+            *src_name.get()
+        )))
     }
 
     pub fn dump(&self) -> () {
@@ -1228,15 +1277,23 @@ impl Operation {
     }
 
     pub fn get_attribute_discardable(&self, name: &StringRef) -> Attribute {
-        Attribute::from(do_unsafe!(mlirOperationGetDiscardableAttributeByName(self.0, *name.get())))
+        Attribute::from(do_unsafe!(mlirOperationGetDiscardableAttributeByName(
+            self.0,
+            *name.get()
+        )))
     }
 
     pub fn get_attribute_discardable_at(&self, i: usize) -> Named {
-        Named::from(do_unsafe!(mlirOperationGetDiscardableAttribute(self.0, i as isize)))
+        Named::from(do_unsafe!(mlirOperationGetDiscardableAttribute(
+            self.0, i as isize
+        )))
     }
 
     pub fn get_attribute_inherent(&self, name: &StringRef) -> Attribute {
-        Attribute::from(do_unsafe!(mlirOperationGetInherentAttributeByName(self.0, *name.get())))
+        Attribute::from(do_unsafe!(mlirOperationGetInherentAttributeByName(
+            self.0,
+            *name.get()
+        )))
     }
 
     pub fn get_block(&self) -> Block {
@@ -1264,7 +1321,7 @@ impl Operation {
     }
 
     pub fn get_parent(&self) -> Operation {
-        Operation::from(do_unsafe!(mlirOperationGetParentOperation(self.0)) )
+        Operation::from(do_unsafe!(mlirOperationGetParentOperation(self.0)))
     }
 
     pub fn get_region(&self, i: isize) -> Region {
@@ -1339,7 +1396,10 @@ impl Operation {
     }
 
     pub fn remove_attribute_discardable(&mut self, name: &StringRef) -> bool {
-        do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(*self.get_mut(), *name.get()))
+        do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(
+            *self.get_mut(),
+            *name.get()
+        ))
     }
 
     pub fn remove_from_parent(&mut self) -> () {
@@ -1367,7 +1427,11 @@ impl Operation {
     }
 
     pub fn set_attribute_inherent(&mut self, name: &StringRef, attr: &Attribute) -> () {
-        do_unsafe!(mlirOperationSetInherentAttributeByName(*self.get_mut(), *name.get(), *attr.get()))
+        do_unsafe!(mlirOperationSetInherentAttributeByName(
+            *self.get_mut(),
+            *name.get(),
+            *attr.get()
+        ))
     }
 
     pub fn set_operand(&mut self, i: isize, value: &Value) -> () {
@@ -1376,11 +1440,19 @@ impl Operation {
 
     pub fn set_operands(&mut self, values: &[Value]) -> () {
         let v: Vec<MlirValue> = values.iter().map(|v| *v.get()).collect();
-        do_unsafe!(mlirOperationSetOperands(*self.get_mut(), values.len() as isize, v.as_ptr()))
+        do_unsafe!(mlirOperationSetOperands(
+            *self.get_mut(),
+            values.len() as isize,
+            v.as_ptr()
+        ))
     }
 
     pub fn set_successor(&mut self, i: isize, block: &mut Block) -> () {
-        do_unsafe!(mlirOperationSetSuccessor(*self.get_mut(), i, *block.get_mut()))
+        do_unsafe!(mlirOperationSetSuccessor(
+            *self.get_mut(),
+            i,
+            *block.get_mut()
+        ))
     }
 
     pub fn verify(&self) -> bool {
@@ -1406,7 +1478,7 @@ impl Iterator for Operation {
     fn next(&mut self) -> Option<Self::Item> {
         let op = do_unsafe!(mlirOperationGetNextInBlock(self.0));
         if op.ptr.is_null() {
-            None    
+            None
         } else {
             self.0 = op;
             Some(op)
@@ -1425,7 +1497,7 @@ impl Iterator for OperationIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
-            None            => {
+            None => {
                 if self.0.is_null() {
                     return None;
                 }
@@ -1436,16 +1508,16 @@ impl Iterator for OperationIter<'_> {
                     self.1 = Some(region);
                     self.1.clone()
                 }
-            },
+            }
             Some(ref mut r) => match r.next() {
-                None        => {
+                None => {
                     self.1 = None;
                     None
-                },
-                Some(r_)    => {
+                }
+                Some(r_) => {
                     self.1 = Some(Region::from(r_));
                     self.1.clone()
-                },
+                }
             },
         }
     }
@@ -1462,27 +1534,47 @@ impl OperationState {
 
     pub fn add_attributes(&mut self, attributes: &[Named]) -> () {
         let a: Vec<MlirNamedAttribute> = attributes.iter().map(|a| *a.get()).collect();
-        do_unsafe!(mlirOperationStateAddAttributes(self.get_mut(), a.len() as isize, a.as_ptr()))
+        do_unsafe!(mlirOperationStateAddAttributes(
+            self.get_mut(),
+            a.len() as isize,
+            a.as_ptr()
+        ))
     }
 
     pub fn add_operands(&mut self, operands: &[Value]) -> () {
         let o: Vec<MlirValue> = operands.iter().map(|o| *o.get()).collect();
-        do_unsafe!(mlirOperationStateAddOperands(self.get_mut(), o.len() as isize, o.as_ptr()))
+        do_unsafe!(mlirOperationStateAddOperands(
+            self.get_mut(),
+            o.len() as isize,
+            o.as_ptr()
+        ))
     }
 
     pub fn add_regions(&mut self, regions: &[Region]) -> () {
         let r: Vec<MlirRegion> = regions.iter().map(|r| *r.get()).collect();
-        do_unsafe!(mlirOperationStateAddOwnedRegions(self.get_mut(), r.len() as isize, r.as_ptr()))
+        do_unsafe!(mlirOperationStateAddOwnedRegions(
+            self.get_mut(),
+            r.len() as isize,
+            r.as_ptr()
+        ))
     }
 
     pub fn add_results(&mut self, types: &[Type]) -> () {
         let t: Vec<MlirType> = types.iter().map(|t| *t.get()).collect();
-        do_unsafe!(mlirOperationStateAddResults(self.get_mut(), t.len() as isize, t.as_ptr()))
+        do_unsafe!(mlirOperationStateAddResults(
+            self.get_mut(),
+            t.len() as isize,
+            t.as_ptr()
+        ))
     }
 
     pub fn add_successors(&mut self, successors: &[Block]) -> () {
         let b: Vec<MlirBlock> = successors.iter().map(|b| *b.get()).collect();
-        do_unsafe!(mlirOperationStateAddSuccessors(self.get_mut(), b.len() as isize, b.as_ptr()))
+        do_unsafe!(mlirOperationStateAddSuccessors(
+            self.get_mut(),
+            b.len() as isize,
+            b.as_ptr()
+        ))
     }
 
     pub fn create_operation(&mut self) -> Operation {
@@ -1554,7 +1646,10 @@ impl Region {
     }
 
     pub fn append_block(&mut self, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionAppendOwnedBlock(*self.get_mut(), *block.get_mut()));
+        do_unsafe!(mlirRegionAppendOwnedBlock(
+            *self.get_mut(),
+            *block.get_mut()
+        ));
         *self.num_blocks_mut() += 1;
     }
 
@@ -1571,17 +1666,29 @@ impl Region {
             eprintln!("Block position '{}' out of bounds", i);
             exit(ExitCode::IRError);
         }
-        do_unsafe!(mlirRegionInsertOwnedBlock(*self.get_mut(), i as isize, *block.get_mut()));
+        do_unsafe!(mlirRegionInsertOwnedBlock(
+            *self.get_mut(),
+            i as isize,
+            *block.get_mut()
+        ));
         *self.num_blocks_mut() += 1;
     }
 
     pub fn insert_block_after(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockAfter(*self.get_mut(), *anchor.get(), *block.get_mut()));
+        do_unsafe!(mlirRegionInsertOwnedBlockAfter(
+            *self.get_mut(),
+            *anchor.get(),
+            *block.get_mut()
+        ));
         *self.num_blocks_mut() += 1;
     }
 
     pub fn insert_block_before(&mut self, anchor: &Block, block: &mut Block) -> () {
-        do_unsafe!(mlirRegionInsertOwnedBlockBefore(*self.get_mut(), *anchor.get(), *block.get_mut()));
+        do_unsafe!(mlirRegionInsertOwnedBlockBefore(
+            *self.get_mut(),
+            *anchor.get(),
+            *block.get_mut()
+        ));
         *self.num_blocks_mut() += 1;
     }
 
@@ -1598,7 +1705,7 @@ impl Region {
     }
 
     fn __num_blocks(&self) -> usize {
-        self.iter().fold(0, |acc,_b| acc + 1) as usize
+        self.iter().fold(0, |acc, _b| acc + 1) as usize
     }
 
     pub fn num_blocks(&self) -> usize {
@@ -1653,7 +1760,7 @@ impl Iterator for RegionIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
-            None            => {
+            None => {
                 if self.0.is_null() {
                     return None;
                 }
@@ -1664,16 +1771,16 @@ impl Iterator for RegionIter<'_> {
                     self.1 = Some(block);
                     self.1.clone()
                 }
-            },
+            }
             Some(ref mut b) => match b.next() {
-                None        => {
+                None => {
                     self.1 = None;
                     None
-                },
-                Some(b_)    => {
+                }
+                Some(b_) => {
                     self.1 = Some(Block::from(b_));
                     self.1.clone()
-                },
+                }
             },
         }
     }
@@ -1701,43 +1808,73 @@ impl Registry {
     }
 
     pub fn register_arith(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__arith__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__arith__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_func(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__func__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__func__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_gpu(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__gpu__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__gpu__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_linalg(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__linalg__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__linalg__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_llvm(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__llvm__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__llvm__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_memref(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__memref__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__memref__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_shape(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__shape__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__shape__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_spirv(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__spirv__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__spirv__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_tensor(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__tensor__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__tensor__(),
+            *self.get_mut()
+        ))
     }
 
     pub fn register_vector(&mut self) -> () {
-        do_unsafe!(mlirDialectHandleInsertDialect(mlirGetDialectHandle__vector__(), *self.get_mut()))
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__vector__(),
+            *self.get_mut()
+        ))
     }
 }
 
@@ -1775,12 +1912,14 @@ impl ShapeImpl<Vec<i64>> {
 
 impl fmt::Display for ShapeImpl<Vec<i64>> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[{}]", self
-            .get()
-            .iter()
-            .map(|d| d.to_string())
-            .collect::<Vec<String>>()
-            .join(",")
+        write!(
+            f,
+            "[{}]",
+            self.get()
+                .iter()
+                .map(|d| d.to_string())
+                .collect::<Vec<String>>()
+                .join(",")
         )
     }
 }
@@ -1860,8 +1999,8 @@ impl fmt::Display for StringBacked {
             return Ok(());
         }
         let s = match self.get_string().to_str() {
-            Ok(s)       => s,
-            Err(msg)    => panic!("Failed to convert CString: {}", msg),
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to convert CString: {}", msg),
         };
         write!(f, "{}", s)
     }
@@ -1876,11 +2015,14 @@ impl Default for StringBacked {
 impl From<&str> for StringBacked {
     fn from(s: &str) -> Self {
         match Self::from_str(s) {
-            Ok(s_)      => s_,
-            Err(msg)    => {
-                eprintln!("Failed to create backed string from string '{}': {}", s, msg);
+            Ok(s_) => s_,
+            Err(msg) => {
+                eprintln!(
+                    "Failed to create backed string from string '{}': {}",
+                    s, msg
+                );
                 exit(ExitCode::IRError);
-            },
+            }
         }
     }
 }
@@ -1927,7 +2069,6 @@ impl cmp::PartialEq for StringBacked {
         do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
     }
 }
-
 
 impl StringCallback {
     pub fn from(callback: MlirStringCallback) -> Self {
@@ -2008,12 +2149,12 @@ impl fmt::Display for StringRef {
             }
         }
         let c_string = match CString::new(v) {
-            Ok(s)       => s,
-            Err(msg)    => panic!("Failed to create CString: {}", msg),
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to create CString: {}", msg),
         };
         let s = match c_string.to_str() {
-            Ok(s)       => s,
-            Err(msg)    => panic!("Failed to convert CString: {}", msg),
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to convert CString: {}", msg),
         };
         write!(f, "{}", s)
     }
@@ -2056,7 +2197,10 @@ impl SymbolTable {
 
     /// Requires: Interface::Symbol
     pub fn insert(&mut self, op: &Operation) -> Attribute {
-        Attribute::from(do_unsafe!(mlirSymbolTableInsert(*self.get_mut(), *op.get())))
+        Attribute::from(do_unsafe!(mlirSymbolTableInsert(
+            *self.get_mut(),
+            *op.get()
+        )))
     }
 
     pub fn is_null(&self) -> bool {
@@ -2246,7 +2390,7 @@ impl cmp::PartialEq for TypeID {
 
 impl Value {
     pub fn new_null() -> Self {
-        let v = MlirValue{ptr: ptr::null()};
+        let v = MlirValue { ptr: ptr::null() };
         Self::from(v)
     }
 
@@ -2348,7 +2492,7 @@ impl Iterator for ValueIter<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.1 {
-            None            => {
+            None => {
                 if self.0.is_null() {
                     return None;
                 }
@@ -2359,16 +2503,16 @@ impl Iterator for ValueIter<'_> {
                     self.1 = Some(op);
                     self.1.clone()
                 }
-            },
+            }
             Some(ref mut o) => match o.next() {
-                None        => {
+                None => {
                     self.1 = None;
                     None
-                },
-                Some(o_)    => {
+                }
+                Some(o_) => {
                     self.1 = Some(OpOperand::from(o_));
                     self.1.clone()
-                },
+                }
             },
         }
     }

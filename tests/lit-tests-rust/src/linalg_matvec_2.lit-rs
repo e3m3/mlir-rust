@@ -2,9 +2,9 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::linalg::Matvec;
 use mlir::dialects::linalg::TransformShape;
 use mlir::dialects::memref::Alloc;
@@ -30,7 +30,9 @@ pub fn main() -> () {
     let t_mat = MemRef::new_contiguous(&s_mat, &t_elem.as_type(), &mem_space);
     let t_vec = MemRef::new_contiguous(&s_vec, &t_elem.as_type(), &mem_space);
     let t_out = MemRef::new_contiguous(&s_out, &t_elem.as_type(), &mem_space);
-    let f = get_empty_test_fn(&context, &[t_mat.as_type(), t_vec.as_type()], &[t_out.as_type()]);
+    let f = get_empty_test_fn(&context, &[t_mat.as_type(), t_vec.as_type()], &[
+        t_out.as_type()
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_alloc = Alloc::new(&t_out, &[], &[], None, &loc).as_operation();
@@ -40,7 +42,8 @@ pub fn main() -> () {
         &f_block.get_arg(1),
         &op_alloc.get_result(0),
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[op_alloc.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_alloc);
     f_block.append_operation(&mut op_matvec);

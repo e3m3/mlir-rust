@@ -3,18 +3,18 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirUnrankedTensorTypeGet;
 use mlir_sys::mlirUnrankedTensorTypeGetChecked;
 use mlir_sys::mlirUnrankedTensorTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Location;
 use ir::Type;
 use ir::TypeID;
@@ -30,7 +30,10 @@ impl UnrankedTensor {
     }
 
     pub fn new_checked(t: &Type, loc: &Location) -> Self {
-        Self::from(do_unsafe!(mlirUnrankedTensorTypeGetChecked(*loc.get(), *t.get())))
+        Self::from(do_unsafe!(mlirUnrankedTensorTypeGetChecked(
+            *loc.get(),
+            *t.get()
+        )))
     }
 
     pub fn from(t: MlirType) -> Self {

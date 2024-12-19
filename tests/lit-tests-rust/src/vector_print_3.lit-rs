@@ -2,15 +2,15 @@
 
 extern crate mlir;
 
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::Print;
 use mlir::dialects::vector::PunctuationKind;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::vector::Vector;
 
 mod common;
@@ -31,7 +31,8 @@ pub fn main() -> () {
         &[f_block.get_arg(0)],
         PunctuationKind::Comma,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_print);
     f_block.append_operation(&mut op_ret);

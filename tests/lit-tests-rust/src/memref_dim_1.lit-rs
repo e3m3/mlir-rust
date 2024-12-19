@@ -2,18 +2,18 @@
 
 extern crate mlir;
 
+use mlir::dialects::IROperation;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::MemoryLayout;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Dim;
 use mlir::ir::Block;
 use mlir::ir::Shape;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IRType;
 use mlir::types::index::Index;
 use mlir::types::memref::MemRef;
 use mlir::types::shaped::Shaped;
@@ -30,19 +30,13 @@ pub fn main() -> () {
     let s_in = ShapeImpl::from(vec![4, Shaped::dynamic_size()]);
     let layout = MemoryLayout::from(AffineMap::new_identity(&context, s_in.rank()));
     let t_mr_in = MemRef::new(&s_in, &t, &layout, &DefaultMemorySpace::new());
-    let f = get_empty_test_fn(
-        &context,
-        &[t_mr_in.as_type(), t_index.clone()],
-        &[t_index.clone()],
-    );
+    let f = get_empty_test_fn(&context, &[t_mr_in.as_type(), t_index.clone()], &[
+        t_index.clone()
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_dim = Dim::new(
-        &context,
-        &f_block.get_arg(0),
-        &f_block.get_arg(1),
-        &loc,
-    ).as_operation();
+    let mut op_dim =
+        Dim::new(&context, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_dim.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_dim);
     f_block.append_operation(&mut op_ret);

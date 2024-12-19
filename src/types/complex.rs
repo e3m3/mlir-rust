@@ -3,18 +3,18 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirComplexTypeGet;
 use mlir_sys::mlirComplexTypeGetElementType;
 use mlir_sys::mlirComplexTypeGetTypeID;
-use mlir_sys::MlirType;
 
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Type;
 use ir::TypeID;
 use types::IRType;

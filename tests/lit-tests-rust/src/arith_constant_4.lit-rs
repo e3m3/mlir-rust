@@ -3,9 +3,9 @@
 extern crate mlir;
 
 use mlir::attributes::float::Float as FloatAttr;
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::Constant;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::ir::Block;
 use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;

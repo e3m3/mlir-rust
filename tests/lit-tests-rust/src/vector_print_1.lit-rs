@@ -3,8 +3,8 @@
 extern crate mlir;
 
 use mlir::attributes::specialized::NamedString;
-use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
+use mlir::dialects::func::Return;
 use mlir::dialects::vector::Print;
 use mlir::dialects::vector::StringLiteral;
 use mlir::ir::Block;

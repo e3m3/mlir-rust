@@ -4,18 +4,18 @@ extern crate mlir;
 
 use mlir::attributes::specialized::NamedString;
 use mlir::attributes::specialized::NamedType;
+use mlir::dialects::IROperation;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::common::SymbolName;
 use mlir::dialects::common::SymbolVisibilityKind;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::memref::Global;
 use mlir::dialects::memref::GlobalType;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
 use mlir::ir::StringBacked;
-use mlir::types::integer::Integer as IntegerType;
 use mlir::types::IRType;
+use mlir::types::integer::Integer as IntegerType;
 use mlir::types::memref::MemRef;
 
 mod common;
@@ -42,7 +42,8 @@ pub fn main() -> () {
         None,
         None,
         &loc,
-    ).as_operation();
+    )
+    .as_operation();
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();

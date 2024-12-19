@@ -20,21 +20,21 @@ use crate::types;
 
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::named::Named;
 use attributes::specialized::NamedArrayOfDictionaries;
 use attributes::specialized::NamedFunction;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
-use attributes::named::Named;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IROp;
 use dialects::IROperation;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
 use dialects::common::SymbolVisibilityKind;
-use effects::MemoryEffectList;
 use effects::MEFF_NO_MEMORY_EFFECT;
-use exit_code::exit;
+use effects::MemoryEffectList;
 use exit_code::ExitCode;
+use exit_code::exit;
 use interfaces::Interface;
 use interfaces::MemoryEffectOpInterface;
 use ir::Block;
@@ -42,14 +42,14 @@ use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
+use ir::Region;
 use ir::StringBacked;
 use ir::StringRef;
-use ir::Region;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::function::Function as FunctionType;
 use types::IRType;
+use types::function::Function as FunctionType;
 
 ///////////////////////////////
 //  Attributes
@@ -74,7 +74,7 @@ pub struct Results(MlirAttribute);
 //  Enums
 ///////////////////////////////
 
-#[derive(Clone,Copy,PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Op {
     Call,
     CallIndirect,
@@ -163,11 +163,11 @@ impl Results {
 impl Op {
     pub fn get_name(&self) -> &'static str {
         match self {
-            Op::Call            => "call",
-            Op::CallIndirect    => "call_indirect",
-            Op::Constant        => "constant",
-            Op::Func            => "func",
-            Op::Return          => "return",
+            Op::Call => "call",
+            Op::CallIndirect => "call_indirect",
+            Op::Constant => "constant",
+            Op::Func => "func",
+            Op::Return => "return",
         }
     }
 }
@@ -202,7 +202,9 @@ impl Call {
 
     pub fn get_callee(&self) -> Callee {
         let attr_name = StringBacked::from(Callee::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Callee::from(*attr.get())
     }
 
@@ -228,7 +230,10 @@ impl CallIndirect {
         }
         for (i, arg) in args.iter().enumerate() {
             if t_f.get_input(i as isize) != arg.get_type() {
-                eprintln!("Expected matching types for callee type anad argument type at position {}", i);
+                eprintln!(
+                    "Expected matching types for callee type anad argument type at position {}",
+                    i
+                );
                 exit(ExitCode::DialectError);
             }
         }
@@ -307,7 +312,9 @@ impl Constant {
 
     pub fn get_value(&self) -> Referee {
         let attr_name = StringBacked::from(Referee::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         Referee::from(*attr.get())
     }
 }
@@ -385,7 +392,9 @@ impl Func {
 
     pub fn get_function_attribute(&self) -> FunctionAttr {
         let attr_name = StringBacked::from(FunctionAttr::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         FunctionAttr::from(*attr.get())
     }
 
@@ -395,12 +404,17 @@ impl Func {
 
     pub fn get_symbol_name(&self) -> SymbolName {
         let attr_name = StringBacked::from(SymbolName::get_name());
-        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
         SymbolName::from(*attr.get())
     }
 
     pub fn get_symbol_ref(&self) -> SymbolRef {
-        SymbolRef::new_flat(&self.get_context(), &self.get_symbol_name().as_string().get_string())
+        SymbolRef::new_flat(
+            &self.get_context(),
+            &self.get_symbol_name().as_string().get_string(),
+        )
     }
 
     pub fn get_result_attributes(&self) -> Option<Results> {
@@ -434,15 +448,18 @@ impl Return {
         let num_results = t_f.num_results() as usize;
         let symbol_ref = parent.get_symbol_ref();
         if num_results != args.len() {
-            eprintln!("Expected '{}' results for func.func '@{}'", num_results, symbol_ref);
+            eprintln!(
+                "Expected '{}' results for func.func '@{}'",
+                num_results, symbol_ref
+            );
             exit(ExitCode::DialectError);
         }
         for i in 0..num_results {
             let t = t_f.get_result(i as isize);
             if t != args.get(i).unwrap().get_type() {
-                eprintln!("Expected matching type for func.func '@{}' result at position '{}'",
-                    symbol_ref,
-                    i,
+                eprintln!(
+                    "Expected matching type for func.func '@{}' result at position '{}'",
+                    symbol_ref, i,
                 );
                 exit(ExitCode::DialectError);
             }
@@ -514,16 +531,11 @@ impl IROperation for Call {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::CallOpInterface,
-            Interface::SymbolUserOpInterface,
-        ]
+        &[Interface::CallOpInterface, Interface::SymbolUserOpInterface]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -539,9 +551,7 @@ impl IROperation for Call {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::MemRefsNormalizable,
-        ]
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -579,15 +589,11 @@ impl IROperation for CallIndirect {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
-        &[
-            Interface::CallOpInterface
-        ]
+        &[Interface::CallOpInterface]
     }
 
     fn get_mut(&mut self) -> &mut MlirOperation {
@@ -617,9 +623,7 @@ impl IROperation for Constant {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -644,10 +648,7 @@ impl IROperation for Constant {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::ConstantLike,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
     }
 }
 
@@ -661,9 +662,7 @@ impl IROperation for Func {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -784,9 +783,7 @@ impl IROperation for Return {
     }
 
     fn get_effects(&self) -> MemoryEffectList {
-        &[
-            MEFF_NO_MEMORY_EFFECT,
-        ]
+        &[MEFF_NO_MEMORY_EFFECT]
     }
 
     fn get_interfaces(&self) -> &'static [Interface] {
@@ -833,11 +830,11 @@ impl cmp::PartialEq for Return {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::CallIndirect    => "CallIndirectOp",
-            Op::Call            => "CallOp",
-            Op::Constant        => "ConstantOp",
-            Op::Func            => "FuncOp",
-            Op::Return          => "ReturnOp",
+            Op::CallIndirect => "CallIndirectOp",
+            Op::Call => "CallOp",
+            Op::Constant => "ConstantOp",
+            Op::Func => "FuncOp",
+            Op::Return => "ReturnOp",
         })
     }
 }

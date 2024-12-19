@@ -3,15 +3,15 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirType;
 use mlir_sys::mlirIntegerTypeGet;
-use mlir_sys::mlirIntegerTypeGetWidth;
 use mlir_sys::mlirIntegerTypeGetTypeID;
+use mlir_sys::mlirIntegerTypeGetWidth;
 use mlir_sys::mlirIntegerTypeIsSigned;
 use mlir_sys::mlirIntegerTypeIsSignless;
 use mlir_sys::mlirIntegerTypeIsUnsigned;
 use mlir_sys::mlirIntegerTypeSignedGet;
 use mlir_sys::mlirIntegerTypeUnsignedGet;
-use mlir_sys::MlirType;
 
 use std::ffi::c_uint;
 
@@ -20,8 +20,8 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
@@ -33,7 +33,10 @@ pub struct Integer(MlirType);
 
 impl Integer {
     pub fn new(context: &Context, width: usize) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeGet(*context.get(), width as c_uint)))
+        Self::from(do_unsafe!(mlirIntegerTypeGet(
+            *context.get(),
+            width as c_uint
+        )))
     }
 
     pub fn new_bool(context: &Context) -> Self {
@@ -41,7 +44,10 @@ impl Integer {
     }
 
     pub fn new_signed(context: &Context, width: usize) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeSignedGet(*context.get(), width as c_uint)))
+        Self::from(do_unsafe!(mlirIntegerTypeSignedGet(
+            *context.get(),
+            width as c_uint
+        )))
     }
 
     pub fn new_signless(context: &Context, width: usize) -> Self {
@@ -49,7 +55,10 @@ impl Integer {
     }
 
     pub fn new_unsigned(context: &Context, width: usize) -> Self {
-        Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), width as c_uint)))
+        Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(
+            *context.get(),
+            width as c_uint
+        )))
     }
 
     pub fn from(t: MlirType) -> Self {

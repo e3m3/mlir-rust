@@ -3,6 +3,8 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
+use mlir_sys::MlirType;
 use mlir_sys::mlirMemRefTypeContiguousGet;
 use mlir_sys::mlirMemRefTypeContiguousGetChecked;
 use mlir_sys::mlirMemRefTypeGet;
@@ -12,8 +14,6 @@ use mlir_sys::mlirMemRefTypeGetLayout;
 use mlir_sys::mlirMemRefTypeGetMemorySpace;
 use mlir_sys::mlirMemRefTypeGetStridesAndOffset;
 use mlir_sys::mlirMemRefTypeGetTypeID;
-use mlir_sys::MlirAttribute;
-use mlir_sys::MlirType;
 
 use crate::attributes;
 use crate::dialects;
@@ -22,12 +22,12 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::strided_layout::StridedLayout;
 use attributes::specialized::NamedMemoryLayout;
 use attributes::specialized::NamedMemorySpace;
+use attributes::strided_layout::StridedLayout;
 use dialects::affine::Map as AffineMap;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Location;
 use ir::LogicalResult;
 use ir::Shape;
@@ -61,7 +61,7 @@ impl MemRef {
         t: &Type,
         layout: &impl NamedMemoryLayout,
         memory_space: &impl NamedMemorySpace,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeGetChecked(
@@ -74,16 +74,25 @@ impl MemRef {
         )))
     }
 
-    pub fn new_contiguous(shape: &dyn Shape, t: &Type, memory_space: &impl NamedMemorySpace) -> Self {
+    pub fn new_contiguous(
+        shape: &dyn Shape,
+        t: &Type,
+        memory_space: &impl NamedMemorySpace,
+    ) -> Self {
         let (r, s) = shape.unpack();
-        Self::from(do_unsafe!(mlirMemRefTypeContiguousGet(*t.get(), r, s.as_ptr(), *memory_space.get())))
+        Self::from(do_unsafe!(mlirMemRefTypeContiguousGet(
+            *t.get(),
+            r,
+            s.as_ptr(),
+            *memory_space.get()
+        )))
     }
 
     pub fn new_contiguous_checked(
         shape: &dyn Shape,
         t: &Type,
         memory_space: &impl NamedMemorySpace,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let (r, s) = shape.unpack();
         Self::from(do_unsafe!(mlirMemRefTypeContiguousGetChecked(
@@ -147,7 +156,7 @@ impl MemRef {
         &mut self.0
     }
 
-    pub fn get_strided_layout(&self) -> Result<StridedLayout, String>{
+    pub fn get_strided_layout(&self) -> Result<StridedLayout, String> {
         let rank = self
             .as_shaped()
             .rank()

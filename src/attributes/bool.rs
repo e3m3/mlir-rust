@@ -3,9 +3,9 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::mlirBoolAttrGet;
 use mlir_sys::mlirBoolAttrGetValue;
-use mlir_sys::MlirAttribute;
 
 use std::ffi::c_int;
 
@@ -15,8 +15,8 @@ use crate::exit_code;
 use crate::ir;
 
 use attributes::IRAttribute;
-use exit_code::exit;
 use exit_code::ExitCode;
+use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 

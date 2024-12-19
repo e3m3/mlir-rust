@@ -3,17 +3,17 @@
 extern crate mlir;
 
 use mlir::attributes::float::Float as FloatAttr;
+use mlir::dialects::IROperation;
 use mlir::dialects::arith::Constant;
 use mlir::dialects::func::Return;
-use mlir::dialects::IROperation;
 use mlir::dialects::tensor::Generate;
 use mlir::dialects::tensor::Yield;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
-use mlir::types::IRType;
 use mlir::types::ranked_tensor::RankedTensor;
 use mlir::types::shaped::Shaped;
 
@@ -29,24 +29,19 @@ pub fn main() -> () {
     let dyn_size = Shaped::dynamic_size();
     let s_out = ShapeImpl::from(vec![dyn_size, 3, dyn_size]);
     let t_tnsr_out = RankedTensor::new(&s_out, &t.as_type());
-    let f = get_empty_test_fn(
-        &context,
-        &[t_index.clone(), t_index.clone()],
-        &[t_tnsr_out.as_type()],
-    );
+    let f = get_empty_test_fn(&context, &[t_index.clone(), t_index.clone()], &[
+        t_tnsr_out.as_type()
+    ]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let tensor_gen = Generate::new(
-        &t_tnsr_out,
-        &[f_block.get_arg(0), f_block.get_arg(1)],
-        &loc,
-    );
+    let tensor_gen = Generate::new(&t_tnsr_out, &[f_block.get_arg(0), f_block.get_arg(1)], &loc);
     let mut op_gen = tensor_gen.as_operation();
     let gen_region = op_gen.iter().next().unwrap_or_default();
     let mut gen_block = gen_region.iter().next().unwrap_or_default();
     let attr_float = FloatAttr::new(&t, 0.0);
     let mut op_const = Constant::new_float(&attr_float, &loc).as_operation();
-    let mut op_yield = Yield::new_generate(&op_const.get_result(0), &tensor_gen, &loc).as_operation();
+    let mut op_yield =
+        Yield::new_generate(&op_const.get_result(0), &tensor_gen, &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_gen.get_result(0)], &loc).as_operation();
     gen_block.append_operation(&mut op_const);
     gen_block.append_operation(&mut op_yield);
