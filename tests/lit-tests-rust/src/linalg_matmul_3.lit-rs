@@ -1,0 +1,67 @@
+// RUN: %O/linalg_matmul_3 2>&1 | @filecheck %M/linalg_matmul_3.mlir --check-prefix=CHECK_CAN
+// COM: Bypass processing via `mlir-opt <args>` since indexing maps is incorrectly dropped after
+//      automatic canonicalization done by `Module::dump()`.
+
+extern crate mlir;
+
+use mlir::attributes::specialized::NamedArrayOfAffineMaps;
+use mlir::dialects::affine::AffineExpr;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::dialects::IROperation;
+use mlir::dialects::linalg::IndexingMaps;
+use mlir::dialects::linalg::Matmul;
+use mlir::dialects::memref::Alloc;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IRType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::memref::MemRef;
+
+mod common;
+use crate::common::*;
+
+pub fn main() -> () {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let s_a = ShapeImpl::from(vec![3]);
+    let s_b = ShapeImpl::from(vec![5, 7]);
+    let s_out = ShapeImpl::from(vec![3, 7]);
+    let t_elem = FloatType::new(&context, FloatLayout::F32);
+    let mem_space = DefaultMemorySpace::new();
+    let t_a = MemRef::new_contiguous(&s_a, &t_elem.as_type(), &mem_space);
+    let t_b = MemRef::new_contiguous(&s_b, &t_elem.as_type(), &mem_space);
+    let t_out = MemRef::new_contiguous(&s_out, &t_elem.as_type(), &mem_space);
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let d2 = AffineDim::new(&context, 2).as_expr();
+    let map0 = AffineMap::new_results(&context, 3, 0, &[d0]);
+    let map1 = AffineMap::new_results(&context, 3, 0, &[d2, d1]);
+    let map2 = AffineMap::new_results(&context, 3, 0, &[d0, d1]);
+    let index_maps = IndexingMaps::new(&context, &[map0, map1, map2]);
+    let f = get_empty_test_fn(&context, &[t_a.as_type(), t_b.as_type()], &[t_out.as_type()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_alloc = Alloc::new(&t_out, &[], &[], None, &loc).as_operation();
+    let mut op_matmul = Matmul::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &op_alloc.get_result(0),
+        Some(&index_maps),
+        None,
+        &loc,
+    ).as_operation();
+    let mut op_ret = Return::new(&f, &[op_alloc.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_alloc);
+    f_block.append_operation(&mut op_matmul);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+}
