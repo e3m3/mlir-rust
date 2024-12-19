@@ -281,6 +281,26 @@ name = "linalg_matmul_4"
 path = "src/linalg_matmul_4.lit-rs"
 
 [[bin]]
+name = "linalg_matmul_5"
+path = "src/linalg_matmul_5.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_transpose_a_1"
+path = "src/linalg_matmul_transpose_a_1.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_transpose_a_2"
+path = "src/linalg_matmul_transpose_a_2.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_transpose_b_1"
+path = "src/linalg_matmul_transpose_b_1.lit-rs"
+
+[[bin]]
+name = "linalg_matmul_transpose_b_2"
+path = "src/linalg_matmul_transpose_b_2.lit-rs"
+
+[[bin]]
 name = "linalg_matvec_1"
 path = "src/linalg_matvec_1.lit-rs"
 
@@ -319,6 +339,14 @@ path = "src/linalg_sub_3.lit-rs"
 [[bin]]
 name = "linalg_sub_4"
 path = "src/linalg_sub_4.lit-rs"
+
+[[bin]]
+name = "linalg_transpose_1"
+path = "src/linalg_transpose_1.lit-rs"
+
+[[bin]]
+name = "linalg_transpose_2"
+path = "src/linalg_transpose_2.lit-rs"
 
 [[bin]]
 name = "linalg_vecmat_1"

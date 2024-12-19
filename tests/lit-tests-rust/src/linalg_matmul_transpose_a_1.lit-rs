@@ -1,18 +1,12 @@
-// RUN: %O/linalg_matmul_4 2>&1 | @filecheck %M/linalg_matmul_4.mlir --check-prefix=CHECK_CAN
-// COM: Bypass processing via `mlir-opt <args>` since indexing maps is incorrectly dropped after
-//      automatic canonicalization done by `Module::dump()`.
+// RUN: %O/linalg_matmul_transpose_a_1 2>&1 | @mlir-opt --mlir-print-op-generic | @filecheck %M/linalg_matmul_transpose_a_1.mlir --check-prefix=CHECK_GEN
 
 extern crate mlir;
 
-use mlir::attributes::specialized::NamedArrayOfAffineMaps;
-use mlir::dialects::affine::AffineExpr;
-use mlir::dialects::affine::Dim as AffineDim;
-use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
 use mlir::dialects::IROperation;
-use mlir::dialects::linalg::IndexingMaps;
-use mlir::dialects::linalg::Matmul;
+use mlir::dialects::linalg::MatmulTransposeA;
+use mlir::dialects::linalg::TransformShape;
 use mlir::dialects::memref::Alloc;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
@@ -29,30 +23,22 @@ pub fn main() -> () {
     let context = module.get_context();
     let loc = context.get_unknown_location();
     let s_a = ShapeImpl::from(vec![5, 3]);
-    let s_b = ShapeImpl::from(vec![7]);
-    let s_out = ShapeImpl::from(vec![3, 7]);
+    let s_b = ShapeImpl::from(vec![5, 7]);
+    let s_out = ShapeImpl::from(s_a.transpose().matmul(&s_b).unwrap_or_default());
     let t_elem = FloatType::new(&context, FloatLayout::F32);
     let mem_space = DefaultMemorySpace::new();
     let t_a = MemRef::new_contiguous(&s_a, &t_elem.as_type(), &mem_space);
     let t_b = MemRef::new_contiguous(&s_b, &t_elem.as_type(), &mem_space);
     let t_out = MemRef::new_contiguous(&s_out, &t_elem.as_type(), &mem_space);
-    let d0 = AffineDim::new(&context, 0).as_expr();
-    let d1 = AffineDim::new(&context, 1).as_expr();
-    let d2 = AffineDim::new(&context, 2).as_expr();
-    let map0 = AffineMap::new_results(&context, 3, 0, &[d2, d0]);
-    let map1 = AffineMap::new_results(&context, 3, 0, &[d1]);
-    let map2 = AffineMap::new_results(&context, 3, 0, &[d0, d1]);
-    let index_maps = IndexingMaps::new(&context, &[map0, map1, map2]);
     let f = get_empty_test_fn(&context, &[t_a.as_type(), t_b.as_type()], &[t_out.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_alloc = Alloc::new(&t_out, &[], &[], None, &loc).as_operation();
-    let mut op_matmul = Matmul::new_mem_ref(
+    let mut op_matmul = MatmulTransposeA::new_mem_ref(
         &context,
         &f_block.get_arg(0),
         &f_block.get_arg(1),
         &op_alloc.get_result(0),
-        Some(&index_maps),
         None,
         &loc,
     ).as_operation();
