@@ -1445,7 +1445,7 @@ impl Copy {
     ) -> Self {
         let mut op = Self::__new_mem_ref(&Op::Copy, context, input, output, loc).as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1458,7 +1458,7 @@ impl Copy {
     ) -> Self {
         let mut op = Self::__new_tensor(&Op::Copy, t, input, output, loc).as_operation();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1476,7 +1476,7 @@ impl Copy {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1617,8 +1617,8 @@ impl ElementwiseBinary {
             .as_operation();
         let f = BinaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1634,8 +1634,8 @@ impl ElementwiseBinary {
         let mut op = Self::__new_tensor(&Op::ElementwiseBinary, t, lhs, rhs, output, loc).as_operation();
         let f = BinaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1653,13 +1653,13 @@ impl ElementwiseBinary {
 
     pub fn get_binary_function(&self) -> BinaryFunction {
         let attr_name = StringBacked::from(BinaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         BinaryFunction::from(*attr.get())
     }
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1681,8 +1681,8 @@ impl ElementwiseUnary {
             .as_operation();
         let f = UnaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1697,8 +1697,8 @@ impl ElementwiseUnary {
         let mut op = Self::__new_tensor(&Op::ElementwiseUnary, t, input, output, loc).as_operation();
         let f = UnaryFunction::new(&t.get_context(), f_kind).as_named_attribute();
         let cast = Cast::new(&t.get_context(), cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&f.get_identifier().as_string(), &f.as_attribute());
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&f.get_identifier().as_string(), &f.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -1716,7 +1716,7 @@ impl ElementwiseUnary {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -1726,7 +1726,7 @@ impl ElementwiseUnary {
 
     pub fn get_unary_function(&self) -> UnaryFunction {
         let attr_name = StringBacked::from(UnaryFunction::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         UnaryFunction::from(*attr.get())
     }
 }
@@ -1858,7 +1858,7 @@ impl Index {
 
     pub fn get_dimension(&self) -> Dimension {
         let attr_name = StringBacked::from(Dimension::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Dimension::from(*attr.get())
     }
 
@@ -1927,7 +1927,7 @@ impl Matmul {
         );
         if let Some(cast_kind_) = cast_kind {
             let cast = Cast::new(context, cast_kind_).as_named_attribute();
-            op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+            op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         }
         Self::from(*op.get_mut())
     }
@@ -1946,17 +1946,17 @@ impl Matmul {
 
     pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get())
     }
 
     pub fn get_default_indexing_maps(context: &Context) -> IndexingMaps {
-        let affine_d0 = AffineDim::new(context, 0).as_expr();
-        let affine_d1 = AffineDim::new(context, 1).as_expr();
-        let affine_d2 = AffineDim::new(context, 2).as_expr();
-        let map0 = AffineMap::new_results(context, 2, 0, &[affine_d0, affine_d2]);
-        let map1 = AffineMap::new_results(context, 2, 0, &[affine_d2, affine_d1]);
-        let map2 = AffineMap::new_results(context, 2, 0, &[affine_d0, affine_d0]);
+        let d0 = AffineDim::new(context, 0).as_expr();
+        let d1 = AffineDim::new(context, 1).as_expr();
+        let d2 = AffineDim::new(context, 2).as_expr();
+        let map0 = AffineMap::new_results(context, 3, 0, &[d0, d2]);
+        let map1 = AffineMap::new_results(context, 3, 0, &[d2, d1]);
+        let map2 = AffineMap::new_results(context, 3, 0, &[d0, d1]);
         IndexingMaps::new(context, &[map0, map1, map2])
     }
 
@@ -1987,7 +1987,7 @@ impl MatmulTransposeA {
         let mut op = Self::__new_mem_ref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc)
             .as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2005,7 +2005,7 @@ impl MatmulTransposeA {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -2030,7 +2030,7 @@ impl MatmulTransposeB {
         let mut op = Self::__new_mem_ref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc)
             .as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_discardable(&cast.get_identifier().as_string(), &cast.as_attribute());
+        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2048,7 +2048,7 @@ impl MatmulTransposeB {
 
     pub fn get_cast_kind(&self) -> CastKind {
         let attr_name = StringBacked::from(Cast::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Cast::from(*attr.get()).get_kind()
     }
 
@@ -2517,7 +2517,7 @@ impl Transpose {
     ) -> Self {
         let mut op = Self::__new_mem_ref(&Op::Transpose, context, input, output, loc).as_operation();
         let p_ = p.as_named_attribute();
-        op.set_attribute_discardable(&p_.get_identifier().as_string(), &p_.as_attribute());
+        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2530,7 +2530,7 @@ impl Transpose {
     ) -> Self {
         let mut op = Self::__new_tensor(&Op::Transpose, t, input, output, loc).as_operation();
         let p_ = p.as_named_attribute();
-        op.set_attribute_discardable(&p_.get_identifier().as_string(), &p_.as_attribute());
+        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
         Self::from(*op.get_mut())
     }
 
@@ -2552,7 +2552,7 @@ impl Transpose {
 
     pub fn get_permutation(&self) -> Permutation {
         let attr_name = StringBacked::from(Permutation::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         Permutation::from(*attr.get())
     }
 }
@@ -2561,7 +2561,7 @@ impl Vecmat {
     fn new_maps(op: &mut Self) -> Self {
         let context = op.as_operation().get_context();
         let indexing_maps = Self::get_default_indexing_maps(&context).as_named_attribute();
-        op.as_operation().set_attribute_discardable(
+        op.as_operation().set_attribute_inherent(
             &indexing_maps.get_identifier().as_string(),
             &indexing_maps.as_attribute(),
         );
@@ -2611,7 +2611,7 @@ impl Vecmat {
 
     pub fn get_indexing_maps(&self) -> IndexingMaps {
         let attr_name = StringBacked::from(IndexingMaps::get_name());
-        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
         IndexingMaps::from(*attr.get())
     }
 
