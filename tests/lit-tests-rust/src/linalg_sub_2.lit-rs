@@ -29,7 +29,7 @@ pub fn main() -> () {
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_alloc = Alloc::new(&t, &[], &[], None, &loc).as_operation();
-    let mut op_sub = Sub::new_mem_ref(
+    let mut op_sub = Sub::new_memref(
         &context,
         &f_block.get_arg(0),
         &f_block.get_arg(1),

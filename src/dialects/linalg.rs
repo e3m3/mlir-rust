@@ -417,7 +417,7 @@ pub trait ElementwiseBinaryOperation:
         Self::from(*op_parent.get_mut())
     }
 
-    fn __new_mem_ref(
+    fn __new_memref(
         op: &'static Op,
         context: &Context,
         lhs: &Value,
@@ -425,8 +425,8 @@ pub trait ElementwiseBinaryOperation:
         output: &Value,
         loc: &Location,
     ) -> Self {
-        if !lhs.get_type().is_mem_ref() || !rhs.get_type().is_mem_ref()
-            || !output.get_type().is_mem_ref() {
+        if !lhs.get_type().is_memref() || !rhs.get_type().is_memref()
+            || !output.get_type().is_memref() {
             eprintln!("Expected memory reference type operand(s) for {} operation", op.get_name());
             exit(ExitCode::DialectError);
         }
@@ -513,14 +513,14 @@ pub trait ElementwiseUnaryOperation:
         Self::from(*op_parent.get_mut())
     }
 
-    fn __new_mem_ref(
+    fn __new_memref(
         op: &'static Op,
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        if !input.get_type().is_mem_ref() || !output.get_type().is_mem_ref() {
+        if !input.get_type().is_memref() || !output.get_type().is_memref() {
             eprintln!("Expected memory reference type operand(s) for {} operation", op.get_name());
             exit(ExitCode::DialectError);
         }
@@ -1329,13 +1329,13 @@ impl UnaryFunctionKind {
 ///////////////////////////////
 
 impl Abs {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Abs, context, input, output, loc)
+        Self::__new_memref(&Op::Abs, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1365,14 +1365,14 @@ impl Abs {
 }
 
 impl Add {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Add, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Add, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -1403,13 +1403,13 @@ impl Add {
 }
 
 impl Ceil {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Ceil, context, input, output, loc)
+        Self::__new_memref(&Op::Ceil, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1439,14 +1439,14 @@ impl Ceil {
 }
 
 impl Copy {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::Copy, context, input, output, loc).as_operation();
+        let mut op = Self::__new_memref(&Op::Copy, context, input, output, loc).as_operation();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
         op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
         Self::from(*op.get_mut())
@@ -1489,14 +1489,14 @@ impl Copy {
 }
 
 impl Div {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Div, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Div, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -1527,14 +1527,14 @@ impl Div {
 }
 
 impl DivUnsigned {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::DivUnsigned, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::DivUnsigned, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -1565,14 +1565,14 @@ impl DivUnsigned {
 }
 
 impl Dot {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Dot, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Dot, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -1607,7 +1607,7 @@ impl Dot {
 }
 
 impl ElementwiseBinary {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -1616,7 +1616,7 @@ impl ElementwiseBinary {
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::ElementwiseBinary, context, lhs, rhs, output, loc)
+        let mut op = Self::__new_memref(&Op::ElementwiseBinary, context, lhs, rhs, output, loc)
             .as_operation();
         let f = BinaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
@@ -1672,7 +1672,7 @@ impl ElementwiseBinary {
 }
 
 impl ElementwiseUnary {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
@@ -1680,7 +1680,7 @@ impl ElementwiseUnary {
         cast_kind: CastKind,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::ElementwiseUnary, context, input, output, loc)
+        let mut op = Self::__new_memref(&Op::ElementwiseUnary, context, input, output, loc)
             .as_operation();
         let f = UnaryFunction::new(context, f_kind).as_named_attribute();
         let cast = Cast::new(context, cast_kind).as_named_attribute();
@@ -1735,13 +1735,13 @@ impl ElementwiseUnary {
 }
 
 impl Erf {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Erf, context, input, output, loc)
+        Self::__new_memref(&Op::Erf, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1771,13 +1771,13 @@ impl Erf {
 }
 
 impl Exp {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Exp, context, input, output, loc)
+        Self::__new_memref(&Op::Exp, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1807,13 +1807,13 @@ impl Exp {
 }
 
 impl Floor {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Floor, context, input, output, loc)
+        Self::__new_memref(&Op::Floor, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1875,13 +1875,13 @@ impl Index {
 }
 
 impl Log {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Log, context, input, output, loc)
+        Self::__new_memref(&Op::Log, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -1931,7 +1931,7 @@ impl Matmul {
         Self::from(*op.get_mut())
     }
 
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -1941,7 +1941,7 @@ impl Matmul {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_mem_ref(&Op::Matmul, context, lhs, rhs, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::Matmul, context, lhs, rhs, output, loc).as_operation(),
             index_maps,
             cast_kind,
         )
@@ -2021,7 +2021,7 @@ impl MatmulTransposeA {
         Self::from(*op.get_mut())
     }
 
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -2030,7 +2030,7 @@ impl MatmulTransposeA {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_mem_ref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc).as_operation(),
             cast_kind,
         )
     }
@@ -2107,7 +2107,7 @@ impl MatmulTransposeB {
         Self::from(*op.get_mut())
     }
 
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -2116,7 +2116,7 @@ impl MatmulTransposeB {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_mem_ref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc).as_operation(),
             cast_kind,
         )
     }
@@ -2179,14 +2179,14 @@ impl MatmulTransposeB {
 }
 
 impl Matvec {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Matvec, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Matvec, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -2221,14 +2221,14 @@ impl Matvec {
 }
 
 impl Max {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Max, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Max, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -2259,14 +2259,14 @@ impl Max {
 }
 
 impl Min {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Min, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Min, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -2297,14 +2297,14 @@ impl Min {
 }
 
 impl Mul {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Mul, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Mul, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -2335,13 +2335,13 @@ impl Mul {
 }
 
 impl NegF {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::NegF, context, input, output, loc)
+        Self::__new_memref(&Op::NegF, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2371,13 +2371,13 @@ impl NegF {
 }
 
 impl Reciprocal {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Reciprocal, context, input, output, loc)
+        Self::__new_memref(&Op::Reciprocal, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2407,13 +2407,13 @@ impl Reciprocal {
 }
 
 impl Round {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Round, context, input, output, loc)
+        Self::__new_memref(&Op::Round, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2443,13 +2443,13 @@ impl Round {
 }
 
 impl Rsqrt {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Rsqrt, context, input, output, loc)
+        Self::__new_memref(&Op::Rsqrt, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2479,13 +2479,13 @@ impl Rsqrt {
 }
 
 impl Sqrt {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Sqrt, context, input, output, loc)
+        Self::__new_memref(&Op::Sqrt, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2515,13 +2515,13 @@ impl Sqrt {
 }
 
 impl Square {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Square, context, input, output, loc)
+        Self::__new_memref(&Op::Square, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2551,14 +2551,14 @@ impl Square {
 }
 
 impl Sub {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Sub, context, lhs, rhs, output, loc)
+        Self::__new_memref(&Op::Sub, context, lhs, rhs, output, loc)
     }
 
     pub fn new_tensor(
@@ -2589,13 +2589,13 @@ impl Sub {
 }
 
 impl Tanh {
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::__new_mem_ref(&Op::Tanh, context, input, output, loc)
+        Self::__new_memref(&Op::Tanh, context, input, output, loc)
     }
 
     pub fn new_tensor(
@@ -2631,7 +2631,7 @@ impl Transpose {
         Self::from(*op.get_mut())
     }
 
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         input: &Value,
         output: &Value,
@@ -2639,7 +2639,7 @@ impl Transpose {
         loc: &Location,
     ) -> Self {
         Self::new(
-            &mut Self::__new_mem_ref(&Op::Transpose, context, input, output, loc).as_operation(),
+            &mut Self::__new_memref(&Op::Transpose, context, input, output, loc).as_operation(),
             p,
         )
     }
@@ -2691,14 +2691,14 @@ impl Vecmat {
         op.clone()
     }
 
-    pub fn new_mem_ref(
+    pub fn new_memref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
         loc: &Location,
     ) -> Self {
-        Self::new_maps(&mut Self::__new_mem_ref(&Op::Vecmat, context, lhs, rhs, output, loc))
+        Self::new_maps(&mut Self::__new_memref(&Op::Vecmat, context, lhs, rhs, output, loc))
     }
 
     pub fn new_tensor(

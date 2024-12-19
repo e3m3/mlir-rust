@@ -45,7 +45,7 @@ impl UnrankedMemRef {
     }
 
     pub fn from_type(t: &Type) -> Self {
-        if !t.is_unranked_mem_ref() {
+        if !t.is_unranked_memref() {
             eprint!("Cannot coerce type to unranked mem ref type: ");
             t.dump();
             eprintln!();

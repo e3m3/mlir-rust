@@ -614,7 +614,7 @@ pub trait NamedMemRef: From<MlirAttribute> + IRAttributeNamed + Sized {
             exit(ExitCode::IRError);
         }
         let attr_typed = TypeAttr::from(attr);
-        if !attr_typed.get_type().is_mem_ref() {
+        if !attr_typed.get_type().is_memref() {
             eprintln!("Expected memory reference type attribute");
             exit(ExitCode::IRError);
         }

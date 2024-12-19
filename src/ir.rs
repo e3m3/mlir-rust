@@ -2127,7 +2127,7 @@ impl Type {
         do_unsafe!(mlirTypeIsAInteger(self.0))
     }
 
-    pub fn is_mem_ref(&self) -> bool {
+    pub fn is_memref(&self) -> bool {
         do_unsafe!(mlirTypeIsAMemRef(self.0))
     }
 
@@ -2165,7 +2165,7 @@ impl Type {
         self.get_id() == Unit::get_type_id()
     }
 
-    pub fn is_unranked_mem_ref(&self) -> bool {
+    pub fn is_unranked_memref(&self) -> bool {
         do_unsafe!(mlirTypeIsAUnrankedMemRef(self.0))
     }
 

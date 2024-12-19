@@ -52,7 +52,7 @@ impl fmt::Display for Trait {
             },
             Trait::InferTypeOpAdaptor                   => "infer_type_op_adaptor".to_string(),
             Trait::IsolatedFromAbove                    => "isolated_from_above".to_string(),
-            Trait::MemRefsNormalizable                  => "mem_refs_normalizable".to_string(),
+            Trait::MemRefsNormalizable                  => "memrefs_normalizable".to_string(),
             Trait::RecursiveMemoryEffects               => "recursive_memory_effects".to_string(),
             Trait::ReturnLike                           => "return_like".to_string(),
             Trait::SameOperandsAndResultType            => "same_operands_and_result_type".to_string(),

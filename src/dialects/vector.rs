@@ -640,7 +640,7 @@ impl Load {
         is_nt: &NonTemporal,
         loc: &Location,
     ) -> Self {
-        if !base.get_type().is_mem_ref() {
+        if !base.get_type().is_memref() {
             eprintln!("Expected memory reference type for base operand of load operation");
             exit(ExitCode::DialectError);
         }
@@ -783,7 +783,7 @@ impl Store {
             eprintln!("Expected vector type for value operand of store operation");
             exit(ExitCode::DialectError);
         }
-        if !base.get_type().is_mem_ref() {
+        if !base.get_type().is_memref() {
             eprintln!("Expected memory reference type for base operand of store operation");
             exit(ExitCode::DialectError);
         }

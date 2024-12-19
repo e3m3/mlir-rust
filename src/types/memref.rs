@@ -100,7 +100,7 @@ impl MemRef {
     }
 
     pub fn from_type(t: &Type) -> Self {
-        if !t.is_mem_ref() {
+        if !t.is_memref() {
             eprint!("Cannot coerce type to mem ref type: ");
             t.dump();
             eprintln!();

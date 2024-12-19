@@ -490,8 +490,8 @@ impl Cast {
     /// [1]: https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop
     pub fn new_ranked<T: NamedMemorySpace>(t: &MemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
-        let is_ranked = t_source.is_mem_ref();
-        let is_unranked = t_source.is_unranked_mem_ref();
+        let is_ranked = t_source.is_memref();
+        let is_unranked = t_source.is_unranked_memref();
         if !is_ranked && !is_unranked {
             eprintln!("Expected ranked or unranked memory reference for source operand \
                 of cast operation"
@@ -536,8 +536,8 @@ impl Cast {
 
     pub fn new_unranked<T: NamedMemorySpace>(t: &UnrankedMemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
-        let is_ranked = t_source.is_mem_ref();
-        let is_unranked = t_source.is_unranked_mem_ref();
+        let is_ranked = t_source.is_memref();
+        let is_unranked = t_source.is_unranked_memref();
         if !is_ranked && !is_unranked {
             eprintln!("Expected ranked or unranked memory reference for source operand \
                 of cast operation"
@@ -591,13 +591,13 @@ impl Copy {
     pub fn new(context: &Context, source: &Value, target: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let t_target = target.get_type();
-        if !t_source.is_mem_ref() && !t_source.is_unranked_mem_ref() {
+        if !t_source.is_memref() && !t_source.is_unranked_memref() {
             eprintln!("Expected ranked or unranked memory reference for source operand \
                 of copy operation"
             );
             exit(ExitCode::DialectError);
         }
-        if !t_target.is_mem_ref() && !t_target.is_unranked_mem_ref() {
+        if !t_target.is_memref() && !t_target.is_unranked_memref() {
             eprintln!("Expected ranked or unranked memory reference for target operand \
                 of copy operation"
             );
@@ -639,7 +639,7 @@ impl Copy {
 
 impl Dealloc {
     pub fn new(context: &Context, value: &Value, loc: &Location) -> Self {
-        if !value.get_type().is_mem_ref() {
+        if !value.get_type().is_memref() {
             eprintln!("Expected memory reference type for operand of deallocation operation");
             exit(ExitCode::DialectError);
         }
@@ -672,8 +672,8 @@ impl Dim {
     /// is not statically known.
     pub fn new(context: &Context, source: &Value, index: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
-        let is_unranked = t_source.is_unranked_mem_ref();
-        let is_non_0_ranked = t_source.is_mem_ref() &&
+        let is_unranked = t_source.is_unranked_memref();
+        let is_non_0_ranked = t_source.is_memref() &&
             Shaped::from(*t_source.get()).rank().unwrap_or(0) > 0;
         if !is_unranked && !is_non_0_ranked {
             eprintln!("Expected unranked or non-0-ranked memory reference type \
@@ -892,7 +892,7 @@ impl Global {
 
 impl Load {
     pub fn new(t: &Type, source: &Value, indices: &[Value], is_nt: &NonTemporal, loc: &Location) -> Self {
-        if !source.get_type().is_mem_ref() {
+        if !source.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for source operand of load operation");
             exit(ExitCode::DialectError);
         }
@@ -957,8 +957,8 @@ impl Load {
 impl Rank {
     pub fn new(context: &Context, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
-        let is_unranked = t_source.is_unranked_mem_ref();
-        let is_ranked = t_source.is_mem_ref();
+        let is_unranked = t_source.is_unranked_memref();
+        let is_ranked = t_source.is_memref();
         if !is_unranked && !is_ranked {
             eprintln!("Expected unranked or ranked memory reference type \
                 for source operand of rank operaton"
@@ -1004,7 +1004,7 @@ impl Store {
         is_nt: &NonTemporal,
         loc: &Location
     ) -> Self {
-        if !target.get_type().is_mem_ref() {
+        if !target.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for target operand of store operation");
             exit(ExitCode::DialectError);
         }
@@ -1056,7 +1056,7 @@ impl Store {
 
 impl Transpose {
     pub fn new(t: &MemRef, source: &Value, p: &Permutation, loc: &Location) -> Self {
-        if !source.get_type().is_mem_ref() {
+        if !source.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for source operand of transpose operation");
             exit(ExitCode::DialectError);
         }
@@ -1118,7 +1118,7 @@ impl Transpose {
 
 impl View {
     pub fn new(t: &MemRef, source: &Value, byte_shift: &Value, sizes: &[Value], loc: &Location) -> Self {
-        if !source.get_type().is_mem_ref() {
+        if !source.get_type().is_memref() {
             eprintln!("Expected ranked memory reference type for source operand of view operation");
             exit(ExitCode::DialectError);
         }
