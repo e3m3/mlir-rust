@@ -1,4 +1,6 @@
-// RUN: %O/linalg_matmul_2 2>&1 | @mlir-opt --mlir-print-op-generic | @filecheck %M/linalg_matmul_2.mlir --check-prefix=CHECK_GEN
+// RUN: %O/linalg_matmul_2 2>&1 | @filecheck %M/linalg_matmul_2.mlir --check-prefix=CHECK_CAN
+// COM: Bypass processing via `mlir-opt <args>` since indexing maps is incorrectly dropped after
+//      automatic canonicalization done by `Module::dump()`.
 
 extern crate mlir;
 
@@ -35,12 +37,12 @@ pub fn main() -> () {
     let t_a = MemRef::new_contiguous(&s_a, &t_elem.as_type(), &mem_space);
     let t_b = MemRef::new_contiguous(&s_b, &t_elem.as_type(), &mem_space);
     let t_out = MemRef::new_contiguous(&s_out, &t_elem.as_type(), &mem_space);
-    let affine_d0 = AffineDim::new(&context, 0).as_expr();
-    let affine_d1 = AffineDim::new(&context, 1).as_expr();
-    let affine_d2 = AffineDim::new(&context, 2).as_expr();
-    let map0 = AffineMap::new_results(&context, 2, 0, &[affine_d2, affine_d0]);
-    let map1 = AffineMap::new_results(&context, 2, 0, &[affine_d2, affine_d1]);
-    let map2 = AffineMap::new_results(&context, 2, 0, &[affine_d0, affine_d0]);
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let d2 = AffineDim::new(&context, 2).as_expr();
+    let map0 = AffineMap::new_results(&context, 3, 0, &[d2, d0]);
+    let map1 = AffineMap::new_results(&context, 3, 0, &[d2, d1]);
+    let map2 = AffineMap::new_results(&context, 3, 0, &[d0, d1]);
     let index_maps = IndexingMaps::new(&context, &[map0, map1, map2]);
     let f = get_empty_test_fn(&context, &[t_a.as_type(), t_b.as_type()], &[t_out.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
