@@ -20,10 +20,12 @@ use crate::types;
 
 use attributes::IRAttribute;
 use attributes::IRAttributeNamed;
+use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedArrayOfAffineMaps;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
+use attributes::specialized::NamedParsed;
 use dialects::affine::AffineExpr;
 use dialects::affine::Dim as AffineDim;
 use dialects::affine::Map as AffineMap;
@@ -400,17 +402,14 @@ pub trait ElementwiseBinaryOperation:
     fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
         let context = t.get_context(); 
         let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
-        let ops = Self::get_body(
-            t,
-            &block.get_arg(0),
-            &block.get_arg(1),
-            &block.get_arg(2),
-            loc,
-        );
+        let lhs = block.get_arg(0);
+        let rhs = block.get_arg(1);
+        let acc = block.get_arg(2);
+        let ops = Self::get_body(t, &lhs, &rhs, &acc, loc);
         let results = if let Some(op) = ops.last() {
             vec![op.get_result(0)]
         } else {
-            vec![]
+            vec![acc.clone()]
         };
         let mut op_yield = Yield::new(&context, &results, loc).as_operation();
         ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
@@ -500,16 +499,13 @@ pub trait ElementwiseUnaryOperation:
     fn __new_body(t: &Type, op_parent: &mut Operation, loc: &Location) -> Self {
         let context = t.get_context(); 
         let mut block = op_parent.get_region(0).iter().next().unwrap_or_default();
-        let ops = Self::get_body(
-            t,
-            &block.get_arg(0),
-            &block.get_arg(2),
-            loc,
-        );
+        let input = block.get_arg(0);
+        let acc = block.get_arg(1);
+        let ops = Self::get_body(t, &input, &acc, loc);
         let results = if let Some(op) = ops.last() {
             vec![op.get_result(0)]
         } else {
-            vec![]
+            vec![input.clone()]
         };
         let mut op_yield = Yield::new(&context, &results, loc).as_operation();
         ops.into_iter().for_each(|mut op| block.append_operation(&mut op));
@@ -1066,16 +1062,16 @@ impl BinaryFunction {
 
 impl Cast {
     pub fn new(context: &Context, k: CastKind) -> Self {
-        const WIDTH: usize = 32;
-        <Self as NamedInteger>::new(context, k as i64, WIDTH)
+        let cad = CustomAttributeData::new(
+            "type_fn".to_string(),
+            context.get_dialect_linalg().get_namespace().to_string(),
+            vec![k.get_name().to_string()],
+        );
+        <Self as NamedParsed>::new_custom(context, &cad)
     }
 
     pub fn get(&self) -> &MlirAttribute {
         &self.0
-    }
-
-    pub fn get_kind(&self) -> CastKind {
-        CastKind::from(self.get_value() as i32)
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -1175,6 +1171,13 @@ impl CastKind {
                 eprintln!("Invalid value '{}' for CastKind", n);
                 exit(ExitCode::DialectError);
             },
+        }
+    }
+
+    pub fn get_name(&self) -> &'static str {
+        match self {
+            CastKind::Signed    => "cast_signed",
+            CastKind::Unsigned  => "cast_unsigned",
         }
     }
 }
@@ -1474,10 +1477,10 @@ impl Copy {
         &self.0
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        Cast::from(*attr.get())
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1657,10 +1660,10 @@ impl ElementwiseBinary {
         BinaryFunction::from(*attr.get())
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        Cast::from(*attr.get())
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1714,10 +1717,10 @@ impl ElementwiseUnary {
         &self.0
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast_kind(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        Cast::from(*attr.get())
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -1908,7 +1911,27 @@ impl Log {
 }
 
 impl Matmul {
-    pub fn new(
+    fn new(
+        op: &mut Operation,
+        index_maps: Option<&IndexingMaps>,
+        cast_kind: Option<CastKind>,
+    ) -> Self {
+        let context = op.get_context();
+        let index_maps_ = index_maps.unwrap_or(
+            &Self::get_default_indexing_maps(&context)
+        ).as_named_attribute();
+        op.set_attribute_discardable(
+            &index_maps_.get_identifier().as_string(),
+            &index_maps_.as_attribute(),
+        );
+        if let Some(cast_kind_) = cast_kind {
+            let cast = Cast::new(&context, cast_kind_).as_named_attribute();
+            op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        }
+        Self::from(*op.get_mut())
+    }
+
+    pub fn new_mem_ref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
@@ -1917,19 +1940,27 @@ impl Matmul {
         cast_kind: Option<CastKind>,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::Matmul, context, lhs, rhs, output, loc).as_operation();
-        let index_maps_ = index_maps.unwrap_or(
-            &Self::get_default_indexing_maps(context)
-        ).as_named_attribute();
-        op.set_attribute_discardable(
-            &index_maps_.get_identifier().as_string(),
-            &index_maps_.as_attribute(),
-        );
-        if let Some(cast_kind_) = cast_kind {
-            let cast = Cast::new(context, cast_kind_).as_named_attribute();
-            op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        }
-        Self::from(*op.get_mut())
+        Self::new(
+            &mut Self::__new_mem_ref(&Op::Matmul, context, lhs, rhs, output, loc).as_operation(),
+            index_maps,
+            cast_kind,
+        )
+    }
+
+    pub fn new_tensor(
+        t: &RankedTensor,
+        lhs: &Value,
+        rhs: &Value,
+        output: &Value,
+        index_maps: Option<&IndexingMaps>,
+        cast_kind: Option<CastKind>,
+        loc: &Location,
+    ) -> Self {
+        Self::new(
+            &mut Self::__new_tensor(&Op::Matmul, t, lhs, rhs, output, loc).as_operation(),
+            index_maps,
+            cast_kind,
+        )
     }
 
     fn check_operands(lhs: &Value, rhs: &Value, output: &Value) -> () {
@@ -1976,19 +2007,46 @@ impl Matmul {
 }
 
 impl MatmulTransposeA {
-    pub fn new(
+    fn new(op: &mut Operation, cast_kind: Option<CastKind>) -> Self {
+        let context = op.get_context();
+        let index_maps = Self::get_default_indexing_maps(&context).as_named_attribute();
+        op.set_attribute_discardable(
+            &index_maps.get_identifier().as_string(),
+            &index_maps.as_attribute(),
+        );
+        if let Some(cast_kind_) = cast_kind {
+            let cast = Cast::new(&context, cast_kind_).as_named_attribute();
+            op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        }
+        Self::from(*op.get_mut())
+    }
+
+    pub fn new_mem_ref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
-        cast_kind: CastKind,
+        cast_kind: Option<CastKind>,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc)
-            .as_operation();
-        let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        Self::from(*op.get_mut())
+        Self::new(
+            &mut Self::__new_mem_ref(&Op::MatmulTransposeA, context, lhs, rhs, output, loc).as_operation(),
+            cast_kind,
+        )
+    }
+
+    pub fn new_tensor(
+        t: &RankedTensor,
+        lhs: &Value,
+        rhs: &Value,
+        output: &Value,
+        cast_kind: Option<CastKind>,
+        loc: &Location,
+    ) -> Self {
+        Self::new(
+            &mut Self::__new_tensor(&Op::MatmulTransposeA, t, lhs, rhs, output, loc).as_operation(),
+            cast_kind,
+        )
     }
 
     fn check_operands(lhs: &Value, rhs: &Value, output: &Value) -> () {
@@ -2003,10 +2061,26 @@ impl MatmulTransposeA {
         &self.0
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        Cast::from(*attr.get())
+    }
+
+    pub fn get_default_indexing_maps(context: &Context) -> IndexingMaps {
+        let d0 = AffineDim::new(context, 0).as_expr();
+        let d1 = AffineDim::new(context, 1).as_expr();
+        let d2 = AffineDim::new(context, 2).as_expr();
+        let map0 = AffineMap::new_results(context, 3, 0, &[d2, d0]);
+        let map1 = AffineMap::new_results(context, 3, 0, &[d2, d1]);
+        let map2 = AffineMap::new_results(context, 3, 0, &[d0, d1]);
+        IndexingMaps::new(context, &[map0, map1, map2])
+    }
+
+    pub fn get_indexing_maps(&self) -> IndexingMaps {
+        let attr_name = StringBacked::from(IndexingMaps::get_name());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        IndexingMaps::from(*attr.get())
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -2019,19 +2093,46 @@ impl MatmulTransposeA {
 }
 
 impl MatmulTransposeB {
-    pub fn new(
+    pub fn new(op: &mut Operation, cast_kind: Option<CastKind>) -> Self {
+        let context = op.get_context();
+        let index_maps = Self::get_default_indexing_maps(&context).as_named_attribute();
+        op.set_attribute_discardable(
+            &index_maps.get_identifier().as_string(),
+            &index_maps.as_attribute(),
+        );
+        if let Some(cast_kind_) = cast_kind {
+            let cast = Cast::new(&context, cast_kind_).as_named_attribute();
+            op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
+        }
+        Self::from(*op.get_mut())
+    }
+
+    pub fn new_mem_ref(
         context: &Context,
         lhs: &Value,
         rhs: &Value,
         output: &Value,
-        cast_kind: CastKind,
+        cast_kind: Option<CastKind>,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc)
-            .as_operation();
-        let cast = Cast::new(context, cast_kind).as_named_attribute();
-        op.set_attribute_inherent(&cast.get_identifier().as_string(), &cast.as_attribute());
-        Self::from(*op.get_mut())
+        Self::new(
+            &mut Self::__new_mem_ref(&Op::MatmulTransposeB, context, lhs, rhs, output, loc).as_operation(),
+            cast_kind,
+        )
+    }
+
+    pub fn new_tensor(
+        t: &RankedTensor,
+        lhs: &Value,
+        rhs: &Value,
+        output: &Value,
+        cast_kind: Option<CastKind>,
+        loc: &Location,
+    ) -> Self {
+        Self::new(
+            &mut Self::__new_tensor(&Op::MatmulTransposeB, t, lhs, rhs, output, loc).as_operation(),
+            cast_kind,
+        )
     }
 
     fn check_operands(lhs: &Value, rhs: &Value, output: &Value) -> () {
@@ -2046,10 +2147,26 @@ impl MatmulTransposeB {
         &self.0
     }
 
-    pub fn get_cast_kind(&self) -> CastKind {
+    pub fn get_cast(&self) -> Cast {
         let attr_name = StringBacked::from(Cast::get_name());
         let attr = self.as_operation().get_attribute_inherent(&attr_name.as_string_ref());
-        Cast::from(*attr.get()).get_kind()
+        Cast::from(*attr.get())
+    }
+
+    pub fn get_default_indexing_maps(context: &Context) -> IndexingMaps {
+        let d0 = AffineDim::new(context, 0).as_expr();
+        let d1 = AffineDim::new(context, 1).as_expr();
+        let d2 = AffineDim::new(context, 2).as_expr();
+        let map0 = AffineMap::new_results(context, 3, 0, &[d0, d2]);
+        let map1 = AffineMap::new_results(context, 3, 0, &[d1, d2]);
+        let map2 = AffineMap::new_results(context, 3, 0, &[d0, d1]);
+        IndexingMaps::new(context, &[map0, map1, map2])
+    }
+
+    pub fn get_indexing_maps(&self) -> IndexingMaps {
+        let attr_name = StringBacked::from(IndexingMaps::get_name());
+        let attr = self.as_operation().get_attribute_discardable(&attr_name.as_string_ref());
+        IndexingMaps::from(*attr.get())
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -2508,6 +2625,12 @@ impl Tanh {
 }
 
 impl Transpose {
+    fn new(op: &mut Operation, p: &Permutation) -> Self {
+        let p_ = p.as_named_attribute();
+        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
+        Self::from(*op.get_mut())
+    }
+
     pub fn new_mem_ref(
         context: &Context,
         input: &Value,
@@ -2515,10 +2638,10 @@ impl Transpose {
         p: &Permutation,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_mem_ref(&Op::Transpose, context, input, output, loc).as_operation();
-        let p_ = p.as_named_attribute();
-        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
-        Self::from(*op.get_mut())
+        Self::new(
+            &mut Self::__new_mem_ref(&Op::Transpose, context, input, output, loc).as_operation(),
+            p,
+        )
     }
 
     pub fn new_tensor(
@@ -2528,10 +2651,10 @@ impl Transpose {
         p: &Permutation,
         loc: &Location,
     ) -> Self {
-        let mut op = Self::__new_tensor(&Op::Transpose, t, input, output, loc).as_operation();
-        let p_ = p.as_named_attribute();
-        op.set_attribute_inherent(&p_.get_identifier().as_string(), &p_.as_attribute());
-        Self::from(*op.get_mut())
+        Self::new(
+            &mut Self::__new_tensor(&Op::Transpose, t, input, output, loc).as_operation(),
+            p,
+        )
     }
 
     fn check_operands(input: &Value, output: &Value) -> () {
@@ -2844,11 +2967,11 @@ impl IRAttribute for Cast {
 
 impl IRAttributeNamed for Cast {
     fn get_name() -> &'static str {
-        "linalg.cast"
+        "cast"
     }
 }
 
-impl NamedInteger for Cast {}
+impl NamedParsed for Cast {}
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Ceil);
 
@@ -3677,7 +3800,6 @@ impl IROperation for Log {
 impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult!(Matmul);
 
 impl ElementwiseBinaryOperationGetBody for Matmul {
-    /// TODO: Check `cast` attribute.
     fn get_body(
         t: &Type,
         lhs: &Value,
@@ -3786,7 +3908,42 @@ impl ElementwiseBinaryOperationGetBody for MatmulTransposeA {
         acc: &Value,
         loc: &Location,
     ) -> Vec<Operation> {
-        todo!()
+        if t.is_float() {
+            let op_mul = arith::MulF::new(
+                t,
+                lhs,
+                rhs,
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddF::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else if t.is_integer() {
+            let op_mul = arith::MulI::new(
+                t,
+                lhs,
+                rhs,
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddI::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else {
+            eprintln!("Expected float or integer element type for matmul operation");
+            exit(ExitCode::DialectError);
+        }
     }
 }
 
@@ -3852,7 +4009,42 @@ impl ElementwiseBinaryOperationGetBody for MatmulTransposeB {
         acc: &Value,
         loc: &Location,
     ) -> Vec<Operation> {
-        todo!()
+        if t.is_float() {
+            let op_mul = arith::MulF::new(
+                t,
+                lhs,
+                rhs,
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddF::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::FastMathFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else if t.is_integer() {
+            let op_mul = arith::MulI::new(
+                t,
+                lhs,
+                rhs,
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            let op_add = arith::AddI::new(
+                t,
+                acc,
+                &op_mul.get_result(0),
+                arith::IntegerOverflowFlags::None,
+                loc,
+            ).as_operation();
+            vec![op_mul, op_add]
+        } else {
+            eprintln!("Expected float or integer element type for matmul operation");
+            exit(ExitCode::DialectError);
+        }
     }
 }
 
@@ -4812,7 +5004,12 @@ impl ElementwiseUnaryOperationGetBody for Transpose {
         acc: &Value,
         loc: &Location,
     ) -> Vec<Operation> {
-        todo!()
+        if t.is_float() || t.is_integer() {
+            vec![]
+        } else {
+            eprintln!("Expected float or integer element type for matmul operation");
+            exit(ExitCode::DialectError);
+        }
     }
 }
 
