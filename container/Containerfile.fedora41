@@ -62,4 +62,6 @@ RUN echo DYLD_LIBRARY_PATH="${RUSTUP_TOOLCHAIN_PATH}/lib:${DYLD_LIBRARY_PATH}" \
 
 RUN source ${CARGO_ENV}  &&  cargo build --verbose ${BUILD_MODE}
 RUN source ${CARGO_ENV}  &&  cargo clippy --verbose ${BUILD_MODE}
+RUN source ${CARGO_ENV}  &&  cargo fmt --all -- --check
+RUN source ${CARGO_ENV}  &&  cargo fmt --all --manifest-path tests/lit-tests-rust/Cargo.toml -- --check
 RUN source ${CARGO_ENV}  &&  cargo test --verbose ${BUILD_MODE} -- --nocapture
