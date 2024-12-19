@@ -32,11 +32,11 @@ pub fn main() -> () {
     let t = FloatType::new(&context, FloatLayout::F32).as_type();
     let t_index = Index::new(&context).as_type();
     let s_out = ShapeImpl::from(vec![8, 64]);
-    let affine_d0 = AffineDim::new(&context, 0).as_expr();
-    let affine_d1 = AffineDim::new(&context, 1).as_expr();
-    let affine_s0 = AffineSymbol::new(&context, 0).as_expr();
-    let affine_expr0 = AffineBinop::new_add(&affine_d0, &affine_s0).as_expr();
-    let map = AffineMap::new_results(&context, s_out.rank(), 1, &[affine_expr0, affine_d1]);
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let s0 = AffineSymbol::new(&context, 0).as_expr();
+    let expr0 = AffineBinop::new_add(&d0, &s0).as_expr();
+    let map = AffineMap::new_results(&context, s_out.rank(), 1, &[expr0, d1]);
     let layout = MemoryLayout::from(map);
     let t_mr_out = MemRef::new(&s_out, &t, &layout, &DefaultMemorySpace::new());
     let align = Alignment::new(&context, 8);
