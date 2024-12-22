@@ -88,7 +88,7 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 
 [3]:    https://crates.io/crates/mlir-sys
 
-[4]:    https://github.com/femtomc/mlir-sys/blob/main/LICENSE
+[4]:    https://github.com/mlir-rs/mlir-sys/blob/main/LICENSE
 
 [5]:    https://fedoraproject.org/
 
@@ -102,7 +102,7 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 
 1.  `https://crates.io/crates/mlir-sys`
 
-1.  `https://github.com/femtomc/mlir-sys/blob/main/LICENSE`
+1.  `https://github.com/mlir-rs/mlir-sys/blob/main/LICENSE`
 
 1.  `https://fedoraproject.org/`
 

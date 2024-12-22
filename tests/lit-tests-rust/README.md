@@ -51,7 +51,7 @@ from the `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 
 [3]:    https://crates.io/crates/mlir-sys
 
-[4]:    https://github.com/femtomc/mlir-sys/blob/main/LICENSE
+[4]:    https://github.com/mlir-rs/mlir-sys/blob/main/LICENSE
 
 1.  `https://mlir.llvm.org/`
 
@@ -59,4 +59,4 @@ from the `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 
 1.  `https://crates.io/crates/mlir-sys`
 
-1.  `https://github.com/femtomc/mlir-sys/blob/main/LICENSE`
+1.  `https://github.com/mlir-rs/mlir-sys/blob/main/LICENSE`
