@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
+//  ^Attribute separator
 
 extern crate mlir;
+
+use crate::default_test::DEFAULT_TEST_NAME;
 
 use mlir::dialects::common::SymbolVisibilityKind;
 use mlir::dialects::func::Arguments;
@@ -16,6 +19,27 @@ use mlir::ir::Registry;
 use mlir::ir::StringBacked;
 use mlir::ir::Type;
 use mlir::types::function::Function as FunctionType;
+
+use std::collections::HashMap;
+use std::process;
+
+#[repr(i32)]
+pub enum ExitCode {
+    Ok = 0,
+    ArgError = 100,
+    TestError = 200,
+}
+
+pub type TestCallback = fn() -> TestResult;
+pub type TestResult = Result<(), String>;
+
+pub struct TestRegistry {
+    map: HashMap<String, TestCallback>,
+}
+
+pub fn exit(code: ExitCode) -> ! {
+    process::exit(code as i32);
+}
 
 pub fn get_empty_test_fn(context: &Context, inputs: &[Type], results: &[Type]) -> Func {
     let name = StringBacked::from("test");
@@ -71,4 +95,36 @@ pub fn get_registry() -> Registry {
     registry.register_tensor();
     registry.register_vector();
     registry
+}
+
+impl TestRegistry {
+    pub fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
+
+    pub fn add_test(&mut self, test_name: &str, test_callback: TestCallback) -> () {
+        if self
+            .map
+            .insert(test_name.to_string(), test_callback)
+            .is_some()
+        {
+            eprintln!("Attempted to register test '{}' more than once", test_name);
+            exit(ExitCode::TestError);
+        }
+    }
+
+    pub fn get_test(&self, test_name: &str) -> TestCallback {
+        match self.map.get(test_name) {
+            Some(cb) => *cb,
+            None => self.get_test(DEFAULT_TEST_NAME),
+        }
+    }
+}
+
+impl Default for TestRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }

@@ -42,5 +42,4 @@ jobs:
           -f container/Containerfile.${{ inputs.distro }}${{ inputs.os_ver }} \
           -t ${{ inputs.os }}-mlir-rust-${{ inputs.build_mode }} \
           ${{ inputs.build_mode == 'release' && '--build-arg=BUILD_MODE=--release' || '' }} \
-          --build-arg=CARGO_JOBS=1 \
           .

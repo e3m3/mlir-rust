@@ -1,9 +1,12 @@
-// RUN: %O/func_func_1 2>&1 | @mlir-opt --allow-unregistered-dialect | @filecheck %M/func_func_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run func_func_1 2>&1 | @mlir-opt --allow-unregistered-dialect | @filecheck %M/func_func_1.mlir --check-prefix=CHECK_CAN
 // COM: The flag for allowing unregistered dialects is needed both in the IR generation and
 // COM: the call to `mlir-opt`.
 
 extern crate mlir;
 extern crate mlir_sys;
+
+
+use crate::common::*;
 
 use mlir_sys::MlirAttribute;
 
@@ -25,16 +28,13 @@ use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
 use mlir::types::integer::Integer as IntegerType;
 
-mod common;
-use crate::common::*;
-
 #[derive(Clone)]
 pub struct ClassNameAttribute(MlirAttribute);
 
 #[derive(Clone)]
 pub struct GenericIntegerAttribute(MlirAttribute);
 
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let mut context = module.get_context();
     context.set_allow_unregistered_dialects(true);
@@ -62,6 +62,7 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }
 
 impl ClassNameAttribute {

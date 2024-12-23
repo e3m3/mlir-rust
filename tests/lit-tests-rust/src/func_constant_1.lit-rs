@@ -1,6 +1,9 @@
-// RUN: %O/func_constant_1 2>&1 | @mlir-opt | @filecheck %M/func_constant_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run func_constant_1 2>&1 | @mlir-opt | @filecheck %M/func_constant_1.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
+
+
+use crate::common::*;
 
 use mlir::dialects::IROperation;
 use mlir::dialects::func::Constant;
@@ -11,10 +14,7 @@ use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::function::Function as FunctionType;
 
-mod common;
-use crate::common::*;
-
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
@@ -42,4 +42,5 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }

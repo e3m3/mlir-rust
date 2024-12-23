@@ -1,9 +1,11 @@
-// RUN: %O/tensor_generate_2 2>&1 | @mlir-opt | @filecheck %M/tensor_generate_2.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run tensor_generate_2 2>&1 | @mlir-opt | @filecheck %M/tensor_generate_2.mlir --check-prefix=CHECK_CAN
 
-// COM: TODO: Implement required arith and index operations for genrerate body.
+// COM: TODO: Implement required arith and index operations for generate body.
 // XFAIL: *
 
-pub fn main() -> () {
-    eprintln!("Unimplemented");
-    panic!();
+
+use crate::common::TestResult;
+
+pub fn test() -> TestResult {
+    Err("Unimplemented".to_string())
 }

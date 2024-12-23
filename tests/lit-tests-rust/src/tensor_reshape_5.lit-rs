@@ -1,6 +1,9 @@
-// RUN: %O/tensor_reshape_5 2>&1 | @mlir-opt --canonicalize | @filecheck %M/tensor_reshape_5.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run tensor_reshape_5 2>&1 | @mlir-opt --canonicalize | @filecheck %M/tensor_reshape_5.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
+
+
+use crate::common::*;
 
 use mlir::dialects::IROperation;
 use mlir::dialects::func::Return;
@@ -15,10 +18,7 @@ use mlir::types::ranked_tensor::RankedTensor;
 use mlir::types::shaped::Shaped;
 use mlir::types::unranked_tensor::UnrankedTensor;
 
-mod common;
-use crate::common::*;
-
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
@@ -43,4 +43,5 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }

@@ -1,6 +1,9 @@
-// RUN: %O/memref_global_5 2>&1 | @mlir-opt | @filecheck %M/memref_global_5.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run memref_global_5 2>&1 | @mlir-opt | @filecheck %M/memref_global_5.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
+
+
+use crate::common::*;
 
 use mlir::attributes::dense_elements::DenseElements;
 use mlir::attributes::specialized::NamedInitialization;
@@ -24,10 +27,7 @@ use mlir::types::integer::Integer as IntegerType;
 use mlir::types::memref::MemRef;
 use mlir::types::ranked_tensor::RankedTensor;
 
-mod common;
-use crate::common::*;
-
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
@@ -61,4 +61,5 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }

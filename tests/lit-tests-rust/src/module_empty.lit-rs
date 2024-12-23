@@ -1,11 +1,12 @@
-// RUN: %O/module_empty 2>&1 | @mlir-opt | @filecheck %M/module_empty.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run module_empty 2>&1 | @mlir-opt | @filecheck %M/module_empty.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
-mod common;
+
 use crate::common::*;
 
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let module = get_module(&get_registry());
     module.as_operation().dump();
+    Ok(())
 }

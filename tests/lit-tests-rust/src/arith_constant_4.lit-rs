@@ -1,6 +1,9 @@
-// RUN: %O/arith_constant_4 2>&1 | @mlir-opt | @filecheck %M/arith_constant_4.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run arith_constant_4 2>&1 | @mlir-opt | @filecheck %M/arith_constant_4.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
+
+
+use crate::common::*;
 
 use mlir::attributes::float::Float as FloatAttr;
 use mlir::dialects::IROperation;
@@ -11,10 +14,7 @@ use mlir::types::IRType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 
-mod common;
-use crate::common::*;
-
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
@@ -31,4 +31,5 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }

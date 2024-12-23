@@ -1,4 +1,4 @@
-// RUN: %O/vector_transfer_write_5 2>&1 | @mlir-opt | @filecheck %M/vector_transfer_write_5.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run vector_transfer_write_5 2>&1 | @mlir-opt | @filecheck %M/vector_transfer_write_5.mlir --check-prefix=CHECK_CAN
 
 // COM: This test fails to verify because `mlir-opt` says that this operation cannot have
 // COM: broadcast dimensions.
@@ -7,6 +7,9 @@
 // XFAIL: *
 
 extern crate mlir;
+
+
+use crate::common::*;
 
 use mlir::attributes::specialized::NamedAffineMap;
 use mlir::dialects::IROperation;
@@ -26,10 +29,7 @@ use mlir::types::float::Layout as FloatLayout;
 use mlir::types::ranked_tensor::RankedTensor;
 use mlir::types::vector::Vector;
 
-mod common;
-use crate::common::*;
-
-pub fn main() -> () {
+pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let context = module.get_context();
     let loc = context.get_unknown_location();
@@ -65,4 +65,5 @@ pub fn main() -> () {
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
     module.as_operation().dump();
+    Ok(())
 }
