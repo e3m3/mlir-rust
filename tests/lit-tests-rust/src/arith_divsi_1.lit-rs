@@ -4,11 +4,11 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::arith::DivSI;
 use mlir::dialects::func::Return;
 use mlir::ir::Block;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::integer::Integer as IntegerType;
 
 pub fn test() -> TestResult {

@@ -6,9 +6,9 @@
 use std::fmt;
 
 use crate::dialects;
-use dialects::IROp;
+use dialects::IOp;
 
-pub type StaticOpList = &'static [&'static dyn IROp];
+pub type StaticOpList = &'static [&'static dyn IOp];
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Trait {

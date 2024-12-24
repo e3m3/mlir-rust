@@ -18,16 +18,16 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::array::Array;
 use attributes::specialized::NamedArrayOfIntegerArrays;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedUnit;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::StaticOffsets;
@@ -50,7 +50,7 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::index::Index;
 use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
@@ -1437,7 +1437,7 @@ impl Yield {
         Self::from(*op_state.create_operation().get(), *parent, *parent_op)
     }
 
-    pub fn new(value: &Value, parent: &dyn IROperation, loc: &Location) -> Self {
+    pub fn new(value: &Value, parent: &dyn IOperation, loc: &Location) -> Self {
         let context = parent.as_operation().get_context();
         let dialect = context.get_dialect_tensor();
         if parent.get_dialect() != dialect {
@@ -1498,7 +1498,7 @@ impl Yield {
 //  Trait Implemention
 ///////////////////////////////
 
-impl IROperation for Bitcast {
+impl IOperation for Bitcast {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1527,7 +1527,7 @@ impl IROperation for Bitcast {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Dim
     }
 
@@ -1536,7 +1536,7 @@ impl IROperation for Bitcast {
     }
 }
 
-impl IROperation for Cast {
+impl IOperation for Cast {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1566,7 +1566,7 @@ impl IROperation for Cast {
         Op::Cast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Cast
     }
 
@@ -1575,7 +1575,7 @@ impl IROperation for Cast {
     }
 }
 
-impl IROperation for Concat {
+impl IOperation for Concat {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1605,7 +1605,7 @@ impl IROperation for Concat {
         Op::Concat.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Concat
     }
 
@@ -1614,7 +1614,7 @@ impl IROperation for Concat {
     }
 }
 
-impl IROperation for CollapseShape {
+impl IOperation for CollapseShape {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1643,7 +1643,7 @@ impl IROperation for CollapseShape {
         Op::CollapseShape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::CollapseShape
     }
 
@@ -1652,7 +1652,7 @@ impl IROperation for CollapseShape {
     }
 }
 
-impl IROperation for Dim {
+impl IOperation for Dim {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1683,7 +1683,7 @@ impl IROperation for Dim {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Dim
     }
 
@@ -1692,7 +1692,7 @@ impl IROperation for Dim {
     }
 }
 
-impl IROperation for Empty {
+impl IOperation for Empty {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1721,7 +1721,7 @@ impl IROperation for Empty {
         Op::Empty.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Empty
     }
 
@@ -1730,7 +1730,7 @@ impl IROperation for Empty {
     }
 }
 
-impl IROperation for ExpandShape {
+impl IOperation for ExpandShape {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1759,7 +1759,7 @@ impl IROperation for ExpandShape {
         Op::ExpandShape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::ExpandShape
     }
 
@@ -1768,7 +1768,7 @@ impl IROperation for ExpandShape {
     }
 }
 
-impl IROperation for Extract {
+impl IOperation for Extract {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1798,7 +1798,7 @@ impl IROperation for Extract {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Extract
     }
 
@@ -1807,7 +1807,7 @@ impl IROperation for Extract {
     }
 }
 
-impl IROperation for ExtractSlice {
+impl IOperation for ExtractSlice {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1838,7 +1838,7 @@ impl IROperation for ExtractSlice {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Extract
     }
 
@@ -1850,7 +1850,7 @@ impl IROperation for ExtractSlice {
     }
 }
 
-impl IROperation for FromElements {
+impl IOperation for FromElements {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1879,7 +1879,7 @@ impl IROperation for FromElements {
         Op::FromElements.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::FromElements
     }
 
@@ -1894,7 +1894,7 @@ impl From<MlirAttribute> for GatherDimensions {
     }
 }
 
-impl IRAttribute for GatherDimensions {
+impl IAttribute for GatherDimensions {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1904,7 +1904,7 @@ impl IRAttribute for GatherDimensions {
     }
 }
 
-impl IRAttributeNamed for GatherDimensions {
+impl IAttributeNamed for GatherDimensions {
     fn get_name() -> &'static str {
         "gather_dims"
     }
@@ -1912,7 +1912,7 @@ impl IRAttributeNamed for GatherDimensions {
 
 impl NamedI64DenseArray for GatherDimensions {}
 
-impl IROperation for Generate {
+impl IOperation for Generate {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1940,7 +1940,7 @@ impl IROperation for Generate {
         Op::Generate.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Generate
     }
 
@@ -1959,7 +1959,7 @@ impl From<MlirAttribute> for InnerDimensionsPosition {
     }
 }
 
-impl IRAttribute for InnerDimensionsPosition {
+impl IAttribute for InnerDimensionsPosition {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1969,7 +1969,7 @@ impl IRAttribute for InnerDimensionsPosition {
     }
 }
 
-impl IRAttributeNamed for InnerDimensionsPosition {
+impl IAttributeNamed for InnerDimensionsPosition {
     fn get_name() -> &'static str {
         "inner_dims_pos"
     }
@@ -1983,7 +1983,7 @@ impl From<MlirAttribute> for NoFold {
     }
 }
 
-impl IRAttribute for NoFold {
+impl IAttribute for NoFold {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1993,7 +1993,7 @@ impl IRAttribute for NoFold {
     }
 }
 
-impl IRAttributeNamed for NoFold {
+impl IAttributeNamed for NoFold {
     fn get_name() -> &'static str {
         "nofold"
     }
@@ -2001,7 +2001,7 @@ impl IRAttributeNamed for NoFold {
 
 impl NamedUnit for NoFold {}
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
@@ -2013,7 +2013,7 @@ impl From<MlirAttribute> for OuterDimensionsPermutation {
     }
 }
 
-impl IRAttribute for OuterDimensionsPermutation {
+impl IAttribute for OuterDimensionsPermutation {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2023,7 +2023,7 @@ impl IRAttribute for OuterDimensionsPermutation {
     }
 }
 
-impl IRAttributeNamed for OuterDimensionsPermutation {
+impl IAttributeNamed for OuterDimensionsPermutation {
     fn get_name() -> &'static str {
         "outer_dims_perm"
     }
@@ -2031,7 +2031,7 @@ impl IRAttributeNamed for OuterDimensionsPermutation {
 
 impl NamedI64DenseArray for OuterDimensionsPermutation {}
 
-impl IROperation for Pad {
+impl IOperation for Pad {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2060,7 +2060,7 @@ impl IROperation for Pad {
         Op::Pad.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Pad
     }
 
@@ -2074,7 +2074,7 @@ impl IROperation for Pad {
     }
 }
 
-impl IROperation for Rank {
+impl IOperation for Rank {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2104,7 +2104,7 @@ impl IROperation for Rank {
         Op::Rank.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Rank
     }
 
@@ -2119,7 +2119,7 @@ impl From<MlirAttribute> for Reassociation {
     }
 }
 
-impl IRAttribute for Reassociation {
+impl IAttribute for Reassociation {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2129,7 +2129,7 @@ impl IRAttribute for Reassociation {
     }
 }
 
-impl IRAttributeNamed for Reassociation {
+impl IAttributeNamed for Reassociation {
     fn get_name() -> &'static str {
         "reassociation"
     }
@@ -2137,7 +2137,7 @@ impl IRAttributeNamed for Reassociation {
 
 impl NamedArrayOfIntegerArrays for Reassociation {}
 
-impl IROperation for Reshape {
+impl IOperation for Reshape {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2166,7 +2166,7 @@ impl IROperation for Reshape {
         Op::Reshape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Reshape
     }
 
@@ -2181,7 +2181,7 @@ impl From<MlirAttribute> for ScatterDimensions {
     }
 }
 
-impl IRAttribute for ScatterDimensions {
+impl IAttribute for ScatterDimensions {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2191,7 +2191,7 @@ impl IRAttribute for ScatterDimensions {
     }
 }
 
-impl IRAttributeNamed for ScatterDimensions {
+impl IAttributeNamed for ScatterDimensions {
     fn get_name() -> &'static str {
         "scatter_dims"
     }
@@ -2205,7 +2205,7 @@ impl From<MlirAttribute> for StaticHigh {
     }
 }
 
-impl IRAttribute for StaticHigh {
+impl IAttribute for StaticHigh {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2215,7 +2215,7 @@ impl IRAttribute for StaticHigh {
     }
 }
 
-impl IRAttributeNamed for StaticHigh {
+impl IAttributeNamed for StaticHigh {
     fn get_name() -> &'static str {
         "static_high"
     }
@@ -2229,7 +2229,7 @@ impl From<MlirAttribute> for StaticInnerTiles {
     }
 }
 
-impl IRAttribute for StaticInnerTiles {
+impl IAttribute for StaticInnerTiles {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2239,7 +2239,7 @@ impl IRAttribute for StaticInnerTiles {
     }
 }
 
-impl IRAttributeNamed for StaticInnerTiles {
+impl IAttributeNamed for StaticInnerTiles {
     fn get_name() -> &'static str {
         "static_inner_tiles"
     }
@@ -2253,7 +2253,7 @@ impl From<MlirAttribute> for StaticOutputShape {
     }
 }
 
-impl IRAttribute for StaticOutputShape {
+impl IAttribute for StaticOutputShape {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2263,7 +2263,7 @@ impl IRAttribute for StaticOutputShape {
     }
 }
 
-impl IRAttributeNamed for StaticOutputShape {
+impl IAttributeNamed for StaticOutputShape {
     fn get_name() -> &'static str {
         "static_output_shape"
     }
@@ -2277,7 +2277,7 @@ impl From<MlirAttribute> for StaticLow {
     }
 }
 
-impl IRAttribute for StaticLow {
+impl IAttribute for StaticLow {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2287,7 +2287,7 @@ impl IRAttribute for StaticLow {
     }
 }
 
-impl IRAttributeNamed for StaticLow {
+impl IAttributeNamed for StaticLow {
     fn get_name() -> &'static str {
         "static_low"
     }
@@ -2301,7 +2301,7 @@ impl From<MlirAttribute> for Unique {
     }
 }
 
-impl IRAttribute for Unique {
+impl IAttribute for Unique {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2311,7 +2311,7 @@ impl IRAttribute for Unique {
     }
 }
 
-impl IRAttributeNamed for Unique {
+impl IAttributeNamed for Unique {
     fn get_name() -> &'static str {
         "unique"
     }
@@ -2319,7 +2319,7 @@ impl IRAttributeNamed for Unique {
 
 impl NamedUnit for Unique {}
 
-impl IROperation for Yield {
+impl IOperation for Yield {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2348,7 +2348,7 @@ impl IROperation for Yield {
         Op::Yield.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Yield
     }
 

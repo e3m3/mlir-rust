@@ -6,12 +6,12 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::func::CallIndirect;
 use mlir::dialects::func::Constant;
 use mlir::dialects::func::Return;
 use mlir::ir::Block;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 

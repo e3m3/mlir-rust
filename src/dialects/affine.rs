@@ -80,7 +80,7 @@ use ir::Attribute;
 use ir::Context;
 use ir::TypeID;
 
-pub trait AffineExpr {
+pub trait IExpr {
     fn as_expr(&self) -> Expr;
     fn get(&self) -> &MlirAffineExpr;
 }
@@ -576,7 +576,7 @@ impl Symbol {
     }
 }
 
-impl AffineExpr for Binary {
+impl IExpr for Binary {
     fn as_expr(&self) -> Expr {
         Expr::from(self.0)
     }
@@ -586,7 +586,7 @@ impl AffineExpr for Binary {
     }
 }
 
-impl AffineExpr for Constant {
+impl IExpr for Constant {
     fn as_expr(&self) -> Expr {
         Expr::from(self.0)
     }
@@ -596,7 +596,7 @@ impl AffineExpr for Constant {
     }
 }
 
-impl AffineExpr for Dim {
+impl IExpr for Dim {
     fn as_expr(&self) -> Expr {
         Expr::from(self.0)
     }
@@ -606,7 +606,7 @@ impl AffineExpr for Dim {
     }
 }
 
-impl AffineExpr for Expr {
+impl IExpr for Expr {
     fn as_expr(&self) -> Expr {
         *self
     }
@@ -616,7 +616,7 @@ impl AffineExpr for Expr {
     }
 }
 
-impl AffineExpr for Symbol {
+impl IExpr for Symbol {
     fn as_expr(&self) -> Expr {
         Expr::from(self.0)
     }
@@ -626,7 +626,7 @@ impl AffineExpr for Symbol {
     }
 }
 
-impl cmp::PartialEq for dyn AffineExpr {
+impl cmp::PartialEq for dyn IExpr {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirAffineExprEqual(*self.get(), *rhs.get()))
     }

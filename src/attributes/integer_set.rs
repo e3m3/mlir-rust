@@ -11,7 +11,7 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -45,7 +45,7 @@ impl IntegerSet {
     }
 }
 
-impl IRAttribute for IntegerSet {
+impl IAttribute for IntegerSet {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

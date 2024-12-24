@@ -4,8 +4,8 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
-use mlir::dialects::affine::AffineExpr;
+use mlir::dialects::IOperation;
+use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Dim as AffineDim;
 use mlir::dialects::affine::Map as AffineMap;
@@ -17,7 +17,7 @@ use mlir::dialects::memref::Alloc;
 use mlir::ir::Block;
 use mlir::ir::Shape;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;

@@ -14,12 +14,12 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
 use ir::Location;
-use types::IRType;
+use types::IType;
 use types::float::Float as FloatType;
 
 #[derive(Clone)]
@@ -71,7 +71,7 @@ impl Float {
     }
 }
 
-impl IRAttribute for Float {
+impl IAttribute for Float {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

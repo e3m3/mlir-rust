@@ -18,7 +18,7 @@ use exit_code::exit;
 use ir::Location;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -67,7 +67,7 @@ impl UnrankedTensor {
     }
 }
 
-impl IRType for UnrankedTensor {
+impl IType for UnrankedTensor {
     fn get(&self) -> &MlirType {
         self.get()
     }

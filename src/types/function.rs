@@ -21,7 +21,7 @@ use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct Function(MlirType);
@@ -94,7 +94,7 @@ impl Function {
     }
 }
 
-impl IRType for Function {
+impl IType for Function {
     fn get(&self) -> &MlirType {
         self.get()
     }

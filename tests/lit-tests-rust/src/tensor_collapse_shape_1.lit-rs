@@ -4,16 +4,16 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::attributes::IRAttribute;
+use mlir::attributes::IAttribute;
 use mlir::attributes::array::Array;
 use mlir::attributes::integer::Integer as IntegerAttr;
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::func::Return;
 use mlir::dialects::tensor::CollapseShape;
 use mlir::dialects::tensor::Reassociation;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::integer::Integer as IntegerType;

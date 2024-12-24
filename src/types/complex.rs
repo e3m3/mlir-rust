@@ -17,7 +17,7 @@ use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct Complex(MlirType);
@@ -58,7 +58,7 @@ impl Complex {
     }
 }
 
-impl IRType for Complex {
+impl IType for Complex {
     fn get(&self) -> &MlirType {
         self.get()
     }

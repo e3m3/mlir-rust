@@ -4,7 +4,7 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::func::Return;
 use mlir::dialects::vector::Print;
 use mlir::dialects::vector::PunctuationKind;

@@ -255,13 +255,13 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use attributes::named::Named;
 use dialects::affine;
 use exit_code::ExitCode;
 use exit_code::exit;
 use types::GetWidth;
-use types::IRType;
+use types::IType;
 use types::IsPromotableTo;
 use types::unit::Unit;
 
@@ -550,7 +550,7 @@ impl Default for Attribute {
     }
 }
 
-impl IRAttribute for Attribute {
+impl IAttribute for Attribute {
     fn as_attribute(&self) -> Attribute {
         self.clone()
     }
@@ -2324,7 +2324,7 @@ impl Type {
 
 impl GetWidth for Type {}
 
-impl IRType for Type {
+impl IType for Type {
     fn as_type(&self) -> Type {
         self.clone()
     }
@@ -2340,7 +2340,7 @@ impl IRType for Type {
 
 impl IsPromotableTo<Self> for Type {
     fn is_promotable_to(&self, other: &Self) -> bool {
-        <dyn IRType>::is_promotable_to(self, other)
+        <dyn IType>::is_promotable_to(self, other)
     }
 }
 

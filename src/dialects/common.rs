@@ -15,8 +15,8 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
@@ -250,7 +250,7 @@ impl From<MlirAttribute> for DefaultMemorySpace {
     }
 }
 
-impl IRAttribute for DefaultMemorySpace {
+impl IAttribute for DefaultMemorySpace {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -260,7 +260,7 @@ impl IRAttribute for DefaultMemorySpace {
     }
 }
 
-impl IRAttributeNamed for DefaultMemorySpace {
+impl IAttributeNamed for DefaultMemorySpace {
     fn get_name() -> &'static str {
         "memorySpace"
     }
@@ -289,7 +289,7 @@ impl From<MlirAttribute> for IntegerMemorySpace {
     }
 }
 
-impl IRAttribute for IntegerMemorySpace {
+impl IAttribute for IntegerMemorySpace {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -299,7 +299,7 @@ impl IRAttribute for IntegerMemorySpace {
     }
 }
 
-impl IRAttributeNamed for IntegerMemorySpace {
+impl IAttributeNamed for IntegerMemorySpace {
     fn get_name() -> &'static str {
         "memorySpace"
     }
@@ -328,7 +328,7 @@ impl From<MlirAttribute> for Dimension {
     }
 }
 
-impl IRAttribute for Dimension {
+impl IAttribute for Dimension {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -338,7 +338,7 @@ impl IRAttribute for Dimension {
     }
 }
 
-impl IRAttributeNamed for Dimension {
+impl IAttributeNamed for Dimension {
     fn get_name() -> &'static str {
         "dim"
     }
@@ -376,7 +376,7 @@ impl From<&StridedLayout> for MemoryLayout {
     }
 }
 
-impl IRAttribute for MemoryLayout {
+impl IAttribute for MemoryLayout {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -386,7 +386,7 @@ impl IRAttribute for MemoryLayout {
     }
 }
 
-impl IRAttributeNamed for MemoryLayout {
+impl IAttributeNamed for MemoryLayout {
     fn get_name() -> &'static str {
         "layout"
     }
@@ -400,7 +400,7 @@ impl From<MlirAttribute> for NonTemporal {
     }
 }
 
-impl IRAttribute for NonTemporal {
+impl IAttribute for NonTemporal {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -410,7 +410,7 @@ impl IRAttribute for NonTemporal {
     }
 }
 
-impl IRAttributeNamed for NonTemporal {
+impl IAttributeNamed for NonTemporal {
     fn get_name() -> &'static str {
         "nontemporal"
     }
@@ -424,7 +424,7 @@ impl From<MlirAttribute> for OperandSegmentSizes {
     }
 }
 
-impl IRAttribute for OperandSegmentSizes {
+impl IAttribute for OperandSegmentSizes {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -434,7 +434,7 @@ impl IRAttribute for OperandSegmentSizes {
     }
 }
 
-impl IRAttributeNamed for OperandSegmentSizes {
+impl IAttributeNamed for OperandSegmentSizes {
     fn get_name() -> &'static str {
         "operandSegmentSizes"
     }
@@ -448,7 +448,7 @@ impl From<MlirAttribute> for ResultSegmentSizes {
     }
 }
 
-impl IRAttribute for ResultSegmentSizes {
+impl IAttribute for ResultSegmentSizes {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -458,7 +458,7 @@ impl IRAttribute for ResultSegmentSizes {
     }
 }
 
-impl IRAttributeNamed for ResultSegmentSizes {
+impl IAttributeNamed for ResultSegmentSizes {
     fn get_name() -> &'static str {
         "resultSegmentSizes"
     }
@@ -472,7 +472,7 @@ impl From<MlirAttribute> for StaticOffsets {
     }
 }
 
-impl IRAttribute for StaticOffsets {
+impl IAttribute for StaticOffsets {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -482,7 +482,7 @@ impl IRAttribute for StaticOffsets {
     }
 }
 
-impl IRAttributeNamed for StaticOffsets {
+impl IAttributeNamed for StaticOffsets {
     fn get_name() -> &'static str {
         "static_offsets"
     }
@@ -496,7 +496,7 @@ impl From<MlirAttribute> for StaticSizes {
     }
 }
 
-impl IRAttribute for StaticSizes {
+impl IAttribute for StaticSizes {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -506,7 +506,7 @@ impl IRAttribute for StaticSizes {
     }
 }
 
-impl IRAttributeNamed for StaticSizes {
+impl IAttributeNamed for StaticSizes {
     fn get_name() -> &'static str {
         "static_sizes"
     }
@@ -520,7 +520,7 @@ impl From<MlirAttribute> for StaticStrides {
     }
 }
 
-impl IRAttribute for StaticStrides {
+impl IAttribute for StaticStrides {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -530,7 +530,7 @@ impl IRAttribute for StaticStrides {
     }
 }
 
-impl IRAttributeNamed for StaticStrides {
+impl IAttributeNamed for StaticStrides {
     fn get_name() -> &'static str {
         "static_strides"
     }
@@ -544,7 +544,7 @@ impl From<MlirAttribute> for SymbolName {
     }
 }
 
-impl IRAttribute for SymbolName {
+impl IAttribute for SymbolName {
     fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -554,7 +554,7 @@ impl IRAttribute for SymbolName {
     }
 }
 
-impl IRAttributeNamed for SymbolName {
+impl IAttributeNamed for SymbolName {
     fn get_name() -> &'static str {
         "sym_name"
     }
@@ -580,7 +580,7 @@ impl FromStr for SymbolVisibilityKind {
     }
 }
 
-impl IRAttribute for SymbolVisibility {
+impl IAttribute for SymbolVisibility {
     fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -590,7 +590,7 @@ impl IRAttribute for SymbolVisibility {
     }
 }
 
-impl IRAttributeNamed for SymbolVisibility {
+impl IAttributeNamed for SymbolVisibility {
     fn get_name() -> &'static str {
         "sym_visibility"
     }

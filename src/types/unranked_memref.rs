@@ -21,7 +21,7 @@ use exit_code::exit;
 use ir::Location;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -79,7 +79,7 @@ impl UnrankedMemRef {
     }
 }
 
-impl IRType for UnrankedMemRef {
+impl IType for UnrankedMemRef {
     fn get(&self) -> &MlirType {
         self.get()
     }

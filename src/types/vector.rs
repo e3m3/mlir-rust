@@ -23,7 +23,7 @@ use ir::Location;
 use ir::Shape;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -119,7 +119,7 @@ impl Vector {
     }
 }
 
-impl IRType for Vector {
+impl IType for Vector {
     fn get(&self) -> &MlirType {
         self.get()
     }

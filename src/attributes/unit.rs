@@ -12,7 +12,7 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -51,7 +51,7 @@ impl Unit {
     }
 }
 
-impl IRAttribute for Unit {
+impl IAttribute for Unit {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

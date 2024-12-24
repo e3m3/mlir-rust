@@ -17,16 +17,16 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::float::Float as FloatAttr;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedFloatOrIndexOrInteger;
 use attributes::specialized::NamedParsed;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -41,7 +41,7 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::integer::Integer as IntegerType;
 
 ///////////////////////////////
@@ -1262,7 +1262,7 @@ impl SubI {
 //  Trait Implementation
 ///////////////////////////////
 
-impl IROperation for AddF {
+impl IOperation for AddF {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1293,7 +1293,7 @@ impl IROperation for AddF {
         Op::AddF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::AddF
     }
 
@@ -1310,7 +1310,7 @@ impl IROperation for AddF {
     }
 }
 
-impl IROperation for AddI {
+impl IOperation for AddI {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1342,7 +1342,7 @@ impl IROperation for AddI {
         Op::AddI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::AddI
     }
 
@@ -1359,7 +1359,7 @@ impl IROperation for AddI {
     }
 }
 
-impl IROperation for AddUIExtended {
+impl IOperation for AddUIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1388,7 +1388,7 @@ impl IROperation for AddUIExtended {
         Op::AddUIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::AddUIExtended
     }
 
@@ -1410,7 +1410,7 @@ impl From<MlirAttribute> for ArithValue {
     }
 }
 
-impl IRAttribute for ArithValue {
+impl IAttribute for ArithValue {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1420,7 +1420,7 @@ impl IRAttribute for ArithValue {
     }
 }
 
-impl IRAttributeNamed for ArithValue {
+impl IAttributeNamed for ArithValue {
     fn get_name() -> &'static str {
         "value"
     }
@@ -1428,7 +1428,7 @@ impl IRAttributeNamed for ArithValue {
 
 impl NamedFloatOrIndexOrInteger for ArithValue {}
 
-impl IROperation for Constant {
+impl IOperation for Constant {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1459,7 +1459,7 @@ impl IROperation for Constant {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Constant
     }
 
@@ -1468,7 +1468,7 @@ impl IROperation for Constant {
     }
 }
 
-impl IROperation for DivF {
+impl IOperation for DivF {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1499,7 +1499,7 @@ impl IROperation for DivF {
         Op::DivF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::DivF
     }
 
@@ -1515,7 +1515,7 @@ impl IROperation for DivF {
     }
 }
 
-impl IROperation for DivSI {
+impl IOperation for DivSI {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1546,7 +1546,7 @@ impl IROperation for DivSI {
         Op::DivSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::DivSI
     }
 
@@ -1561,7 +1561,7 @@ impl IROperation for DivSI {
     }
 }
 
-impl IROperation for DivUI {
+impl IOperation for DivUI {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1592,7 +1592,7 @@ impl IROperation for DivUI {
         Op::DivUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::DivUI
     }
 
@@ -1613,7 +1613,7 @@ impl From<MlirAttribute> for FastMath {
     }
 }
 
-impl IRAttribute for FastMath {
+impl IAttribute for FastMath {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1623,7 +1623,7 @@ impl IRAttribute for FastMath {
     }
 }
 
-impl IRAttributeNamed for FastMath {
+impl IAttributeNamed for FastMath {
     fn get_name() -> &'static str {
         "fastmath"
     }
@@ -1637,7 +1637,7 @@ impl From<MlirAttribute> for IntegerOverflow {
     }
 }
 
-impl IRAttribute for IntegerOverflow {
+impl IAttribute for IntegerOverflow {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1647,7 +1647,7 @@ impl IRAttribute for IntegerOverflow {
     }
 }
 
-impl IRAttributeNamed for IntegerOverflow {
+impl IAttributeNamed for IntegerOverflow {
     fn get_name() -> &'static str {
         "overflowFlags"
     }
@@ -1655,13 +1655,13 @@ impl IRAttributeNamed for IntegerOverflow {
 
 impl NamedParsed for IntegerOverflow {}
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
 }
 
-impl IROperation for MulF {
+impl IOperation for MulF {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1692,7 +1692,7 @@ impl IROperation for MulF {
         Op::MulF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MulF
     }
 
@@ -1709,7 +1709,7 @@ impl IROperation for MulF {
     }
 }
 
-impl IROperation for MulI {
+impl IOperation for MulI {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1742,7 +1742,7 @@ impl IROperation for MulI {
         Op::MulI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MulI
     }
 
@@ -1759,7 +1759,7 @@ impl IROperation for MulI {
     }
 }
 
-impl IROperation for MulSIExtended {
+impl IOperation for MulSIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1789,7 +1789,7 @@ impl IROperation for MulSIExtended {
         Op::MulSIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MulSIExtended
     }
 
@@ -1805,7 +1805,7 @@ impl IROperation for MulSIExtended {
     }
 }
 
-impl IROperation for MulUIExtended {
+impl IOperation for MulUIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1835,7 +1835,7 @@ impl IROperation for MulUIExtended {
         Op::MulUIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MulUIExtended
     }
 
@@ -1851,7 +1851,7 @@ impl IROperation for MulUIExtended {
     }
 }
 
-impl IROperation for SubF {
+impl IOperation for SubF {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1882,7 +1882,7 @@ impl IROperation for SubF {
         Op::SubF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::SubF
     }
 
@@ -1898,7 +1898,7 @@ impl IROperation for SubF {
     }
 }
 
-impl IROperation for SubI {
+impl IOperation for SubI {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1930,7 +1930,7 @@ impl IROperation for SubI {
         Op::SubI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::SubI
     }
 

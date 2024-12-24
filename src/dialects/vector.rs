@@ -18,8 +18,8 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::bool::Bool as BoolAttr;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedAffineMap;
@@ -29,8 +29,8 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedParsed;
 use attributes::specialized::NamedString;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use effects::MEFF_DEFAULT_WRITE;
@@ -49,7 +49,7 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::integer::Integer as IntegerType;
 use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
@@ -1269,7 +1269,7 @@ impl VectorMask {
 //  Trait Implemention
 ///////////////////////////////
 
-impl IROperation for Extract {
+impl IOperation for Extract {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1299,7 +1299,7 @@ impl IROperation for Extract {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Extract
     }
 
@@ -1311,7 +1311,7 @@ impl IROperation for Extract {
     }
 }
 
-impl IROperation for ExtractElement {
+impl IOperation for ExtractElement {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1341,7 +1341,7 @@ impl IROperation for ExtractElement {
         Op::ExtractElement.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::ExtractElement
     }
 
@@ -1350,7 +1350,7 @@ impl IROperation for ExtractElement {
     }
 }
 
-impl IROperation for FromElements {
+impl IOperation for FromElements {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1378,7 +1378,7 @@ impl IROperation for FromElements {
         Op::FromElements.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::FromElements
     }
 
@@ -1387,7 +1387,7 @@ impl IROperation for FromElements {
     }
 }
 
-impl IROperation for Load {
+impl IOperation for Load {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1412,7 +1412,7 @@ impl IROperation for Load {
         Op::Load.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Load
     }
 
@@ -1427,7 +1427,7 @@ impl From<MlirAttribute> for InBounds {
     }
 }
 
-impl IRAttribute for InBounds {
+impl IAttribute for InBounds {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1437,7 +1437,7 @@ impl IRAttribute for InBounds {
     }
 }
 
-impl IRAttributeNamed for InBounds {
+impl IAttributeNamed for InBounds {
     fn get_name() -> &'static str {
         "in_bounds"
     }
@@ -1451,7 +1451,7 @@ impl From<MlirAttribute> for Offsets {
     }
 }
 
-impl IRAttribute for Offsets {
+impl IAttribute for Offsets {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1461,7 +1461,7 @@ impl IRAttribute for Offsets {
     }
 }
 
-impl IRAttributeNamed for Offsets {
+impl IAttributeNamed for Offsets {
     fn get_name() -> &'static str {
         "offsets"
     }
@@ -1469,13 +1469,13 @@ impl IRAttributeNamed for Offsets {
 
 impl NamedArrayOfIntegers for Offsets {}
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
 }
 
-impl IROperation for Print {
+impl IOperation for Print {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1502,7 +1502,7 @@ impl IROperation for Print {
         Op::Print.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Print
     }
 
@@ -1517,7 +1517,7 @@ impl From<MlirAttribute> for PermutationMap {
     }
 }
 
-impl IRAttribute for PermutationMap {
+impl IAttribute for PermutationMap {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1527,7 +1527,7 @@ impl IRAttribute for PermutationMap {
     }
 }
 
-impl IRAttributeNamed for PermutationMap {
+impl IAttributeNamed for PermutationMap {
     fn get_name() -> &'static str {
         "permutation_map"
     }
@@ -1541,7 +1541,7 @@ impl From<MlirAttribute> for Punctuation {
     }
 }
 
-impl IRAttribute for Punctuation {
+impl IAttribute for Punctuation {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1551,7 +1551,7 @@ impl IRAttribute for Punctuation {
     }
 }
 
-impl IRAttributeNamed for Punctuation {
+impl IAttributeNamed for Punctuation {
     fn get_name() -> &'static str {
         "punctuation"
     }
@@ -1604,7 +1604,7 @@ impl From<MlirAttribute> for Sizes {
     }
 }
 
-impl IRAttribute for Sizes {
+impl IAttribute for Sizes {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1614,7 +1614,7 @@ impl IRAttribute for Sizes {
     }
 }
 
-impl IRAttributeNamed for Sizes {
+impl IAttributeNamed for Sizes {
     fn get_name() -> &'static str {
         "sizes"
     }
@@ -1622,7 +1622,7 @@ impl IRAttributeNamed for Sizes {
 
 impl NamedArrayOfIntegers for Sizes {}
 
-impl IROperation for Store {
+impl IOperation for Store {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1647,7 +1647,7 @@ impl IROperation for Store {
         Op::Store.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Store
     }
 
@@ -1662,7 +1662,7 @@ impl From<MlirAttribute> for Strides {
     }
 }
 
-impl IRAttribute for Strides {
+impl IAttribute for Strides {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1672,7 +1672,7 @@ impl IRAttribute for Strides {
     }
 }
 
-impl IRAttributeNamed for Strides {
+impl IAttributeNamed for Strides {
     fn get_name() -> &'static str {
         "strides"
     }
@@ -1686,7 +1686,7 @@ impl From<MlirAttribute> for StaticPosition {
     }
 }
 
-impl IRAttribute for StaticPosition {
+impl IAttribute for StaticPosition {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1696,7 +1696,7 @@ impl IRAttribute for StaticPosition {
     }
 }
 
-impl IRAttributeNamed for StaticPosition {
+impl IAttributeNamed for StaticPosition {
     fn get_name() -> &'static str {
         "static_position"
     }
@@ -1710,7 +1710,7 @@ impl From<MlirAttribute> for StringLiteral {
     }
 }
 
-impl IRAttribute for StringLiteral {
+impl IAttribute for StringLiteral {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1720,7 +1720,7 @@ impl IRAttribute for StringLiteral {
     }
 }
 
-impl IRAttributeNamed for StringLiteral {
+impl IAttributeNamed for StringLiteral {
     fn get_name() -> &'static str {
         "stringLiteral"
     }
@@ -1728,7 +1728,7 @@ impl IRAttributeNamed for StringLiteral {
 
 impl NamedString for StringLiteral {}
 
-impl IROperation for TransferRead {
+impl IOperation for TransferRead {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1760,7 +1760,7 @@ impl IROperation for TransferRead {
         Op::TransferRead.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::TransferRead
     }
 
@@ -1769,7 +1769,7 @@ impl IROperation for TransferRead {
     }
 }
 
-impl IROperation for TransferWrite {
+impl IOperation for TransferWrite {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1801,7 +1801,7 @@ impl IROperation for TransferWrite {
         Op::TransferWrite.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::TransferWrite
     }
 
@@ -1810,7 +1810,7 @@ impl IROperation for TransferWrite {
     }
 }
 
-impl IROperation for VectorMask {
+impl IOperation for VectorMask {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1835,7 +1835,7 @@ impl IROperation for VectorMask {
         self.as_from_elements().get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         self.as_from_elements().get_op()
     }
 

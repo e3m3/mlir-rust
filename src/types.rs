@@ -35,7 +35,7 @@ pub mod unranked_memref;
 pub mod unranked_tensor;
 pub mod vector;
 
-pub trait GetWidth: IRType {
+pub trait GetWidth: IType {
     fn get_width(&self) -> Option<usize> {
         if self.as_type().is_index() {
             Some(Index::from(*self.get()).get_width())
@@ -51,7 +51,7 @@ pub trait GetWidth: IRType {
     }
 }
 
-pub trait IRType {
+pub trait IType {
     fn get(&self) -> &MlirType;
     fn get_mut(&mut self) -> &mut MlirType;
 
@@ -68,15 +68,15 @@ pub trait IsPromotableTo<T> {
     fn is_promotable_to(&self, other: &T) -> bool;
 }
 
-impl GetWidth for dyn IRType {}
+impl GetWidth for dyn IType {}
 
-impl cmp::PartialEq for dyn IRType {
+impl cmp::PartialEq for dyn IType {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirTypeEqual(*self.get(), *rhs.get()))
     }
 }
 
-impl<T: IRType> IsPromotableTo<T> for dyn IRType {
+impl<T: IType> IsPromotableTo<T> for dyn IType {
     fn is_promotable_to(&self, other: &T) -> bool {
         let t = self.as_type();
         let t_other = other.as_type();

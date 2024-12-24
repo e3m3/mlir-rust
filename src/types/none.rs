@@ -17,7 +17,7 @@ use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct None(MlirType);
@@ -54,7 +54,7 @@ impl None {
     }
 }
 
-impl IRType for None {
+impl IType for None {
     fn get(&self) -> &MlirType {
         self.get()
     }

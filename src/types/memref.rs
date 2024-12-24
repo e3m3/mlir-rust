@@ -33,7 +33,7 @@ use ir::LogicalResult;
 use ir::Shape;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -183,7 +183,7 @@ impl MemRef {
     }
 }
 
-impl IRType for MemRef {
+impl IType for MemRef {
     fn get(&self) -> &MlirType {
         self.get()
     }

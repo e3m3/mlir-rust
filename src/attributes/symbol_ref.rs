@@ -21,7 +21,7 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -117,7 +117,7 @@ impl fmt::Display for SymbolRef {
     }
 }
 
-impl IRAttribute for SymbolRef {
+impl IAttribute for SymbolRef {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

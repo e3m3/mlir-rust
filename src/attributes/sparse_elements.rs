@@ -15,7 +15,7 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -70,7 +70,7 @@ impl SparseElements {
     }
 }
 
-impl IRAttribute for SparseElements {
+impl IAttribute for SparseElements {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

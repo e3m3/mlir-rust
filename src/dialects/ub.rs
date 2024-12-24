@@ -15,12 +15,12 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedOpaque;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -33,7 +33,7 @@ use ir::Location;
 use ir::OperationState;
 use ir::StringBacked;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::integer::Integer as IntegerType;
 use types::none::None as NoneType;
 
@@ -138,7 +138,7 @@ impl Poison {
 //  Trait Implemention
 ///////////////////////////////
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
@@ -150,7 +150,7 @@ impl From<MlirOperation> for Poison {
     }
 }
 
-impl IROperation for Poison {
+impl IOperation for Poison {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -178,7 +178,7 @@ impl IROperation for Poison {
         Op::Poison.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Poison
     }
 
@@ -193,7 +193,7 @@ impl From<MlirAttribute> for PoisonValue {
     }
 }
 
-impl IRAttribute for PoisonValue {
+impl IAttribute for PoisonValue {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -203,7 +203,7 @@ impl IRAttribute for PoisonValue {
     }
 }
 
-impl IRAttributeNamed for PoisonValue {
+impl IAttributeNamed for PoisonValue {
     fn get_name() -> &'static str {
         "value"
     }

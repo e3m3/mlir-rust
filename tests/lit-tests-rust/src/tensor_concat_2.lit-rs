@@ -4,13 +4,13 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::common::Dimension;
 use mlir::dialects::func::Return;
 use mlir::dialects::tensor::Concat;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::ranked_tensor::RankedTensor;

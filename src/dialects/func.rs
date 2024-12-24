@@ -18,16 +18,16 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::named::Named;
 use attributes::specialized::NamedArrayOfDictionaries;
 use attributes::specialized::NamedFunction;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
 use attributes::symbol_ref::SymbolRef;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
 use dialects::common::SymbolVisibilityKind;
@@ -48,7 +48,7 @@ use ir::StringRef;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::function::Function as FunctionType;
 
 ///////////////////////////////
@@ -503,7 +503,7 @@ impl From<MlirAttribute> for Arguments {
     }
 }
 
-impl IRAttribute for Arguments {
+impl IAttribute for Arguments {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -513,7 +513,7 @@ impl IRAttribute for Arguments {
     }
 }
 
-impl IRAttributeNamed for Arguments {
+impl IAttributeNamed for Arguments {
     fn get_name() -> &'static str {
         "arg_attrs"
     }
@@ -521,7 +521,7 @@ impl IRAttributeNamed for Arguments {
 
 impl NamedArrayOfDictionaries for Arguments {}
 
-impl IROperation for Call {
+impl IOperation for Call {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -546,7 +546,7 @@ impl IROperation for Call {
         Op::Call.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Call
     }
 
@@ -561,7 +561,7 @@ impl From<MlirAttribute> for Callee {
     }
 }
 
-impl IRAttribute for Callee {
+impl IAttribute for Callee {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -571,7 +571,7 @@ impl IRAttribute for Callee {
     }
 }
 
-impl IRAttributeNamed for Callee {
+impl IAttributeNamed for Callee {
     fn get_name() -> &'static str {
         "callee"
     }
@@ -579,7 +579,7 @@ impl IRAttributeNamed for Callee {
 
 impl NamedSymbolRef for Callee {}
 
-impl IROperation for CallIndirect {
+impl IOperation for CallIndirect {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -604,7 +604,7 @@ impl IROperation for CallIndirect {
         Op::CallIndirect.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::CallIndirect
     }
 
@@ -613,7 +613,7 @@ impl IROperation for CallIndirect {
     }
 }
 
-impl IROperation for Constant {
+impl IOperation for Constant {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -643,7 +643,7 @@ impl IROperation for Constant {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Constant
     }
 
@@ -652,7 +652,7 @@ impl IROperation for Constant {
     }
 }
 
-impl IROperation for Func {
+impl IOperation for Func {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -682,7 +682,7 @@ impl IROperation for Func {
         Op::Func.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Func
     }
 
@@ -701,7 +701,7 @@ impl From<MlirAttribute> for FunctionAttr {
     }
 }
 
-impl IRAttribute for FunctionAttr {
+impl IAttribute for FunctionAttr {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -711,7 +711,7 @@ impl IRAttribute for FunctionAttr {
     }
 }
 
-impl IRAttributeNamed for FunctionAttr {
+impl IAttributeNamed for FunctionAttr {
     fn get_name() -> &'static str {
         "function_type"
     }
@@ -719,7 +719,7 @@ impl IRAttributeNamed for FunctionAttr {
 
 impl NamedFunction for FunctionAttr {}
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
@@ -731,7 +731,7 @@ impl From<MlirAttribute> for Referee {
     }
 }
 
-impl IRAttribute for Referee {
+impl IAttribute for Referee {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -741,7 +741,7 @@ impl IRAttribute for Referee {
     }
 }
 
-impl IRAttributeNamed for Referee {
+impl IAttributeNamed for Referee {
     fn get_name() -> &'static str {
         "value"
     }
@@ -755,7 +755,7 @@ impl From<MlirAttribute> for Results {
     }
 }
 
-impl IRAttribute for Results {
+impl IAttribute for Results {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -765,7 +765,7 @@ impl IRAttribute for Results {
     }
 }
 
-impl IRAttributeNamed for Results {
+impl IAttributeNamed for Results {
     fn get_name() -> &'static str {
         "res_attrs"
     }
@@ -773,7 +773,7 @@ impl IRAttributeNamed for Results {
 
 impl NamedArrayOfDictionaries for Results {}
 
-impl IROperation for Return {
+impl IOperation for Return {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -802,7 +802,7 @@ impl IROperation for Return {
         Op::Return.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Return
     }
 

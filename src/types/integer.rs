@@ -25,7 +25,7 @@ use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::IsPromotableTo;
 
 #[derive(Clone)]
@@ -108,7 +108,7 @@ impl Integer {
     }
 }
 
-impl IRType for Integer {
+impl IType for Integer {
     fn get(&self) -> &MlirType {
         self.get()
     }

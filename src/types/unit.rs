@@ -10,14 +10,14 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use attributes::unit::Unit as UnitAttr;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Context;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct Unit(MlirType);
@@ -56,7 +56,7 @@ impl Unit {
     }
 }
 
-impl IRType for Unit {
+impl IType for Unit {
     fn get(&self) -> &MlirType {
         self.get()
     }

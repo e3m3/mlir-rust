@@ -16,13 +16,13 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
 use ir::Context;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 use types::integer::Integer as IntegerType;
 
 #[derive(Clone)]
@@ -89,7 +89,7 @@ impl Integer {
     }
 }
 
-impl IRAttribute for Integer {
+impl IAttribute for Integer {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

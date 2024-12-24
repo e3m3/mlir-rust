@@ -18,8 +18,8 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedInitialization;
 use attributes::specialized::NamedInteger;
@@ -30,8 +30,8 @@ use attributes::specialized::NamedSymbolRef;
 use attributes::specialized::NamedType;
 use attributes::specialized::NamedUnit;
 use attributes::symbol_ref::SymbolRef;
-use dialects::IROp;
-use dialects::IROperation;
+use dialects::IOp;
+use dialects::IOperation;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::SymbolName;
@@ -52,7 +52,7 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::index::Index;
 use types::integer::Integer as IntegerType;
 use types::memref::MemRef;
@@ -1258,7 +1258,7 @@ impl From<MlirAttribute> for Alignment {
     }
 }
 
-impl IRAttribute for Alignment {
+impl IAttribute for Alignment {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1268,7 +1268,7 @@ impl IRAttribute for Alignment {
     }
 }
 
-impl IRAttributeNamed for Alignment {
+impl IAttributeNamed for Alignment {
     fn get_name() -> &'static str {
         "alignment"
     }
@@ -1276,7 +1276,7 @@ impl IRAttributeNamed for Alignment {
 
 impl NamedInteger for Alignment {}
 
-impl IROperation for Alloc {
+impl IOperation for Alloc {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1301,7 +1301,7 @@ impl IROperation for Alloc {
         Op::Alloc.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Alloc
     }
 
@@ -1310,7 +1310,7 @@ impl IROperation for Alloc {
     }
 }
 
-impl IROperation for Alloca {
+impl IOperation for Alloca {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1339,7 +1339,7 @@ impl IROperation for Alloca {
         Op::Alloca.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Alloca
     }
 
@@ -1348,7 +1348,7 @@ impl IROperation for Alloca {
     }
 }
 
-impl IROperation for Cast {
+impl IOperation for Cast {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1379,7 +1379,7 @@ impl IROperation for Cast {
         Op::Cast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Cast
     }
 
@@ -1392,7 +1392,7 @@ impl IROperation for Cast {
     }
 }
 
-impl IROperation for Copy {
+impl IOperation for Copy {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1417,7 +1417,7 @@ impl IROperation for Copy {
         Op::Copy.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Copy
     }
 
@@ -1426,7 +1426,7 @@ impl IROperation for Copy {
     }
 }
 
-impl IROperation for Dealloc {
+impl IOperation for Dealloc {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1451,7 +1451,7 @@ impl IROperation for Dealloc {
         Op::Dealloc.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Dealloc
     }
 
@@ -1460,7 +1460,7 @@ impl IROperation for Dealloc {
     }
 }
 
-impl IROperation for Dim {
+impl IOperation for Dim {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1491,7 +1491,7 @@ impl IROperation for Dim {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Dim
     }
 
@@ -1500,7 +1500,7 @@ impl IROperation for Dim {
     }
 }
 
-impl IROperation for GetGlobal {
+impl IOperation for GetGlobal {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1529,7 +1529,7 @@ impl IROperation for GetGlobal {
         Op::GetGlobal.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::GetGlobal
     }
 
@@ -1538,7 +1538,7 @@ impl IROperation for GetGlobal {
     }
 }
 
-impl IROperation for Global {
+impl IOperation for Global {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1563,7 +1563,7 @@ impl IROperation for Global {
         Op::Global.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Global
     }
 
@@ -1578,7 +1578,7 @@ impl From<MlirAttribute> for InitialValue {
     }
 }
 
-impl IRAttribute for InitialValue {
+impl IAttribute for InitialValue {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1588,7 +1588,7 @@ impl IRAttribute for InitialValue {
     }
 }
 
-impl IRAttributeNamed for InitialValue {
+impl IAttributeNamed for InitialValue {
     fn get_name() -> &'static str {
         "initial_value"
     }
@@ -1602,7 +1602,7 @@ impl From<MlirAttribute> for IsConstant {
     }
 }
 
-impl IRAttribute for IsConstant {
+impl IAttribute for IsConstant {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1612,7 +1612,7 @@ impl IRAttribute for IsConstant {
     }
 }
 
-impl IRAttributeNamed for IsConstant {
+impl IAttributeNamed for IsConstant {
     fn get_name() -> &'static str {
         "constant"
     }
@@ -1620,7 +1620,7 @@ impl IRAttributeNamed for IsConstant {
 
 impl NamedUnit for IsConstant {}
 
-impl IROperation for Load {
+impl IOperation for Load {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1649,7 +1649,7 @@ impl IROperation for Load {
         Op::Load.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Load
     }
 
@@ -1658,7 +1658,7 @@ impl IROperation for Load {
     }
 }
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
@@ -1670,7 +1670,7 @@ impl From<MlirAttribute> for Permutation {
     }
 }
 
-impl IRAttribute for Permutation {
+impl IAttribute for Permutation {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1680,7 +1680,7 @@ impl IRAttribute for Permutation {
     }
 }
 
-impl IRAttributeNamed for Permutation {
+impl IAttributeNamed for Permutation {
     fn get_name() -> &'static str {
         "permutation"
     }
@@ -1688,7 +1688,7 @@ impl IRAttributeNamed for Permutation {
 
 impl NamedPermutation for Permutation {}
 
-impl IROperation for Rank {
+impl IOperation for Rank {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1717,7 +1717,7 @@ impl IROperation for Rank {
         Op::Rank.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Rank
     }
 
@@ -1726,7 +1726,7 @@ impl IROperation for Rank {
     }
 }
 
-impl IROperation for Store {
+impl IOperation for Store {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1754,7 +1754,7 @@ impl IROperation for Store {
         Op::Store.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Store
     }
 
@@ -1763,7 +1763,7 @@ impl IROperation for Store {
     }
 }
 
-impl IROperation for Transpose {
+impl IOperation for Transpose {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1792,7 +1792,7 @@ impl IROperation for Transpose {
         Op::Transpose.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Transpose
     }
 
@@ -1807,7 +1807,7 @@ impl From<MlirAttribute> for GlobalRef {
     }
 }
 
-impl IRAttribute for GlobalRef {
+impl IAttribute for GlobalRef {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1817,7 +1817,7 @@ impl IRAttribute for GlobalRef {
     }
 }
 
-impl IRAttributeNamed for GlobalRef {
+impl IAttributeNamed for GlobalRef {
     fn get_name() -> &'static str {
         "name"
     }
@@ -1831,7 +1831,7 @@ impl From<MlirAttribute> for GlobalType {
     }
 }
 
-impl IRAttribute for GlobalType {
+impl IAttribute for GlobalType {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -1841,7 +1841,7 @@ impl IRAttribute for GlobalType {
     }
 }
 
-impl IRAttributeNamed for GlobalType {
+impl IAttributeNamed for GlobalType {
     fn get_name() -> &'static str {
         "type"
     }
@@ -1849,7 +1849,7 @@ impl IRAttributeNamed for GlobalType {
 
 impl NamedType for GlobalType {}
 
-impl IROperation for View {
+impl IOperation for View {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -1879,7 +1879,7 @@ impl IROperation for View {
         Op::View.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::View
     }
 

@@ -9,19 +9,19 @@ use crate::common::*;
 
 use mlir_sys::MlirAttribute;
 
-use mlir::attributes::IRAttribute;
-use mlir::attributes::IRAttributeNamed;
+use mlir::attributes::IAttribute;
+use mlir::attributes::IAttributeNamed;
 use mlir::attributes::dictionary::Dictionary;
 use mlir::attributes::specialized::CustomAttributeData;
 use mlir::attributes::specialized::NamedArrayOfDictionaries;
 use mlir::attributes::specialized::NamedInteger;
 use mlir::attributes::specialized::NamedOpaque;
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::func::Arguments;
 use mlir::dialects::func::Results;
 use mlir::ir::Block;
 use mlir::ir::Context;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;
@@ -103,7 +103,7 @@ impl From<MlirAttribute> for ClassNameAttribute {
     }
 }
 
-impl IRAttribute for ClassNameAttribute {
+impl IAttribute for ClassNameAttribute {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -113,7 +113,7 @@ impl IRAttribute for ClassNameAttribute {
     }
 }
 
-impl IRAttributeNamed for ClassNameAttribute {
+impl IAttributeNamed for ClassNameAttribute {
     fn get_name() -> &'static str {
         "lang.self"
     }
@@ -127,7 +127,7 @@ impl From<MlirAttribute> for GenericIntegerAttribute {
     }
 }
 
-impl IRAttribute for GenericIntegerAttribute {
+impl IAttribute for GenericIntegerAttribute {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -137,7 +137,7 @@ impl IRAttribute for GenericIntegerAttribute {
     }
 }
 
-impl IRAttributeNamed for GenericIntegerAttribute {
+impl IAttributeNamed for GenericIntegerAttribute {
     fn get_name() -> &'static str {
         "dialectName.attrName"
     }

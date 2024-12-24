@@ -20,7 +20,7 @@ use ir::Context;
 use ir::StringRef;
 use ir::Type;
 use ir::TypeID;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct Opaque(MlirType);
@@ -69,7 +69,7 @@ impl Opaque {
     }
 }
 
-impl IRType for Opaque {
+impl IType for Opaque {
     fn get(&self) -> &MlirType {
         self.get()
     }

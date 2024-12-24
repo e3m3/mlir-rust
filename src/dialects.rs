@@ -42,19 +42,19 @@ pub mod vector;
 ///////////////////////////////
 
 /// Interface for printable opcode.
-pub trait IROp: fmt::Display {
+pub trait IOp: fmt::Display {
     fn get_name(&self) -> &'static str;
 }
 
 /// Interface for dialect operations with trait and interface semantics.
-pub trait IROperation {
+pub trait IOperation {
     fn get(&self) -> &MlirOperation;
     fn get_dialect(&self) -> Dialect;
     fn get_effects(&self) -> MemoryEffectList;
     fn get_interfaces(&self) -> &'static [Interface];
     fn get_mut(&mut self) -> &mut MlirOperation;
     fn get_name(&self) -> &'static str;
-    fn get_op(&self) -> &'static dyn IROp;
+    fn get_op(&self) -> &'static dyn IOp;
     fn get_traits(&self) -> &'static [Trait];
 
     fn as_operation(&self) -> Operation {
@@ -62,19 +62,19 @@ pub trait IROperation {
     }
 }
 
-impl cmp::PartialEq for dyn IROp {
+impl cmp::PartialEq for dyn IOp {
     fn eq(&self, rhs: &Self) -> bool {
         self.to_string() == rhs.to_string()
     }
 }
 
-impl Destroy for dyn IROperation {
+impl Destroy for dyn IOperation {
     fn destroy(&mut self) -> () {
         self.as_operation().destroy()
     }
 }
 
-impl cmp::PartialEq for dyn IROperation {
+impl cmp::PartialEq for dyn IOperation {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_operation() == rhs.as_operation()
     }

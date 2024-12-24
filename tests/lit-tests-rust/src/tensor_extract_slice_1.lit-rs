@@ -5,7 +5,7 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::attributes::specialized::NamedI64DenseArray;
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::common::StaticOffsets;
 use mlir::dialects::common::StaticSizes;
 use mlir::dialects::common::StaticStrides;
@@ -13,7 +13,7 @@ use mlir::dialects::func::Return;
 use mlir::dialects::tensor::ExtractSlice;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::ranked_tensor::RankedTensor;

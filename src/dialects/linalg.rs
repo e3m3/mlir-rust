@@ -18,17 +18,17 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedArrayOfAffineMaps;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedParsed;
-use dialects::IROp;
-use dialects::IROperation;
-use dialects::affine::AffineExpr;
+use dialects::IOp;
+use dialects::IOperation;
+use dialects::affine::IExpr;
 use dialects::affine::Dim as AffineDim;
 use dialects::affine::Map as AffineMap;
 use dialects::arith;
@@ -53,7 +53,7 @@ use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IRType;
+use types::IType;
 use types::IsPromotableTo;
 use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
@@ -351,7 +351,7 @@ pub trait TransformShape {
     fn unpack_vecmat(&self, rhs: &Self) -> Option<ShapeUnpacked>;
 }
 
-pub trait ElementwiseOperation: From<MlirOperation> + IROperation + Sized {
+pub trait ElementwiseOperation: From<MlirOperation> + IOperation + Sized {
     fn get_result(&self) -> Option<Value> {
         let op = self.as_operation();
         if op.num_results() > 0 {
@@ -2700,7 +2700,7 @@ impl From<MlirOperation> for Abs {
     }
 }
 
-impl IROperation for Abs {
+impl IOperation for Abs {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2731,7 +2731,7 @@ impl IROperation for Abs {
         Op::Abs.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Abs
     }
 
@@ -2769,7 +2769,7 @@ impl From<MlirOperation> for Add {
     }
 }
 
-impl IROperation for Add {
+impl IOperation for Add {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2800,7 +2800,7 @@ impl IROperation for Add {
         Op::Add.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Add
     }
 
@@ -2826,7 +2826,7 @@ impl From<MlirAttribute> for BinaryFunction {
     }
 }
 
-impl IRAttribute for BinaryFunction {
+impl IAttribute for BinaryFunction {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2836,7 +2836,7 @@ impl IRAttribute for BinaryFunction {
     }
 }
 
-impl IRAttributeNamed for BinaryFunction {
+impl IAttributeNamed for BinaryFunction {
     fn get_name() -> &'static str {
         "linalg.fun"
     }
@@ -2856,7 +2856,7 @@ impl From<MlirAttribute> for Cast {
     }
 }
 
-impl IRAttribute for Cast {
+impl IAttribute for Cast {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -2866,7 +2866,7 @@ impl IRAttribute for Cast {
     }
 }
 
-impl IRAttributeNamed for Cast {
+impl IAttributeNamed for Cast {
     fn get_name() -> &'static str {
         "cast"
     }
@@ -2888,7 +2888,7 @@ impl From<MlirOperation> for Ceil {
     }
 }
 
-impl IROperation for Ceil {
+impl IOperation for Ceil {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2919,7 +2919,7 @@ impl IROperation for Ceil {
         Op::Ceil.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Ceil
     }
 
@@ -2947,7 +2947,7 @@ impl From<MlirOperation> for Copy {
     }
 }
 
-impl IROperation for Copy {
+impl IOperation for Copy {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -2978,7 +2978,7 @@ impl IROperation for Copy {
         Op::Copy.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Copy
     }
 
@@ -3015,7 +3015,7 @@ impl From<MlirOperation> for Div {
     }
 }
 
-impl IROperation for Div {
+impl IOperation for Div {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3046,7 +3046,7 @@ impl IROperation for Div {
         Op::Div.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Div
     }
 
@@ -3080,7 +3080,7 @@ impl From<MlirOperation> for DivUnsigned {
     }
 }
 
-impl IROperation for DivUnsigned {
+impl IOperation for DivUnsigned {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3111,7 +3111,7 @@ impl IROperation for DivUnsigned {
         Op::DivUnsigned.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::DivUnsigned
     }
 
@@ -3139,7 +3139,7 @@ impl From<MlirOperation> for Dot {
     }
 }
 
-impl IROperation for Dot {
+impl IOperation for Dot {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3171,7 +3171,7 @@ impl IROperation for Dot {
         Op::Dot.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Dot
     }
 
@@ -3199,7 +3199,7 @@ impl From<MlirOperation> for ElementwiseBinary {
     }
 }
 
-impl IROperation for ElementwiseBinary {
+impl IOperation for ElementwiseBinary {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3230,7 +3230,7 @@ impl IROperation for ElementwiseBinary {
         Op::ElementwiseBinary.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::ElementwiseBinary
     }
 
@@ -3258,7 +3258,7 @@ impl From<MlirOperation> for ElementwiseUnary {
     }
 }
 
-impl IROperation for ElementwiseUnary {
+impl IOperation for ElementwiseUnary {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3289,7 +3289,7 @@ impl IROperation for ElementwiseUnary {
         Op::ElementwiseUnary.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::ElementwiseUnary
     }
 
@@ -3317,7 +3317,7 @@ impl From<MlirOperation> for Erf {
     }
 }
 
-impl IROperation for Erf {
+impl IOperation for Erf {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3348,7 +3348,7 @@ impl IROperation for Erf {
         Op::Erf.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Erf
     }
 
@@ -3376,7 +3376,7 @@ impl From<MlirOperation> for Exp {
     }
 }
 
-impl IROperation for Exp {
+impl IOperation for Exp {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3407,7 +3407,7 @@ impl IROperation for Exp {
         Op::Exp.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Exp
     }
 
@@ -3435,7 +3435,7 @@ impl From<MlirOperation> for Floor {
     }
 }
 
-impl IROperation for Floor {
+impl IOperation for Floor {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3466,7 +3466,7 @@ impl IROperation for Floor {
         Op::Floor.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Floor
     }
 
@@ -3486,7 +3486,7 @@ impl From<MlirOperation> for Index {
     }
 }
 
-impl IROperation for Index {
+impl IOperation for Index {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3515,7 +3515,7 @@ impl IROperation for Index {
         Op::Index.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Index
     }
 
@@ -3530,7 +3530,7 @@ impl From<MlirAttribute> for IndexingMaps {
     }
 }
 
-impl IRAttribute for IndexingMaps {
+impl IAttribute for IndexingMaps {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -3540,7 +3540,7 @@ impl IRAttribute for IndexingMaps {
     }
 }
 
-impl IRAttributeNamed for IndexingMaps {
+impl IAttributeNamed for IndexingMaps {
     fn get_name() -> &'static str {
         "linalg.memoized_indexing_maps"
     }
@@ -3560,7 +3560,7 @@ impl From<MlirAttribute> for IteratorType {
     }
 }
 
-impl IRAttribute for IteratorType {
+impl IAttribute for IteratorType {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -3570,7 +3570,7 @@ impl IRAttribute for IteratorType {
     }
 }
 
-impl IRAttributeNamed for IteratorType {
+impl IAttributeNamed for IteratorType {
     fn get_name() -> &'static str {
         "iterator_type"
     }
@@ -3592,7 +3592,7 @@ impl From<MlirOperation> for Log {
     }
 }
 
-impl IROperation for Log {
+impl IOperation for Log {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3623,7 +3623,7 @@ impl IROperation for Log {
         Op::Log.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Log
     }
 
@@ -3678,7 +3678,7 @@ impl From<MlirOperation> for Matmul {
     }
 }
 
-impl IROperation for Matmul {
+impl IOperation for Matmul {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3710,7 +3710,7 @@ impl IROperation for Matmul {
         Op::Matmul.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Matmul
     }
 
@@ -3765,7 +3765,7 @@ impl From<MlirOperation> for MatmulTransposeA {
     }
 }
 
-impl IROperation for MatmulTransposeA {
+impl IOperation for MatmulTransposeA {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3797,7 +3797,7 @@ impl IROperation for MatmulTransposeA {
         Op::MatmulTransposeA.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MatmulTransposeA
     }
 
@@ -3852,7 +3852,7 @@ impl From<MlirOperation> for MatmulTransposeB {
     }
 }
 
-impl IROperation for MatmulTransposeB {
+impl IOperation for MatmulTransposeB {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3884,7 +3884,7 @@ impl IROperation for MatmulTransposeB {
         Op::MatmulTransposeB.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::MatmulTransposeB
     }
 
@@ -3939,7 +3939,7 @@ impl From<MlirOperation> for Matvec {
     }
 }
 
-impl IROperation for Matvec {
+impl IOperation for Matvec {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -3971,7 +3971,7 @@ impl IROperation for Matvec {
         Op::Matvec.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Matvec
     }
 
@@ -3999,7 +3999,7 @@ impl From<MlirOperation> for Max {
     }
 }
 
-impl IROperation for Max {
+impl IOperation for Max {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4030,7 +4030,7 @@ impl IROperation for Max {
         Op::Max.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Max
     }
 
@@ -4058,7 +4058,7 @@ impl From<MlirOperation> for Min {
     }
 }
 
-impl IROperation for Min {
+impl IOperation for Min {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4089,7 +4089,7 @@ impl IROperation for Min {
         Op::Min.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Min
     }
 
@@ -4127,7 +4127,7 @@ impl From<MlirOperation> for Mul {
     }
 }
 
-impl IROperation for Mul {
+impl IOperation for Mul {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4158,7 +4158,7 @@ impl IROperation for Mul {
         Op::Mul.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Mul
     }
 
@@ -4186,7 +4186,7 @@ impl From<MlirOperation> for NegF {
     }
 }
 
-impl IROperation for NegF {
+impl IOperation for NegF {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4217,7 +4217,7 @@ impl IROperation for NegF {
         Op::NegF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::NegF
     }
 
@@ -4269,7 +4269,7 @@ impl From<UnaryFunctionKind> for Op {
     }
 }
 
-impl IROp for Op {
+impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
     }
@@ -4281,7 +4281,7 @@ impl From<MlirAttribute> for Permutation {
     }
 }
 
-impl IRAttribute for Permutation {
+impl IAttribute for Permutation {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -4291,7 +4291,7 @@ impl IRAttribute for Permutation {
     }
 }
 
-impl IRAttributeNamed for Permutation {
+impl IAttributeNamed for Permutation {
     fn get_name() -> &'static str {
         "permutation"
     }
@@ -4313,7 +4313,7 @@ impl From<MlirOperation> for Reciprocal {
     }
 }
 
-impl IROperation for Reciprocal {
+impl IOperation for Reciprocal {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4344,7 +4344,7 @@ impl IROperation for Reciprocal {
         Op::Reciprocal.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Reciprocal
     }
 
@@ -4372,7 +4372,7 @@ impl From<MlirOperation> for Round {
     }
 }
 
-impl IROperation for Round {
+impl IOperation for Round {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4403,7 +4403,7 @@ impl IROperation for Round {
         Op::Round.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Round
     }
 
@@ -4431,7 +4431,7 @@ impl From<MlirOperation> for Rsqrt {
     }
 }
 
-impl IROperation for Rsqrt {
+impl IOperation for Rsqrt {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4462,7 +4462,7 @@ impl IROperation for Rsqrt {
         Op::Rsqrt.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Rsqrt
     }
 
@@ -4490,7 +4490,7 @@ impl From<MlirOperation> for Sqrt {
     }
 }
 
-impl IROperation for Sqrt {
+impl IOperation for Sqrt {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4521,7 +4521,7 @@ impl IROperation for Sqrt {
         Op::Sqrt.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Sqrt
     }
 
@@ -4549,7 +4549,7 @@ impl From<MlirOperation> for Square {
     }
 }
 
-impl IROperation for Square {
+impl IOperation for Square {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4580,7 +4580,7 @@ impl IROperation for Square {
         Op::Square.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Square
     }
 
@@ -4618,7 +4618,7 @@ impl From<MlirOperation> for Sub {
     }
 }
 
-impl IROperation for Sub {
+impl IOperation for Sub {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4649,7 +4649,7 @@ impl IROperation for Sub {
         Op::Sub.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Sub
     }
 
@@ -4677,7 +4677,7 @@ impl From<MlirOperation> for Tanh {
     }
 }
 
-impl IROperation for Tanh {
+impl IOperation for Tanh {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4708,7 +4708,7 @@ impl IROperation for Tanh {
         Op::Tanh.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Tanh
     }
 
@@ -4741,7 +4741,7 @@ impl From<MlirOperation> for Transpose {
     }
 }
 
-impl IROperation for Transpose {
+impl IOperation for Transpose {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4773,7 +4773,7 @@ impl IROperation for Transpose {
         Op::Transpose.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Transpose
     }
 
@@ -4798,7 +4798,7 @@ impl From<MlirAttribute> for UnaryFunction {
     }
 }
 
-impl IRAttribute for UnaryFunction {
+impl IAttribute for UnaryFunction {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }
@@ -4808,7 +4808,7 @@ impl IRAttribute for UnaryFunction {
     }
 }
 
-impl IRAttributeNamed for UnaryFunction {
+impl IAttributeNamed for UnaryFunction {
     fn get_name() -> &'static str {
         "linalg.fun"
     }
@@ -4857,7 +4857,7 @@ impl From<MlirOperation> for Vecmat {
     }
 }
 
-impl IROperation for Vecmat {
+impl IOperation for Vecmat {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4889,7 +4889,7 @@ impl IROperation for Vecmat {
         Op::Vecmat.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Vecmat
     }
 
@@ -4909,7 +4909,7 @@ impl From<MlirOperation> for Yield {
     }
 }
 
-impl IROperation for Yield {
+impl IOperation for Yield {
     fn get(&self) -> &MlirOperation {
         self.get()
     }
@@ -4938,7 +4938,7 @@ impl IROperation for Yield {
         Op::Yield.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IROp {
+    fn get_op(&self) -> &'static dyn IOp {
         &Op::Yield
     }
 

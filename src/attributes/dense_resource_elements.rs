@@ -38,7 +38,7 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -292,7 +292,7 @@ impl DenseResourceElements {
     }
 }
 
-impl IRAttribute for DenseResourceElements {
+impl IAttribute for DenseResourceElements {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

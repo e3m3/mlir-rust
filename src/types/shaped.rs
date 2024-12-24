@@ -26,7 +26,7 @@ use ir::Shape;
 use ir::ShapeImpl;
 use ir::Type;
 use types::GetWidth;
-use types::IRType;
+use types::IType;
 
 #[derive(Clone)]
 pub struct Shaped(MlirType);
@@ -172,7 +172,7 @@ impl Shaped {
     }
 }
 
-impl IRType for Shaped {
+impl IType for Shaped {
     fn get(&self) -> &MlirType {
         self.get()
     }

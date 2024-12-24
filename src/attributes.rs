@@ -42,7 +42,7 @@ pub mod unit;
 //  Generic Traits
 ///////////////////////////////
 
-pub trait IRAttribute {
+pub trait IAttribute {
     fn get(&self) -> &MlirAttribute;
     fn get_mut(&mut self) -> &mut MlirAttribute;
 
@@ -59,7 +59,7 @@ pub trait IRAttribute {
     }
 }
 
-pub trait IRAttributeNamed: IRAttribute {
+pub trait IAttributeNamed: IAttribute {
     fn get_name() -> &'static str
     where
         Self: Sized;
@@ -76,13 +76,13 @@ pub trait IRAttributeNamed: IRAttribute {
     }
 }
 
-impl cmp::PartialEq for dyn IRAttribute {
+impl cmp::PartialEq for dyn IAttribute {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_attribute() == rhs.as_attribute()
     }
 }
 
-impl cmp::PartialEq for dyn IRAttributeNamed {
+impl cmp::PartialEq for dyn IAttributeNamed {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_attribute() == rhs.as_attribute()
     }

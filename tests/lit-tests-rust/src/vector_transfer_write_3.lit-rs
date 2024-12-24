@@ -5,7 +5,7 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::attributes::specialized::NamedAffineMap;
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;
@@ -15,7 +15,7 @@ use mlir::dialects::vector::TransferWrite;
 use mlir::ir::Block;
 use mlir::ir::Shape;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
 use mlir::types::index::Index;

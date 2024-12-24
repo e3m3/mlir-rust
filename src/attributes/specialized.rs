@@ -16,8 +16,8 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IRAttribute;
-use attributes::IRAttributeNamed;
+use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::array::Array;
 use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
@@ -41,7 +41,7 @@ use ir::Context;
 use ir::StringBacked;
 use ir::StringRef;
 use ir::Type;
-use types::IRType;
+use types::IType;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
 use types::memref::MemRef;
@@ -60,7 +60,7 @@ pub struct CustomAttributeData {
 //  Specialized Traits
 ///////////////////////////////
 
-pub trait NamedAffineMap: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedAffineMap: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(map: &AffineMap) -> Self {
         Self::from(*map.as_attribute().get())
     }
@@ -79,7 +79,7 @@ pub trait NamedAffineMap: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, elements: &[AffineMap]) -> Self {
         let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
         let attr = Array::new(context, &e);
@@ -116,7 +116,7 @@ pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IRAttributeNamed + Sized
     }
 }
 
-pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedArrayOfBools: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, elements: &[BoolAttr]) -> Self {
         let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
         let attr = Array::new(context, &e);
@@ -153,7 +153,7 @@ pub trait NamedArrayOfBools: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, elements: &[Dictionary]) -> Self {
         let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
         let attr = Array::new(context, &e);
@@ -190,7 +190,7 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IRAttributeNamed + Siz
     }
 }
 
-pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedArrayOfIntegers: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, elements: &[IntegerAttr]) -> Self {
         let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
         let attr = Array::new(context, &e);
@@ -227,7 +227,7 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, values: &[Array], width: usize) -> Self {
         for value in values.iter() {
             for i in 0..value.num_elements() {
@@ -283,7 +283,7 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IRAttributeNamed + Si
     }
 }
 
-pub trait NamedBool: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedBool: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, value: bool) -> Self {
         Self::from(*BoolAttr::new(context, value).get())
     }
@@ -306,7 +306,7 @@ pub trait NamedBool: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedFloatOrIndexOrInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedFloatOrIndexOrInteger: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new_float(attr: &FloatAttr) -> Self {
         Self::from(*attr.as_attribute().get())
     }
@@ -365,7 +365,7 @@ pub trait NamedFloatOrIndexOrInteger: From<MlirAttribute> + IRAttributeNamed + S
     }
 }
 
-pub trait NamedFunction: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedFunction: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(f: &Function) -> Self {
         let attr = TypeAttr::new(&f.as_type());
         Self::from(*attr.get())
@@ -390,7 +390,7 @@ pub trait NamedFunction: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedI32DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedI32DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, values: &[i32]) -> Self {
         Self::from(*DenseArray::new_i32(context, values).get_mut())
     }
@@ -413,7 +413,7 @@ pub trait NamedI32DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedI64DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, values: &[i64]) -> Self {
         Self::from(*DenseArray::new_i64(context, values).get_mut())
     }
@@ -436,7 +436,7 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedInitialization: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(attr: &Attribute) -> Self {
         Self::from_checked(*attr.get())
     }
@@ -471,7 +471,7 @@ pub trait NamedInitialization: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedInteger: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
@@ -510,7 +510,7 @@ pub trait NamedInteger: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedMemoryLayout: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedMemoryLayout: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new_affine_map(attr: &AffineMap) -> Self {
         Self::from(*attr.as_attribute().get())
     }
@@ -545,7 +545,7 @@ pub trait NamedMemoryLayout: From<MlirAttribute> + IRAttributeNamed + Sized {
 }
 
 pub trait NamedMemorySpace:
-    From<MlirAttribute> + IRAttributeNamed + cmp::PartialEq + Sized
+    From<MlirAttribute> + IAttributeNamed + cmp::PartialEq + Sized
 {
     fn from_checked(attr: MlirAttribute) -> Self;
 
@@ -614,7 +614,7 @@ pub trait NamedMemorySpace:
     }
 }
 
-pub trait NamedMemRef: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedMemRef: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(t: &MemRef) -> Self {
         Self::from(*TypeAttr::new(&t.as_type()).get())
     }
@@ -638,7 +638,7 @@ pub trait NamedMemRef: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedOpaque: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedOpaque: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(t: &Type, namespace: &StringRef, data: &StringRef) -> Self {
         Self::from(*Opaque::new(t, namespace, data).get())
     }
@@ -663,7 +663,7 @@ pub trait NamedOpaque: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedParsed: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedParsed: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, s: &StringRef) -> Self {
         Self::from(*Attribute::from_parse(context, s).get())
     }
@@ -674,7 +674,7 @@ pub trait NamedParsed: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedPermutation: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedPermutation: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, permutation: &mut [c_uint]) -> Self {
         let map = AffineMap::new_permutation(context, permutation);
         Self::from(*map.as_attribute().get())
@@ -694,7 +694,7 @@ pub trait NamedPermutation: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedString: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedString: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, s: &StringRef) -> Self {
         let s_ = StringAttr::new(context, s);
         Self::from(*s_.get())
@@ -714,7 +714,7 @@ pub trait NamedString: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedSymbolRef: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedSymbolRef: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, s: &StringRef) -> Self {
         let s_ = SymbolRef::new_flat(context, s);
         Self::from(*s_.get())
@@ -748,7 +748,7 @@ pub trait NamedSymbolRef: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedType: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedType: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(t: &Type) -> Self {
         Self::from(*TypeAttr::new(t).get())
     }
@@ -767,7 +767,7 @@ pub trait NamedType: From<MlirAttribute> + IRAttributeNamed + Sized {
     }
 }
 
-pub trait NamedUnit: From<MlirAttribute> + IRAttributeNamed + Sized {
+pub trait NamedUnit: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context) -> Self {
         Self::from(*Unit::new(context).get())
     }

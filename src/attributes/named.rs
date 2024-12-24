@@ -13,7 +13,7 @@ use crate::attributes;
 use crate::do_unsafe;
 use crate::ir;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use ir::Attribute;
 use ir::Identifier;
 
@@ -42,7 +42,7 @@ impl Named {
     }
 }
 
-impl IRAttribute for Named {
+impl IAttribute for Named {
     fn get(&self) -> &MlirAttribute {
         &self.0.attribute
     }

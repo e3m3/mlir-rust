@@ -29,7 +29,7 @@ use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
-use attributes::IRAttribute;
+use attributes::IAttribute;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Context;
@@ -229,7 +229,7 @@ impl DenseArray {
     }
 }
 
-impl IRAttribute for DenseArray {
+impl IAttribute for DenseArray {
     fn get(&self) -> &MlirAttribute {
         self.get()
     }

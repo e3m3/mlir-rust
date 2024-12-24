@@ -4,12 +4,12 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::IROperation;
+use mlir::dialects::IOperation;
 use mlir::dialects::func::Return;
 use mlir::dialects::tensor::Bitcast;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
-use mlir::types::IRType;
+use mlir::types::IType;
 use mlir::types::integer::Integer as IntegerType;
 use mlir::types::ranked_tensor::RankedTensor;
 
