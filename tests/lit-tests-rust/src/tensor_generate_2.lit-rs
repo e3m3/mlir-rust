@@ -3,7 +3,6 @@
 // COM: TODO: Implement required arith and index operations for generate body.
 // XFAIL: *
 
-
 use crate::common::TestResult;
 
 pub fn test() -> TestResult {

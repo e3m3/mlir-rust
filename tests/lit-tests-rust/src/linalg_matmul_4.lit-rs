@@ -4,7 +4,6 @@
 
 extern crate mlir;
 
-
 use crate::common::*;
 
 use mlir::attributes::specialized::NamedArrayOfAffineMaps;

@@ -5,7 +5,6 @@
 extern crate mlir;
 extern crate mlir_sys;
 
-
 use crate::common::*;
 
 use mlir_sys::MlirAttribute;

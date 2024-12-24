@@ -2,7 +2,6 @@
 
 extern crate mlir;
 
-
 use crate::common::*;
 
 pub fn test() -> TestResult {
