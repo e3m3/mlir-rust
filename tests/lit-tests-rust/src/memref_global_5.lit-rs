@@ -32,7 +32,7 @@ pub fn test() -> TestResult {
     let context = module.get_context();
     let loc = context.get_unknown_location();
     let t = IntegerType::new(&context, 32).as_type();
-    let s_out = ShapeImpl::from(vec![1]);
+    let s_out = ShapeImpl::from(vec![2]);
     let t_mr_out = MemRef::new_contiguous(&s_out, &t, &DefaultMemorySpace::new());
     let t_tnsr_out = RankedTensor::new(&s_out, &t).as_shaped();
     let t_attr = GlobalType::new(&t_mr_out.as_type());
@@ -41,7 +41,7 @@ pub fn test() -> TestResult {
     let f_name_global = StringBacked::from("c");
     let sym_name = SymbolName::new(&context, &f_name_global.as_string_ref());
     let attr_init =
-        InitialValue::new_elements(&DenseElements::new_i32(&t_tnsr_out, &[1]).as_elements());
+        InitialValue::new_elements(&DenseElements::new_i32(&t_tnsr_out, &[1, 4]).as_elements());
     let is_const = IsConstant::new(&context);
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let mut op_global = Global::new(

@@ -7,7 +7,7 @@
 // CHECK-SAME:  memref
 
 module {
-    memref.global constant @c : memref<1xi32> = dense<1>
+    memref.global constant @c : memref<2xi32> = dense<[1,4]>
     func.func @test() -> ()
     {
         func.return
@@ -15,14 +15,14 @@ module {
 }
 
 // CHECK_CAN:   module {
-// CHECK_CAN:       memref.global constant @c : memref<1xi32> = dense<1>
+// CHECK_CAN:       memref.global constant @c : memref<2xi32> = dense<[1, 4]>
 // CHECK_CAN:       func.func @test() {
 // CHECK_CAN:           return
 // CHECK_CAN:       }
 // CHECK_CAN:   }
 
 // CHECK_GEN:   "builtin.module"() ({
-// CHECK_GEN:       "memref.global"() <{constant, initial_value = dense<1> : tensor<1xi32>, sym_name = "c", type = memref<1xi32>}> : () -> ()
+// CHECK_GEN:       "memref.global"() <{constant, initial_value = dense<[1, 4]> : tensor<2xi32>, sym_name = "c", type = memref<2xi32>}> : () -> ()
 // CHECK_GEN:       "func.func"() <{function_type = () -> (), sym_name = "test"}> ({
 // CHECK_GEN:           "func.return"() : () -> ()
 // CHECK_GEN:       }) : () -> ()
