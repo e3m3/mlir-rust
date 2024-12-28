@@ -3,14 +3,12 @@
 
 #![allow(dead_code)]
 
-use mlir_sys::MlirAffineExpr;
 use mlir_sys::MlirAttribute;
 use mlir_sys::MlirBlock;
 use mlir_sys::MlirContext;
 use mlir_sys::MlirDialect;
 use mlir_sys::MlirDialectRegistry;
 use mlir_sys::MlirIdentifier;
-use mlir_sys::MlirIntegerSet;
 use mlir_sys::MlirLocation;
 use mlir_sys::MlirLogicalResult;
 use mlir_sys::MlirModule;
@@ -62,6 +60,7 @@ use mlir_sys::mlirAttributeIsASymbolRef;
 use mlir_sys::mlirAttributeIsAType;
 use mlir_sys::mlirAttributeIsAUnit;
 use mlir_sys::mlirAttributeParseGet;
+use mlir_sys::mlirAttributePrint;
 use mlir_sys::mlirBlockAddArgument;
 use mlir_sys::mlirBlockAppendOwnedOperation;
 use mlir_sys::mlirBlockArgumentGetArgNumber;
@@ -83,6 +82,7 @@ use mlir_sys::mlirBlockInsertArgument;
 use mlir_sys::mlirBlockInsertOwnedOperation;
 use mlir_sys::mlirBlockInsertOwnedOperationAfter;
 use mlir_sys::mlirBlockInsertOwnedOperationBefore;
+use mlir_sys::mlirBlockPrint;
 use mlir_sys::mlirContextAppendDialectRegistry;
 use mlir_sys::mlirContextCreate;
 use mlir_sys::mlirContextCreateWithRegistry;
@@ -118,17 +118,13 @@ use mlir_sys::mlirIdentifierEqual;
 use mlir_sys::mlirIdentifierGet;
 use mlir_sys::mlirIdentifierGetContext;
 use mlir_sys::mlirIdentifierStr;
-use mlir_sys::mlirIntegerSetDump;
-use mlir_sys::mlirIntegerSetEmptyGet;
-use mlir_sys::mlirIntegerSetEqual;
-use mlir_sys::mlirIntegerSetGet;
-use mlir_sys::mlirIntegerSetGetContext;
 use mlir_sys::mlirLocationCallSiteGet;
 use mlir_sys::mlirLocationEqual;
 use mlir_sys::mlirLocationFileLineColGet;
 use mlir_sys::mlirLocationFromAttribute;
 use mlir_sys::mlirLocationGetAttribute;
 use mlir_sys::mlirLocationGetContext;
+use mlir_sys::mlirLocationPrint;
 use mlir_sys::mlirLocationUnknownGet;
 use mlir_sys::mlirModuleCreateEmpty;
 use mlir_sys::mlirModuleCreateParse;
@@ -170,6 +166,7 @@ use mlir_sys::mlirOperationGetTypeID;
 use mlir_sys::mlirOperationHasInherentAttributeByName;
 use mlir_sys::mlirOperationMoveAfter;
 use mlir_sys::mlirOperationMoveBefore;
+use mlir_sys::mlirOperationPrint;
 use mlir_sys::mlirOperationRemoveDiscardableAttributeByName;
 use mlir_sys::mlirOperationRemoveFromParent;
 use mlir_sys::mlirOperationSetDiscardableAttributeByName;
@@ -195,6 +192,7 @@ use mlir_sys::mlirRegionInsertOwnedBlock;
 use mlir_sys::mlirRegionInsertOwnedBlockAfter;
 use mlir_sys::mlirRegionInsertOwnedBlockBefore;
 use mlir_sys::mlirRegionTakeBody;
+use mlir_sys::mlirRegisterAllDialects;
 use mlir_sys::mlirRegisterAllPasses;
 use mlir_sys::mlirStringRefCreateFromCString;
 use mlir_sys::mlirStringRefEqual;
@@ -230,12 +228,14 @@ use mlir_sys::mlirTypeIsAUnrankedMemRef;
 use mlir_sys::mlirTypeIsAUnrankedTensor;
 use mlir_sys::mlirTypeIsAVector;
 use mlir_sys::mlirTypeParseGet;
+use mlir_sys::mlirTypePrint;
 use mlir_sys::mlirValueDump;
 use mlir_sys::mlirValueEqual;
 use mlir_sys::mlirValueGetFirstUse;
 use mlir_sys::mlirValueGetType;
 use mlir_sys::mlirValueIsABlockArgument;
 use mlir_sys::mlirValueIsAOpResult;
+use mlir_sys::mlirValuePrint;
 use mlir_sys::mlirValueReplaceAllUsesOfWith;
 use mlir_sys::mlirValueSetType;
 
@@ -250,20 +250,39 @@ use std::ptr;
 use std::str::FromStr;
 
 use crate::attributes;
-use crate::dialects;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::types;
 
 use attributes::IAttribute;
 use attributes::named::Named;
-use dialects::affine;
 use exit_code::ExitCode;
 use exit_code::exit;
 use types::GetWidth;
 use types::IType;
 use types::IsPromotableTo;
 use types::unit::Unit;
+
+const STATE_BUFFER_LENGTH: usize = 4096;
+const STATE_BUFFER_DATA_LENGTH: usize = STATE_BUFFER_LENGTH - mem::size_of::<usize>();
+
+macro_rules! print_method {
+    ($FunctionName:ident) => {
+        pub fn print(&self, state: &mut StringCallbackState) -> () {
+            let callback = StringCallback::new();
+            unsafe {
+                $FunctionName(
+                    *self.get(),
+                    *callback.get(),
+                    state.as_void_mut_ptr()
+                );
+            }
+            let idx = state.num_bytes_written();
+            state.get_data_mut()[idx] = b'\0';
+        }
+    }
+}
+pub(crate) use print_method;
 
 pub trait Destroy {
     fn destroy(&mut self) -> ();
@@ -313,9 +332,6 @@ pub struct Dialect(MlirDialect);
 pub struct Identifier(MlirIdentifier);
 
 #[derive(Clone)]
-pub struct IntegerSet(MlirIntegerSet);
-
-#[derive(Clone)]
 pub struct Location(MlirLocation);
 
 #[derive(Clone)]
@@ -352,6 +368,13 @@ pub struct ShapeImpl<T: Clone + Sized>(T);
 pub struct StringCallback(MlirStringCallback);
 pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct StringCallbackState {
+    bytes_written: usize,
+    data: [u8; STATE_BUFFER_DATA_LENGTH],
+}
+
 #[derive(Clone)]
 pub struct StringBacked(MlirStringRef, CString);
 
@@ -381,10 +404,6 @@ impl Attribute {
     /// Also, why is it mispelled in the C API?
     pub fn new_distinct(attr: &Attribute) -> Self {
         Self::from(do_unsafe!(mlirDisctinctAttrCreate(*attr.get())))
-    }
-
-    pub fn from(attr: MlirAttribute) -> Self {
-        Attribute(attr)
     }
 
     pub fn from_parse(context: &Context, s: &StringRef) -> Self {
@@ -539,6 +558,8 @@ impl Attribute {
         do_unsafe!(mlirAttributeIsAUnit(self.0))
     }
 
+    print_method!(mlirAttributePrint);
+
     pub fn to_location(&self) -> Location {
         Location::from(do_unsafe!(mlirLocationFromAttribute(self.0)))
     }
@@ -547,6 +568,20 @@ impl Attribute {
 impl Default for Attribute {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Display for Attribute {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl From<MlirAttribute> for Attribute {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
     }
 }
 
@@ -585,12 +620,6 @@ impl Block {
 
     pub fn new_empty() -> Self {
         Self::new(0, &[], &[])
-    }
-
-    pub fn from(block: MlirBlock) -> Self {
-        let mut b = Block(block, 0);
-        *b.num_operations_mut() = b.__num_operations();
-        b
     }
 
     pub fn add_arg(&mut self, t: &Type, loc: &Location) -> Value {
@@ -693,6 +722,8 @@ impl Block {
         BlockIter(self, None)
     }
 
+    print_method!(mlirBlockPrint);
+
     pub fn num_args(&self) -> isize {
         do_unsafe!(mlirBlockGetNumArguments(self.0))
     }
@@ -713,6 +744,42 @@ impl Block {
 impl Default for Block {
     fn default() -> Self {
         Self::new_empty()
+    }
+}
+
+impl fmt::Display for Block {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl From<MlirBlock> for Block {
+    fn from(block: MlirBlock) -> Self {
+        let mut b = Self(block, 0);
+        *b.num_operations_mut() = b.__num_operations();
+        b
+    }
+}
+
+impl Iterator for Block {
+    type Item = MlirBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let block = do_unsafe!(mlirBlockGetNextInRegion(self.0));
+        if block.ptr.is_null() {
+            None
+        } else {
+            self.0 = block;
+            Some(block)
+        }
+    }
+}
+
+impl cmp::PartialEq for Block {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirBlockEqual(self.0, rhs.0))
     }
 }
 
@@ -756,10 +823,6 @@ impl Context {
         Self::from(do_unsafe!(mlirContextCreateWithThreading(allow_threading)))
     }
 
-    pub fn from(context: MlirContext) -> Self {
-        Context(context)
-    }
-
     pub fn from_registry(registry: &Registry) -> Self {
         Self::from(do_unsafe!(mlirContextCreateWithRegistry(
             *registry.get(),
@@ -767,7 +830,7 @@ impl Context {
         )))
     }
 
-    pub fn append_regsitry(&mut self, registry: &Registry) -> () {
+    pub fn append_registry(&mut self, registry: &Registry) -> () {
         do_unsafe!(mlirContextAppendDialectRegistry(
             *self.get_mut(),
             *registry.get()
@@ -915,37 +978,19 @@ impl Destroy for Context {
     }
 }
 
+impl From<MlirContext> for Context {
+    fn from(context: MlirContext) -> Self {
+        Self(context)
+    }
+}
+
 impl Destroy for Block {
     fn destroy(&mut self) -> () {
         do_unsafe!(mlirBlockDestroy(self.0))
     }
 }
 
-impl Iterator for Block {
-    type Item = MlirBlock;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let block = do_unsafe!(mlirBlockGetNextInRegion(self.0));
-        if block.ptr.is_null() {
-            None
-        } else {
-            self.0 = block;
-            Some(block)
-        }
-    }
-}
-
-impl cmp::PartialEq for Block {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirBlockEqual(self.0, rhs.0))
-    }
-}
-
 impl Dialect {
-    pub fn from(dialect: MlirDialect) -> Self {
-        Dialect(dialect)
-    }
-
     pub fn get(&self) -> &MlirDialect {
         &self.0
     }
@@ -967,6 +1012,12 @@ impl Dialect {
     }
 }
 
+impl From<MlirDialect> for Dialect {
+    fn from(dialect: MlirDialect) -> Self {
+        Self(dialect)
+    }
+}
+
 impl cmp::PartialEq for Dialect {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirDialectEqual(self.0, rhs.0))
@@ -976,10 +1027,6 @@ impl cmp::PartialEq for Dialect {
 impl Identifier {
     pub fn new(context: &Context, s: &StringRef) -> Self {
         Self::from(do_unsafe!(mlirIdentifierGet(*context.get(), *s.get())))
-    }
-
-    pub fn from(id: MlirIdentifier) -> Self {
-        Identifier(id)
     }
 
     pub fn as_string(&self) -> StringRef {
@@ -1003,76 +1050,15 @@ impl Identifier {
     }
 }
 
+impl From<MlirIdentifier> for Identifier {
+    fn from(id: MlirIdentifier) -> Self {
+        Self(id)
+    }
+}
+
 impl cmp::PartialEq for Identifier {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirIdentifierEqual(self.0, rhs.0))
-    }
-}
-
-impl IntegerSet {
-    pub fn new(
-        context: &Context,
-        num_dims: isize,
-        num_syms: isize,
-        constraints: &[affine::Expr],
-        flags: &[bool],
-    ) -> Self {
-        let c_len = constraints.len();
-        let f_len = flags.len();
-        if c_len != f_len {
-            eprintln!(
-                "Mismatched constraints ('{}') and flags ('{}') sizes",
-                c_len, f_len
-            );
-            exit(ExitCode::IRError);
-        }
-        let c: Vec<MlirAffineExpr> = constraints.iter().map(|e| *e.get()).collect();
-        Self::from(do_unsafe!(mlirIntegerSetGet(
-            *context.get(),
-            num_dims,
-            num_syms,
-            c_len as isize,
-            c.as_ptr(),
-            flags.as_ptr(),
-        )))
-    }
-
-    pub fn new_empty(context: &Context, num_dims: isize, num_syms: isize) -> Self {
-        Self::from(do_unsafe!(mlirIntegerSetEmptyGet(
-            *context.get(),
-            num_dims,
-            num_syms
-        )))
-    }
-
-    pub fn from(set: MlirIntegerSet) -> Self {
-        IntegerSet(set)
-    }
-
-    pub fn dump(&self) -> () {
-        do_unsafe!(mlirIntegerSetDump(self.0))
-    }
-
-    pub fn get(&self) -> &MlirIntegerSet {
-        &self.0
-    }
-
-    pub fn get_context(&self) -> Context {
-        Context::from(do_unsafe!(mlirIntegerSetGetContext(self.0)))
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirIntegerSet {
-        &mut self.0
-    }
-
-    pub fn is_null(&self) -> bool {
-        self.get().ptr.is_null()
-    }
-}
-
-impl cmp::PartialEq for IntegerSet {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirIntegerSetEqual(self.0, rhs.0))
     }
 }
 
@@ -1088,10 +1074,6 @@ impl Location {
 
     pub fn new_unknown(context: &Context) -> Self {
         Location::from(do_unsafe!(mlirLocationUnknownGet(*context.get())))
-    }
-
-    pub fn from(loc: MlirLocation) -> Self {
-        Location(loc)
     }
 
     pub fn from_call_site(callee: &Location, caller: &Location) -> Self {
@@ -1120,11 +1102,21 @@ impl Location {
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
     }
+
+    print_method!(mlirLocationPrint);
 }
 
 impl Default for Location {
     fn default() -> Self {
         Location::new_unknown(&Context::default())
+    }
+}
+
+impl fmt::Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
     }
 }
 
@@ -1134,11 +1126,13 @@ impl cmp::PartialEq for Location {
     }
 }
 
-impl LogicalResult {
-    pub fn from(loc: MlirLogicalResult) -> Self {
-        LogicalResult(loc)
+impl From<MlirLocation> for Location {
+    fn from(loc: MlirLocation) -> Self {
+        Self(loc)
     }
+}
 
+impl LogicalResult {
     pub fn get(&self) -> &MlirLogicalResult {
         &self.0
     }
@@ -1156,6 +1150,12 @@ impl LogicalResult {
     }
 }
 
+impl From<MlirLogicalResult> for LogicalResult {
+    fn from(loc: MlirLogicalResult) -> Self {
+        Self(loc)
+    }
+}
+
 impl Module {
     pub fn as_operation(&self) -> Operation {
         Operation::from(do_unsafe!(mlirModuleGetOperation(self.0)))
@@ -1163,10 +1163,6 @@ impl Module {
 
     pub fn new(loc: &Location) -> Self {
         Self::from(do_unsafe!(mlirModuleCreateEmpty(*loc.get())))
-    }
-
-    pub fn from(module: MlirModule) -> Self {
-        Module(module)
     }
 
     pub fn from_parse(context: &Context, string: &StringRef) -> Self {
@@ -1223,6 +1219,12 @@ impl Destroy for Module {
     }
 }
 
+impl From<MlirModule> for Module {
+    fn from(module: MlirModule) -> Self {
+        Self(module)
+    }
+}
+
 impl cmp::PartialEq for Module {
     fn eq(&self, rhs: &Self) -> bool {
         self.as_operation() == rhs.as_operation()
@@ -1230,10 +1232,6 @@ impl cmp::PartialEq for Module {
 }
 
 impl Pass {
-    pub fn from(pass: MlirPass) -> Self {
-        Pass(pass)
-    }
-
     pub fn get(&self) -> &MlirPass {
         &self.0
     }
@@ -1251,13 +1249,15 @@ impl Pass {
     }
 }
 
+impl From<MlirPass> for Pass {
+    fn from(pass: MlirPass) -> Self {
+        Self(pass)
+    }
+}
+
 impl Operation {
     pub fn new(state: &mut OperationState) -> Self {
         Self::from(do_unsafe!(mlirOperationCreate(state.get_mut())))
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        Operation(op)
     }
 
     pub fn from_parse(context: &Context, op: &StringRef, src_name: &StringRef) -> Self {
@@ -1395,6 +1395,8 @@ impl Operation {
         do_unsafe!(mlirOperationGetNumSuccessors(self.0))
     }
 
+    print_method!(mlirOperationPrint);
+
     pub fn remove_attribute_discardable(&mut self, name: &StringRef) -> bool {
         do_unsafe!(mlirOperationRemoveDiscardableAttributeByName(
             *self.get_mut(),
@@ -1472,6 +1474,20 @@ impl Destroy for Operation {
     }
 }
 
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl From<MlirOperation> for Operation {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl Iterator for Operation {
     type Item = MlirOperation;
 
@@ -1526,10 +1542,6 @@ impl Iterator for OperationIter<'_> {
 impl OperationState {
     pub fn new(name: &StringRef, loc: &Location) -> Self {
         Self::from(do_unsafe!(mlirOperationStateGet(*name.get(), *loc.get())))
-    }
-
-    pub fn from(state: MlirOperationState) -> Self {
-        OperationState(state)
     }
 
     pub fn add_attributes(&mut self, attributes: &[Named]) -> () {
@@ -1594,11 +1606,13 @@ impl OperationState {
     }
 }
 
-impl OpOperand {
-    pub fn from(op: MlirOpOperand) -> Self {
-        OpOperand(op)
+impl From<MlirOperationState> for OperationState {
+    fn from(state: MlirOperationState) -> Self {
+        Self(state)
     }
+}
 
+impl OpOperand {
     pub fn as_value(&self) -> Value {
         Value::from(do_unsafe!(mlirOpOperandGetValue(self.0)))
     }
@@ -1620,6 +1634,12 @@ impl OpOperand {
     }
 }
 
+impl From<MlirOpOperand> for OpOperand {
+    fn from(op: MlirOpOperand) -> Self {
+        Self(op)
+    }
+}
+
 impl Iterator for OpOperand {
     type Item = MlirOpOperand;
 
@@ -1637,12 +1657,6 @@ impl Iterator for OpOperand {
 impl Region {
     pub fn new() -> Self {
         Self::from(do_unsafe!(mlirRegionCreate()))
-    }
-
-    pub fn from(region: MlirRegion) -> Self {
-        let mut r = Region(region, 0);
-        *r.num_blocks_mut() = r.__num_blocks();
-        r
     }
 
     pub fn append_block(&mut self, block: &mut Block) -> () {
@@ -1735,6 +1749,14 @@ impl Destroy for Region {
     }
 }
 
+impl From<MlirRegion> for Region {
+    fn from(region: MlirRegion) -> Self {
+        let mut r = Self(region, 0);
+        *r.num_blocks_mut() = r.__num_blocks();
+        r
+    }
+}
+
 impl Iterator for Region {
     type Item = MlirRegion;
 
@@ -1791,10 +1813,6 @@ impl Registry {
         Self::from(do_unsafe!(mlirDialectRegistryCreate()))
     }
 
-    pub fn from(registry: MlirDialectRegistry) -> Self {
-        Registry(registry)
-    }
-
     pub fn get(&self) -> &MlirDialectRegistry {
         &self.0
     }
@@ -1805,6 +1823,10 @@ impl Registry {
 
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
+    }
+
+    pub fn register_all_dialects(&mut self) -> () {
+        do_unsafe!(mlirRegisterAllDialects(*self.get_mut()))
     }
 
     pub fn register_arith(&mut self) -> () {
@@ -1890,6 +1912,12 @@ impl Destroy for Registry {
     }
 }
 
+impl From<MlirDialectRegistry> for Registry {
+    fn from(registry: MlirDialectRegistry) -> Self {
+        Self(registry)
+    }
+}
+
 impl cmp::PartialEq for dyn Shape {
     fn eq(&self, rhs: &Self) -> bool {
         self.unpack() == rhs.unpack()
@@ -1926,13 +1954,13 @@ impl fmt::Display for ShapeImpl<Vec<i64>> {
 
 impl From<Vec<i64>> for ShapeImpl<Vec<i64>> {
     fn from(v: Vec<i64>) -> Self {
-        ShapeImpl(v)
+        Self(v)
     }
 }
 
 impl From<&Vec<i64>> for ShapeImpl<Vec<i64>> {
     fn from(v: &Vec<i64>) -> Self {
-        ShapeImpl(v.clone())
+        Self(v.clone())
     }
 }
 
@@ -1993,6 +2021,12 @@ impl StringBacked {
     }
 }
 
+impl Default for StringBacked {
+    fn default() -> Self {
+        Self::from(String::default())
+    }
+}
+
 impl fmt::Display for StringBacked {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.is_empty() {
@@ -2003,12 +2037,6 @@ impl fmt::Display for StringBacked {
             Err(msg) => panic!("Failed to convert CString: {}", msg),
         };
         write!(f, "{}", s)
-    }
-}
-
-impl Default for StringBacked {
-    fn default() -> Self {
-        Self::from(String::default())
     }
 }
 
@@ -2036,7 +2064,7 @@ impl From<MlirStringRef> for StringBacked {
 impl From<&MlirStringRef> for StringBacked {
     fn from(s: &MlirStringRef) -> Self {
         let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
-        StringBacked(*s, mem::take(&mut c_string))
+        Self(*s, mem::take(&mut c_string))
     }
 }
 
@@ -2071,19 +2099,15 @@ impl cmp::PartialEq for StringBacked {
 }
 
 impl StringCallback {
-    pub fn from(callback: MlirStringCallback) -> Self {
-        StringCallback(callback)
-    }
-
-    pub fn from_fn(callback: StringCallbackFn) -> Self {
-        Self::from(Some(callback))
+    pub fn new() -> Self {
+        Self::from(Self::print_string as StringCallbackFn)
     }
 
     /// # Safety
     /// `data` may be dereferenced by the call back function.
     pub unsafe fn apply(&self, s: &StringRef, data: *mut c_void) -> () {
-        if self.0.is_some() {
-            do_unsafe!(self.0.unwrap()(*s.get(), data))
+        if let Some(f) = *self.get() {
+            do_unsafe!(f(*s.get(), data))
         }
     }
 
@@ -2098,13 +2122,105 @@ impl StringCallback {
     pub fn is_none(&self) -> bool {
         self.get().is_none()
     }
+
+    unsafe extern "C" fn print_string(s: MlirStringRef, data: *mut c_void) -> () {
+        let Some(state) = do_unsafe!(StringCallbackState::from_ptr(data).as_mut()) else {
+            eprintln!("Failed to convert pointer to string callback state");
+            exit(ExitCode::IRError);
+        };
+        let data = state.get_data_mut().as_mut_ptr();
+        let offset = state.num_bytes_written();
+        let pos_last = offset + s.length;
+        if pos_last > STATE_BUFFER_DATA_LENGTH {
+            eprintln!("Index {} out of bounds for string callback state data buffer", pos_last);
+            exit(ExitCode::IRError);
+        }
+        for i in 0..s.length {
+            unsafe {
+                let c = *s.data.wrapping_add(i) as u8;
+                *data.wrapping_add(offset + i) = c;
+            }
+            *state.num_bytes_written_mut() += 1;
+        }
+    }
+}
+
+impl Default for StringCallback {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MlirStringCallback> for StringCallback {
+    fn from(callback: MlirStringCallback) -> Self {
+        Self(callback)
+    }
+}
+
+impl From<StringCallbackFn> for StringCallback {
+    fn from(callback: StringCallbackFn) -> Self {
+        Self::from(Some(callback))
+    }
+}
+
+impl StringCallbackState {
+    pub fn new() -> Self {
+        Self{bytes_written: 0, data: [0; STATE_BUFFER_DATA_LENGTH]}
+    }
+
+    pub fn from_ptr(p: *mut c_void) -> *mut Self {
+        p.cast::<Self>()
+    }
+
+    pub fn as_void_ptr(&self) -> *const c_void {
+        ptr::from_ref(self) as *const c_void
+    }
+
+    pub fn as_void_mut_ptr(&mut self) -> *mut c_void {
+        ptr::from_mut(self) as *mut c_void
+    }
+
+    pub fn get_data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn get_data_mut(&mut self) -> &mut [u8] {
+        &mut self.data
+    }
+
+    pub fn num_bytes_written(&self) -> usize {
+        self.bytes_written
+    }
+
+    pub fn num_bytes_written_mut(&mut self) -> &mut usize {
+        &mut self.bytes_written
+    }
+
+    pub fn reset(&mut self) -> () {
+        *self.num_bytes_written_mut() = 0;
+        for i in 0..STATE_BUFFER_DATA_LENGTH {
+            self.get_data_mut()[i] = 0
+        }
+    }
+}
+
+impl Default for StringCallbackState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for StringCallbackState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        const MSG: &str = "Failed to convert to string from string callback state data";
+        let Ok(mut string) = String::from_utf8(self.get_data().to_vec()) else { panic!("{}", MSG) };
+        string.truncate(self.num_bytes_written());
+        string.shrink_to_fit();
+        write!(f, "{}", string)
+    }
 }
 
 impl StringRef {
-    pub fn from(s: MlirStringRef) -> Self {
-        StringRef(s)
-    }
-
     pub fn as_ptr(&self) -> *const c_char {
         self.0.data
     }
@@ -2160,6 +2276,12 @@ impl fmt::Display for StringRef {
     }
 }
 
+impl From<MlirStringRef> for StringRef {
+    fn from(s: MlirStringRef) -> Self {
+        Self(s)
+    }
+}
+
 impl cmp::PartialEq for StringRef {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
@@ -2169,10 +2291,6 @@ impl cmp::PartialEq for StringRef {
 impl SymbolTable {
     pub fn new(op: &Operation) -> Self {
         Self::from(do_unsafe!(mlirSymbolTableCreate(*op.get())))
-    }
-
-    pub fn from(table: MlirSymbolTable) -> Self {
-        SymbolTable(table)
     }
 
     pub fn get(&self) -> &MlirSymbolTable {
@@ -2218,11 +2336,13 @@ impl Destroy for SymbolTable {
     }
 }
 
-impl Type {
-    pub fn from(t: MlirType) -> Self {
-        Type(t)
+impl From<MlirSymbolTable> for SymbolTable {
+    fn from(table: MlirSymbolTable) -> Self {
+        Self(table)
     }
+}
 
+impl Type {
     pub fn from_parse(context: &Context, s: &StringRef) -> Self {
         Self::from(do_unsafe!(mlirTypeParseGet(*context.get(), *s.get())))
     }
@@ -2320,6 +2440,22 @@ impl Type {
     pub fn is_vector(&self) -> bool {
         do_unsafe!(mlirTypeIsAVector(self.0))
     }
+
+    print_method!(mlirTypePrint);
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl From<MlirType> for Type {
+    fn from(t: MlirType) -> Self {
+        Self(t)
+    }
 }
 
 impl GetWidth for Type {}
@@ -2351,10 +2487,6 @@ impl cmp::PartialEq for Type {
 }
 
 impl TypeID {
-    pub fn from(id: MlirTypeID) -> Self {
-        TypeID(id)
-    }
-
     /// # Safety
     /// May dereference raw pointer input `p`
     pub unsafe fn from_ptr(p: *const c_void) -> Self {
@@ -2382,6 +2514,12 @@ impl TypeID {
     }
 }
 
+impl From<MlirTypeID> for TypeID {
+    fn from(id: MlirTypeID) -> Self {
+        Self(id)
+    }
+}
+
 impl cmp::PartialEq for TypeID {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirTypeIDEqual(self.0, rhs.0))
@@ -2392,10 +2530,6 @@ impl Value {
     pub fn new_null() -> Self {
         let v = MlirValue { ptr: ptr::null() };
         Self::from(v)
-    }
-
-    pub fn from(value: MlirValue) -> Self {
-        Value(value)
     }
 
     fn check_argument(&self) -> () {
@@ -2467,6 +2601,8 @@ impl Value {
         ValueIter(self, None)
     }
 
+    print_method!(mlirValuePrint);
+
     pub fn set_arg_type(&mut self, t: &Type) -> () {
         self.check_argument();
         do_unsafe!(mlirBlockArgumentSetType(self.0, *t.get()))
@@ -2478,6 +2614,20 @@ impl Value {
 
     pub fn replace(&mut self, value: &Value) -> () {
         do_unsafe!(mlirValueReplaceAllUsesOfWith(self.0, *value.get()))
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl From<MlirValue> for Value {
+    fn from(value: MlirValue) -> Self {
+        Self(value)
     }
 }
 
