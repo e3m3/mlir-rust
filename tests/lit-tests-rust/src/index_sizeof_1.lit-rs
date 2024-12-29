@@ -1,0 +1,34 @@
+// RUN: %O/run index_sizeof_1 2>&1 | @mlir-opt | @filecheck %M/index_sizeof_1.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for index is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the index dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::index::SizeOf;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::index::Index;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t_index = Index::new(&context).as_type();
+    let f = get_empty_test_fn(&context, &[], &[t_index]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_sizeof = SizeOf::new(&context, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_sizeof.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_sizeof);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}
