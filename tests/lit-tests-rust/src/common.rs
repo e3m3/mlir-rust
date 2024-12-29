@@ -42,7 +42,15 @@ pub fn exit(code: ExitCode) -> ! {
 }
 
 pub fn get_empty_test_fn(context: &Context, inputs: &[Type], results: &[Type]) -> Func {
-    get_fn(context, "test", inputs, results, SymbolVisibilityKind::None, None, None)
+    get_fn(
+        context,
+        "test",
+        inputs,
+        results,
+        SymbolVisibilityKind::None,
+        None,
+        None,
+    )
 }
 
 pub fn get_fn(
@@ -81,7 +89,15 @@ pub fn get_private_fn(
     input_attrs: Option<&Arguments>,
     result_attrs: Option<&Results>,
 ) -> Func {
-    get_fn(context, name, inputs, results, SymbolVisibilityKind::Private, input_attrs, result_attrs)
+    get_fn(
+        context,
+        name,
+        inputs,
+        results,
+        SymbolVisibilityKind::Private,
+        input_attrs,
+        result_attrs,
+    )
 }
 
 pub fn get_registry() -> Registry {

@@ -107,9 +107,9 @@ use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedAffineSet;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedIndex;
-use dialects::common::OperandSegmentSizes;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::common::OperandSegmentSizes;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -123,7 +123,6 @@ use ir::Dialect;
 use ir::Location;
 use ir::Operation;
 use ir::OperationState;
-use ir::print_method;
 use ir::Region;
 use ir::StringBacked;
 use ir::StringCallback;
@@ -131,6 +130,7 @@ use ir::StringCallbackState;
 use ir::Type;
 use ir::TypeID;
 use ir::Value;
+use ir::print_method;
 use traits::Trait;
 use types::IType;
 use types::index::Index;
@@ -814,13 +814,7 @@ impl Map {
 
     print_method!(mlirAffineMapPrint);
 
-    pub fn replace_expr(
-        &mut self,
-        old: Expr,
-        new: Expr,
-        num_dims: isize,
-        num_syms: isize,
-    ) -> Self {
+    pub fn replace_expr(&mut self, old: Expr, new: Expr, num_dims: isize, num_syms: isize) -> Self {
         Self::from(do_unsafe!(mlirAffineMapReplace(
             *self.get_mut(),
             *old.get(),
@@ -884,7 +878,10 @@ impl Set {
             eprintln!("Index {} out of bounds for integer set constraints", pos);
             exit(ExitCode::DialectError);
         } else {
-            Expr::from(do_unsafe!(mlirIntegerSetGetConstraint(*self.get(), pos as isize)))
+            Expr::from(do_unsafe!(mlirIntegerSetGetConstraint(
+                *self.get(),
+                pos as isize
+            )))
         }
     }
 
@@ -945,7 +942,10 @@ impl Set {
         let n_dims_new = dims.len() as isize;
         let n_syms_new = syms.len() as isize;
         if n_dims_new < n_dims {
-            eprintln!("Expected at least {} new dimensions for integer set", n_dims);
+            eprintln!(
+                "Expected at least {} new dimensions for integer set",
+                n_dims
+            );
             exit(ExitCode::DialectError);
         } else if n_syms_new < n_syms {
             eprintln!("Expected at least {} new symbols for integer set", n_syms);
@@ -1039,12 +1039,7 @@ impl Apply {
 /// TODO:   Add support for static basis when MLIR-based tests are fixed.
 ///         See `tests/lit-tests-mlir/affine_delinearize_index_2.mlir`.
 impl DelinearizeIndex {
-    pub fn new(
-        context: &Context,
-        index: &Value,
-        dynamic_basis: &[Value],
-        loc: &Location,
-    ) -> Self {
+    pub fn new(context: &Context, index: &Value, dynamic_basis: &[Value], loc: &Location) -> Self {
         if !index.get_type().is_index() {
             eprintln!("Expected index type for index operand of delinearize index operation");
             exit(ExitCode::DialectError);
@@ -1108,8 +1103,7 @@ impl For {
             eprintln!(
                 "Expected matching number of lower bound operands ({}) and lower bounds map inputs ({}) \
                 for for operation",
-                n_lower_ops,
-                n_lower,
+                n_lower_ops, n_lower,
             );
             exit(ExitCode::DialectError);
         }
@@ -1117,8 +1111,7 @@ impl For {
             eprintln!(
                 "Expected matching number of upper bound operands ({}) and upper bounds map inputs ({}) \
                 for for operation",
-                n_upper_ops,
-                n_upper,
+                n_upper_ops, n_upper,
             );
             exit(ExitCode::DialectError);
         }
@@ -1140,7 +1133,9 @@ impl For {
         let n_block_args = 1 + inits.len() as isize;
         let t_index = Index::new(context).as_type();
         let mut t_block = vec![t_index];
-        inits.iter().for_each(|v| { t_block.push(v.get_type()); });
+        inits.iter().for_each(|v| {
+            t_block.push(v.get_type());
+        });
         let loc_block: Vec<Location> = (0..n_block_args).map(|_| loc.clone()).collect();
         let mut region = Region::new();
         let mut block = Block::new(n_block_args, &t_block, &loc_block);
@@ -1178,14 +1173,11 @@ impl If {
         inputs: &[Value],
         condition: &Condition,
         regions: &[Region],
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::If.get_name(),
-        ));
+        let name =
+            StringBacked::from(format!("{}.{}", dialect.get_namespace(), Op::If.get_name(),));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[condition.as_named_attribute()]);
         op_state.add_operands(inputs);
@@ -1201,14 +1193,21 @@ impl If {
         results: &[Type],
         inputs: &[Value],
         condition: Set,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let condition_ = Condition::new(condition);
         let mut region_then = Region::new();
         let region_else = Region::new();
         let mut block_then = Block::new_empty();
         region_then.append_block(&mut block_then); // Add empty starter block
-        Self::new(context, results, inputs, &condition_, &[region_then, region_else], loc)
+        Self::new(
+            context,
+            results,
+            inputs,
+            &condition_,
+            &[region_then, region_else],
+            loc,
+        )
     }
 
     pub fn new_if_else(
@@ -1216,7 +1215,7 @@ impl If {
         results: &[Type],
         inputs: &[Value],
         condition: Set,
-        loc: &Location
+        loc: &Location,
     ) -> Self {
         let condition_ = Condition::new(condition);
         let mut region_then = Region::new();
@@ -1225,7 +1224,14 @@ impl If {
         let mut block_else = Block::new_empty();
         region_then.append_block(&mut block_then); // Add empty starter block
         region_else.append_block(&mut block_else); // Add empty starter block
-        Self::new(context, results, inputs, &condition_, &[region_then, region_else], loc)
+        Self::new(
+            context,
+            results,
+            inputs,
+            &condition_,
+            &[region_then, region_else],
+            loc,
+        )
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -1524,12 +1530,14 @@ impl Yield {
             eprintln!(
                 "Expected matching number of inputs ({}) and parent operation results ({}) of \
                 yield operation",
-                n_inputs,
-                n_results,
+                n_inputs, n_results,
             );
             exit(ExitCode::DialectError);
         }
-        if t.iter().enumerate().any(|(i,t_)| *t_ != parent.get_result(i as isize).get_type()) {
+        if t.iter()
+            .enumerate()
+            .any(|(i, t_)| *t_ != parent.get_result(i as isize).get_type())
+        {
             eprintln!(
                 "Expected matching types for inputs and parent operation results of yield operation",
             );
@@ -1539,23 +1547,11 @@ impl Yield {
     }
 
     pub fn new_for(values: &[Value], parent: &For, loc: &Location) -> Self {
-        Self::__new(
-            values,
-            parent.get(),
-            &Op::For,
-            &parent.get_dialect(),
-            loc,
-        )
+        Self::__new(values, parent.get(), &Op::For, &parent.get_dialect(), loc)
     }
 
     pub fn new_if(values: &[Value], parent: &If, loc: &Location) -> Self {
-        Self::__new(
-            values,
-            parent.get(),
-            &Op::If,
-            &parent.get_dialect(),
-            loc,
-        )
+        Self::__new(values, parent.get(), &Op::If, &parent.get_dialect(), loc)
     }
 
     pub fn from(op: MlirOperation, parent: MlirOperation, parent_op: Op) -> Self {

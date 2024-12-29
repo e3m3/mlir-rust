@@ -6,8 +6,8 @@ use crate::common::*;
 
 use mlir::attributes::specialized::NamedAffineMap;
 use mlir::dialects::IOperation;
-use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::func::Return;

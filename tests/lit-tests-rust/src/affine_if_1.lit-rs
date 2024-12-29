@@ -7,12 +7,13 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::Apply;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Constant as AffineConstant;
 use mlir::dialects::affine::Dim as AffineDim;
-use mlir::dialects::affine::If;
 use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::If;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::affine::Set as AffineSet;
 use mlir::dialects::affine::Symbol as AffineSymbol;
@@ -20,7 +21,6 @@ use mlir::dialects::affine::Yield;
 use mlir::dialects::func::Call;
 use mlir::dialects::func::Callee;
 use mlir::dialects::func::Return;
-use mlir::dialects::IOperation;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -44,7 +44,9 @@ pub fn test() -> TestResult {
     let b3 = AffineBinop::new_sub(d1, c10).as_expr();
     let b4 = AffineBinop::new_sub(s0, d1).as_expr();
     let b5 = AffineBinop::new_sub(b4, c9).as_expr();
-    let set0 = AffineSet::new(&context, 2, 1, &[b0, b2, b3, b5], &[false, false, false, false]);
+    let set0 = AffineSet::new(&context, 2, 1, &[b0, b2, b3, b5], &[
+        false, false, false, false,
+    ]);
     let b6 = AffineBinop::new_sub(d0, c10).as_expr();
     let b7 = AffineBinop::new_add(b6, d1).as_expr();
     let b8 = AffineBinop::new_sub(b7, c10).as_expr();
@@ -59,13 +61,7 @@ pub fn test() -> TestResult {
     )
     .as_operation();
     let callee = Callee::from_symbol_ref(&f_bb.get_symbol_ref());
-    let mut op_call = Call::new(
-        &callee,
-        &[],
-        &[op_apply.get_result(0)],
-        &loc,
-    )
-    .as_operation();
+    let mut op_call = Call::new(&callee, &[], &[op_apply.get_result(0)], &loc).as_operation();
     let op_if = If::new_if(
         &context,
         &[],
@@ -73,12 +69,7 @@ pub fn test() -> TestResult {
         set0,
         &loc,
     );
-    let mut op_yield = Yield::new_if(
-        &[],
-        &op_if,
-        &loc,
-    )
-    .as_operation();
+    let mut op_yield = Yield::new_if(&[], &op_if, &loc).as_operation();
     let region_if = op_if.as_operation().get_region(0);
     let mut block_if = region_if.iter().next().unwrap_or_default();
     block_if.append_operation(&mut op_apply);

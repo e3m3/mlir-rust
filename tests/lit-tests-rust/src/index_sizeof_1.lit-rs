@@ -7,8 +7,8 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::dialects::IOperation;
-use mlir::dialects::index::SizeOf;
 use mlir::dialects::func::Return;
+use mlir::dialects::index::SizeOf;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;

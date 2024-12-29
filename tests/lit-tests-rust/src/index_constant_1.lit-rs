@@ -8,9 +8,9 @@ use crate::common::*;
 
 use mlir::attributes::specialized::NamedIndex;
 use mlir::dialects::IOperation;
-use mlir::dialects::index::IndexValue;
-use mlir::dialects::index::Constant;
 use mlir::dialects::func::Return;
+use mlir::dialects::index::Constant;
+use mlir::dialects::index::IndexValue;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -25,12 +25,7 @@ pub fn test() -> TestResult {
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let value = IndexValue::new(&context, 10);
-    let mut op_const = Constant::new(
-        &context,
-        &value,
-        &loc,
-    )
-    .as_operation();
+    let mut op_const = Constant::new(&context, &value, &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_const.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_const);
     f_block.append_operation(&mut op_ret);

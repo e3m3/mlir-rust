@@ -413,10 +413,7 @@ impl IOperation for Add {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::Commutative,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::Commutative]
     }
 }
 
@@ -462,10 +459,7 @@ impl IOperation for BoolConstant {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::ConstantLike,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
     }
 }
 
@@ -534,9 +528,7 @@ impl IOperation for CastS {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -581,9 +573,7 @@ impl IOperation for CastU {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
@@ -629,10 +619,7 @@ impl IOperation for Constant {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-            Trait::ConstantLike,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
     }
 }
 
@@ -707,9 +694,7 @@ impl IOperation for SizeOf {
     }
 
     fn get_traits(&self) -> &'static [Trait] {
-        &[
-            Trait::AlwaysSpeculatableImplTrait,
-        ]
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 

@@ -7,6 +7,7 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::attributes::specialized::NamedIndex;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::Constant as AffineConstant;
 use mlir::dialects::affine::For;
 use mlir::dialects::affine::IExpr;
@@ -16,7 +17,6 @@ use mlir::dialects::affine::Yield;
 use mlir::dialects::arith::AddI;
 use mlir::dialects::arith::IntegerOverflowFlags;
 use mlir::dialects::func::Return;
-use mlir::dialects::IOperation;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -28,11 +28,10 @@ pub fn test() -> TestResult {
     context.set_allow_unregistered_dialects(true);
     let loc = context.get_unknown_location();
     let t = Index::new(&context).as_type();
-    let f = get_empty_test_fn(
-        &context,
-        &[t.clone(), t.clone(), t.clone(), t.clone()],
-        &[t.clone(), t.clone()],
-    );
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone(), t.clone(), t.clone()], &[
+        t.clone(),
+        t.clone(),
+    ]);
     let c5 = AffineConstant::new(&context, 5).as_expr();
     let c128 = AffineConstant::new(&context, 128).as_expr();
     let map0 = AffineMap::new_results(&context, 0, 0, &[c5]);
@@ -80,7 +79,10 @@ pub fn test() -> TestResult {
     block_for.append_operation(&mut op_yield);
     let mut op_ret = Return::new(
         &f,
-        &[op_for.as_operation().get_result(0), op_for.as_operation().get_result(1)],
+        &[
+            op_for.as_operation().get_result(0),
+            op_for.as_operation().get_result(1),
+        ],
         &loc,
     )
     .as_operation();

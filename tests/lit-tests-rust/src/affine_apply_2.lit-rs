@@ -8,13 +8,13 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::dialects::IOperation;
-use mlir::dialects::func::Return;
 use mlir::dialects::affine::Apply;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Dim as AffineDim;
 use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::affine::Symbol as AffineSymbol;
+use mlir::dialects::func::Return;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;

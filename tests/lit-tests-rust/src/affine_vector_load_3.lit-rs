@@ -6,16 +6,16 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::func::Return;
-use mlir::dialects::affine::VectorLoad;
-use mlir::dialects::affine::Map as AffineMap;
-use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::IOperation;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::VectorLoad;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IType;
 use mlir::types::index::Index;
 use mlir::types::memref::MemRef;
 use mlir::types::vector::Vector;

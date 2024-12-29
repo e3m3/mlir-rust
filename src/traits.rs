@@ -57,7 +57,8 @@ impl fmt::Display for Trait {
             Trait::MemRefsNormalizable => "memrefs_normalizable".to_string(),
             Trait::NoRegionArguments => "no_region_arguments".to_string(),
             Trait::RecursiveMemoryEffects => "recursive_memory_effects".to_string(),
-            Trait::RecursivelySpeculatableImplTrait => "recursively_speculatable_impl_trait".to_string(),
+            Trait::RecursivelySpeculatableImplTrait =>
+                "recursively_speculatable_impl_trait".to_string(),
             Trait::ReturnLike => "return_like".to_string(),
             Trait::SameOperandsAndResultType => "same_operands_and_result_type".to_string(),
             Trait::SameOperandsElementType => "same_operands_element_type".to_string(),

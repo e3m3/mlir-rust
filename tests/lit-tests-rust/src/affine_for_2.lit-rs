@@ -10,6 +10,7 @@ use crate::common::*;
 
 use mlir::attributes::integer::Integer as IntegerAttr;
 use mlir::attributes::specialized::NamedIndex;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::For;
 use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Map as AffineMap;
@@ -21,7 +22,6 @@ use mlir::dialects::arith::Constant;
 use mlir::dialects::arith::IntegerOverflowFlags;
 use mlir::dialects::func::Return;
 use mlir::dialects::index::CastS;
-use mlir::dialects::IOperation;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -35,7 +35,11 @@ pub fn test() -> TestResult {
     let loc = context.get_unknown_location();
     let t = IntegerType::new(&context, 32);
     let t_index = Index::new(&context).as_type();
-    let f = get_empty_test_fn(&context, &[t_index.clone(), t_index.clone()], &[t.as_type()]);
+    let f = get_empty_test_fn(
+        &context,
+        &[t_index.clone(), t_index.clone()],
+        &[t.as_type()],
+    );
     let s0 = AffineSymbol::new(&context, 0).as_expr();
     let map0 = AffineMap::new_results(&context, 0, 1, &[s0]);
     let step = Step::new(&context, 2);
@@ -55,12 +59,7 @@ pub fn test() -> TestResult {
     );
     let region_for = op_for.as_operation().get_region(0);
     let mut block_for = region_for.iter().next().unwrap_or_default();
-    let mut op_cast = CastS::new_integer(
-        &t,
-        &block_for.get_arg(0),
-        &loc,
-    )
-    .as_operation();
+    let mut op_cast = CastS::new_integer(&t, &block_for.get_arg(0), &loc).as_operation();
     let mut op_add = AddI::new(
         &t.as_type(),
         &block_for.get_arg(1),
@@ -69,12 +68,7 @@ pub fn test() -> TestResult {
         &loc,
     )
     .as_operation();
-    let mut op_yield = Yield::new_for(
-        &[op_add.get_result(0)],
-        &op_for,
-        &loc,
-    )
-    .as_operation();
+    let mut op_yield = Yield::new_for(&[op_add.get_result(0)], &op_for, &loc).as_operation();
     block_for.append_operation(&mut op_cast);
     block_for.append_operation(&mut op_add);
     block_for.append_operation(&mut op_yield);

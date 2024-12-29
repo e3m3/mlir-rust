@@ -7,8 +7,8 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::dialects::IOperation;
-use mlir::dialects::index::CastU;
 use mlir::dialects::func::Return;
+use mlir::dialects::index::CastU;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -24,12 +24,7 @@ pub fn test() -> TestResult {
     let f = get_empty_test_fn(&context, &[t_index], &[t_int.as_type()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_cast = CastU::new_integer(
-        &t_int,
-        &f_block.get_arg(0),
-        &loc,
-    )
-    .as_operation();
+    let mut op_cast = CastU::new_integer(&t_int, &f_block.get_arg(0), &loc).as_operation();
     let mut op_ret = Return::new(&f, &[op_cast.get_result(0)], &loc).as_operation();
     f_block.append_operation(&mut op_cast);
     f_block.append_operation(&mut op_ret);

@@ -18,7 +18,6 @@ use crate::types;
 
 use attributes::IAttribute;
 use attributes::IAttributeNamed;
-use attributes::integer_set::IntegerSet;
 use attributes::array::Array;
 use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
@@ -28,6 +27,7 @@ use attributes::elements::Elements;
 use attributes::float::Float as FloatAttr;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
+use attributes::integer_set::IntegerSet;
 use attributes::opaque::Opaque;
 use attributes::strided_layout::StridedLayout;
 use attributes::string::String as StringAttr;

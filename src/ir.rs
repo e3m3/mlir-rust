@@ -271,16 +271,12 @@ macro_rules! print_method {
         pub fn print(&self, state: &mut StringCallbackState) -> () {
             let callback = StringCallback::new();
             unsafe {
-                $FunctionName(
-                    *self.get(),
-                    *callback.get(),
-                    state.as_void_mut_ptr()
-                );
+                $FunctionName(*self.get(), *callback.get(), state.as_void_mut_ptr());
             }
             let idx = state.num_bytes_written();
             state.get_data_mut()[idx] = b'\0';
         }
-    }
+    };
 }
 pub(crate) use print_method;
 
@@ -2132,7 +2128,10 @@ impl StringCallback {
         let offset = state.num_bytes_written();
         let pos_last = offset + s.length;
         if pos_last > STATE_BUFFER_DATA_LENGTH {
-            eprintln!("Index {} out of bounds for string callback state data buffer", pos_last);
+            eprintln!(
+                "Index {} out of bounds for string callback state data buffer",
+                pos_last
+            );
             exit(ExitCode::IRError);
         }
         for i in 0..s.length {
@@ -2165,7 +2164,10 @@ impl From<StringCallbackFn> for StringCallback {
 
 impl StringCallbackState {
     pub fn new() -> Self {
-        Self{bytes_written: 0, data: [0; STATE_BUFFER_DATA_LENGTH]}
+        Self {
+            bytes_written: 0,
+            data: [0; STATE_BUFFER_DATA_LENGTH],
+        }
     }
 
     pub fn from_ptr(p: *mut c_void) -> *mut Self {
@@ -2213,7 +2215,9 @@ impl Default for StringCallbackState {
 impl fmt::Display for StringCallbackState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         const MSG: &str = "Failed to convert to string from string callback state data";
-        let Ok(mut string) = String::from_utf8(self.get_data().to_vec()) else { panic!("{}", MSG) };
+        let Ok(mut string) = String::from_utf8(self.get_data().to_vec()) else {
+            panic!("{}", MSG)
+        };
         string.truncate(self.num_bytes_written());
         string.shrink_to_fit();
         write!(f, "{}", string)

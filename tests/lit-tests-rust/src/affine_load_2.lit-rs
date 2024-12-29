@@ -6,7 +6,7 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::func::Return;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Dim as AffineDim;
 use mlir::dialects::affine::IExpr;
@@ -14,12 +14,12 @@ use mlir::dialects::affine::Load;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::affine::Symbol as AffineSymbol;
 use mlir::dialects::common::DefaultMemorySpace;
-use mlir::dialects::IOperation;
+use mlir::dialects::func::Return;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IType;
 use mlir::types::index::Index;
 use mlir::types::memref::MemRef;
 
@@ -35,7 +35,13 @@ pub fn test() -> TestResult {
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &mem_space);
     let f = get_empty_test_fn(
         &context,
-        &[t_mr_in.as_type(), t_index.clone(), t_index.clone(), t_index.clone(), t_index.clone()],
+        &[
+            t_mr_in.as_type(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+        ],
         &[t.clone()],
     );
     let f_region = f.as_operation().iter().next().unwrap_or_default();
@@ -51,7 +57,12 @@ pub fn test() -> TestResult {
         &t,
         map,
         &f_block.get_arg(0),
-        &[f_block.get_arg(1), f_block.get_arg(2), f_block.get_arg(3), f_block.get_arg(4)],
+        &[
+            f_block.get_arg(1),
+            f_block.get_arg(2),
+            f_block.get_arg(3),
+            f_block.get_arg(4),
+        ],
         &loc,
     )
     .as_operation();

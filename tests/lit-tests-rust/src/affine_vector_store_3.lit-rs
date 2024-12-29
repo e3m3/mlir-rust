@@ -6,16 +6,16 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::dialects::func::Return;
-use mlir::dialects::affine::VectorStore;
-use mlir::dialects::affine::Map as AffineMap;
-use mlir::dialects::common::DefaultMemorySpace;
 use mlir::dialects::IOperation;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::VectorStore;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
 use mlir::ir::Block;
 use mlir::ir::ShapeImpl;
+use mlir::types::IType;
 use mlir::types::float::Float as FloatType;
 use mlir::types::float::Layout as FloatLayout;
-use mlir::types::IType;
 use mlir::types::index::Index;
 use mlir::types::memref::MemRef;
 use mlir::types::vector::Vector;
@@ -34,7 +34,12 @@ pub fn test() -> TestResult {
     let t_mr_out = MemRef::new_contiguous(&s_out, &t, &mem_space);
     let f = get_empty_test_fn(
         &context,
-        &[t_vec_in.as_type(), t_mr_out.as_type(), t_index.clone(), t_index.clone()],
+        &[
+            t_vec_in.as_type(),
+            t_mr_out.as_type(),
+            t_index.clone(),
+            t_index.clone(),
+        ],
         &[],
     );
     let f_region = f.as_operation().iter().next().unwrap_or_default();

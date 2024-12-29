@@ -5,9 +5,9 @@ extern crate mlir;
 use crate::common::*;
 
 use mlir::dialects::IOperation;
-use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Map as AffineMap;
 use mlir::dialects::affine::Symbol as AffineSymbol;
 use mlir::dialects::common::DefaultMemorySpace;
@@ -36,9 +36,7 @@ pub fn test() -> TestResult {
     let s0 = AffineSymbol::new(&context, 0).as_expr();
     let expr0 = AffineBinop::new_mul(d1, s0).as_expr();
     let expr1 = AffineBinop::new_add(expr0, d0).as_expr();
-    let layout = MemoryLayout::from(AffineMap::new_results(&context, s_in.rank(), 1, &[
-        expr1,
-    ]));
+    let layout = MemoryLayout::from(AffineMap::new_results(&context, s_in.rank(), 1, &[expr1]));
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new());
     let t_mr_out = MemRef::new(&s_in, &t, &layout, &DefaultMemorySpace::new());
     let f = get_empty_test_fn(&context, &[t_mr_in.as_type()], &[t_mr_out.as_type()]);

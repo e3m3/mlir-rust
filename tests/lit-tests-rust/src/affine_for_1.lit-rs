@@ -8,6 +8,7 @@ use crate::common::*;
 
 use mlir::attributes::specialized::NamedIndex;
 use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
 use mlir::dialects::affine::Constant as AffineConstant;
 use mlir::dialects::affine::For;
 use mlir::dialects::affine::IExpr;
@@ -18,7 +19,6 @@ use mlir::dialects::affine::Yield;
 use mlir::dialects::func::Call;
 use mlir::dialects::func::Callee;
 use mlir::dialects::func::Return;
-use mlir::dialects::IOperation;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -52,19 +52,8 @@ pub fn test() -> TestResult {
     );
     let region_for = op_for.as_operation().get_region(0);
     let mut block_for = region_for.iter().next().unwrap_or_default();
-    let mut op_call = Call::new(
-        &callee,
-        &[],
-        &[block_for.get_arg(0)],
-        &loc,
-    )
-    .as_operation();
-    let mut op_yield = Yield::new_for(
-        &[],
-        &op_for,
-        &loc,
-    )
-    .as_operation();
+    let mut op_call = Call::new(&callee, &[], &[block_for.get_arg(0)], &loc).as_operation();
+    let mut op_yield = Yield::new_for(&[], &op_for, &loc).as_operation();
     block_for.append_operation(&mut op_call);
     block_for.append_operation(&mut op_yield);
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();
