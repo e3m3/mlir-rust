@@ -544,9 +544,7 @@ pub trait NamedMemoryLayout: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 }
 
-pub trait NamedMemorySpace:
-    From<MlirAttribute> + IAttributeNamed + cmp::PartialEq + Sized
-{
+pub trait NamedMemorySpace: From<MlirAttribute> + IAttributeNamed + cmp::PartialEq + Sized {
     fn from_checked(attr: MlirAttribute) -> Self;
 
     fn new_integer(attr: &IntegerAttr) -> Self {
