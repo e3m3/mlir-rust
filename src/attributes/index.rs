@@ -28,10 +28,10 @@ impl Index {
     pub fn new(context: &Context, value: i64) -> Self {
         let data = StringBacked::from(format!("{} : index", value));
         let attr = Attribute::from_parse(context, &data.as_string_ref());
-        Self::from(*attr.get())
+        Self::from_checked(*attr.get())
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
+    pub fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Attribute::from(attr);
         if !attr_.is_index() {
             eprint!("Cannot coerce attribute to index attribute type: ");
@@ -39,7 +39,7 @@ impl Index {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Index(attr)
+        Self::from(attr)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -54,6 +54,12 @@ impl Index {
     /// As a hack, use the type ID for for an index type.
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirIndexTypeGetTypeID()))
+    }
+}
+
+impl From<MlirAttribute> for Index {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
     }
 }
 

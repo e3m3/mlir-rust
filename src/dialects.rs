@@ -26,7 +26,7 @@ pub mod arith;
 pub mod common;
 pub mod func;
 //pub mod gpu;
-//pub mod index;
+pub mod index;
 pub mod linalg;
 //pub mod llvm;
 //pub mod math;

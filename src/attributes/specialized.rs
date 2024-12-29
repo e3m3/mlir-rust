@@ -471,10 +471,33 @@ pub trait NamedInitialization: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 }
 
+pub trait NamedIndex: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(context: &Context, n: i64) -> Self {
+        Self::from(*IndexAttr::new(context, n).get_mut())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_index() {
+            eprintln!("Expected index attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_index(&self) -> IndexAttr {
+        IndexAttr::from(*self.get())
+    }
+}
+
 pub trait NamedInteger: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, n: i64, width: usize) -> Self {
         let t = IntegerType::new(context, width);
         Self::from(*IntegerAttr::new(&t, n).get())
+    }
+
+    fn new_index(context: &Context, n: i64) -> Self {
+        Self::from(*IntegerAttr::new_index(context, n).get())
     }
 
     fn new_signed(context: &Context, n: i64, width: usize) -> Self {
