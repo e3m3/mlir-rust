@@ -1,0 +1,105 @@
+// RUN: %O/run affine_if_2 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_if_2.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::float::Float as FloatAttr;
+use mlir::dialects::affine::Binary as AffineBinop;
+use mlir::dialects::affine::Constant as AffineConstant;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::If;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::Load;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Set as AffineSet;
+use mlir::dialects::affine::Yield;
+use mlir::dialects::arith::Constant;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::memref::MemRef;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32);
+    let t_index = Index::new(&context).as_type();
+    let s_in = ShapeImpl::from(vec![10, 10]);
+    let mem_space = DefaultMemorySpace::new();
+    let t_mr_in = MemRef::new_contiguous(&s_in, &t.as_type(), &mem_space);
+    let f = get_empty_test_fn(
+        &context,
+        &[t_mr_in.as_type(), t_index.clone(), t_index.clone()],
+        &[t.as_type()],
+    );
+    let c1 = AffineConstant::new(&context, 1).as_expr();
+    let c10 = AffineConstant::new(&context, 10).as_expr();
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let b0 = AffineBinop::new_sub(d0, c1).as_expr();
+    let b1 = AffineBinop::new_sub(c10, d0).as_expr();
+    let b2 = AffineBinop::new_sub(d1, c1).as_expr();
+    let b3 = AffineBinop::new_sub(c10, d1).as_expr();
+    let set0 = AffineSet::new(&context, 2, 0, &[b0, b1, b2, b3], &[false, false, false, false]);
+    let map0 = AffineMap::new_results(&context, 2, 0, &[b0, b2]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let op_if = If::new_if_else(
+        &context,
+        &[t.as_type()],
+        &[f_block.get_arg(1), f_block.get_arg(2)],
+        set0,
+        &loc,
+    );
+    let mut op_load = Load::new(
+        &t.as_type(),
+        map0,
+        &f_block.get_arg(0),
+        &[f_block.get_arg(1), f_block.get_arg(2)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_const = Constant::new_float(
+        &FloatAttr::new(&t, 0.0),
+        &loc,
+    ).as_operation();
+    let mut op_yield_then = Yield::new_if(
+        &[op_load.get_result(0)],
+        &op_if,
+        &loc,
+    )
+    .as_operation();
+    let mut op_yield_else = Yield::new_if(
+        &[op_const.get_result(0)],
+        &op_if,
+        &loc,
+    )
+    .as_operation();
+    let region_if = op_if.as_operation().get_region(0);
+    let region_else = op_if.as_operation().get_region(1);
+    let mut block_if = region_if.iter().next().unwrap_or_default();
+    let mut block_else = region_else.iter().next().unwrap_or_default();
+    block_if.append_operation(&mut op_load);
+    block_if.append_operation(&mut op_yield_then);
+    block_else.append_operation(&mut op_const);
+    block_else.append_operation(&mut op_yield_else);
+    let mut op_ret = Return::new(&f, &[op_if.as_operation().get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_if.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}

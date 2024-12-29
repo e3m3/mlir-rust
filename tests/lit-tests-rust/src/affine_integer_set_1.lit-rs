@@ -1,0 +1,116 @@
+// RUN: %O/run affine_integer_set_1 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_integer_set_1.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the affine dialect namespace.
+// COM: No dialect handle for index is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the index dialect namespace.
+
+extern crate mlir_sys;
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir_sys::MlirAttribute;
+use mlir::attributes::dictionary::Dictionary;
+use mlir::attributes::IAttribute;
+use mlir::attributes::IAttributeNamed;
+use mlir::attributes::specialized::NamedArrayOfDictionaries;
+use mlir::attributes::specialized::NamedAffineSet;
+use mlir::dialects::affine::Binary as AffineBinop;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::Set as AffineSet;
+use mlir::dialects::common::SymbolVisibilityKind;
+use mlir::dialects::func::Arguments;
+use mlir::dialects::func::Results;
+use mlir::dialects::func::Return;
+use mlir::dialects::index::Add;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::index::Index;
+
+#[derive(Clone)]
+pub struct HoareConstraints(MlirAttribute);
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    context.set_allow_unregistered_dialects(true);
+    let loc = context.get_unknown_location();
+    let t = Index::new(&context).as_type();
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let b0 = AffineBinop::new_add(d0, d1).as_expr();
+    let set0 = AffineSet::new(&context, 1, 0, &[d0], &[false]);
+    let set1 = AffineSet::new(&context, 2, 0, &[d0, d1, b0], &[false, false, false]);
+    let hc0 = HoareConstraints::new(set0).as_named_attribute();
+    let hc1 = HoareConstraints::new(set1).as_named_attribute();
+    let arg_attrs = Arguments::new(&context, &[
+        Dictionary::new(&context, &[hc0.clone()]),
+        Dictionary::new(&context, &[hc0.clone()]),
+    ]);
+    let result_attrs = Results::new(&context, &[
+        Dictionary::new(&context, &[hc1.clone()])
+    ]);
+    let f = get_fn(
+        &context,
+        "test",
+        &[t.clone(), t.clone()],
+        &[t.clone()],
+        SymbolVisibilityKind::None,
+        Some(&arg_attrs),
+        Some(&result_attrs),
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_add = Add::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_add);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}
+
+impl HoareConstraints {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl From<MlirAttribute> for HoareConstraints {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IAttribute for HoareConstraints {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IAttributeNamed for HoareConstraints {
+    fn get_name() -> &'static str {
+        "hoare.constraints"
+    }
+}
+
+impl NamedAffineSet for HoareConstraints {}

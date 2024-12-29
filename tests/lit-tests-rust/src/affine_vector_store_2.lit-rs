@@ -1,0 +1,77 @@
+// RUN: %O/run affine_vector_store_2 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_vector_store_2.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing the vector store operation from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::affine::Binary as AffineBinop;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::VectorStore;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Symbol as AffineSymbol;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::memref::MemRef;
+use mlir::types::vector::Vector;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_index = Index::new(&context).as_type();
+    let s_in = ShapeImpl::from(vec![8]);
+    let s_out = ShapeImpl::from(vec![100, 100]);
+    let mem_space = DefaultMemorySpace::new();
+    let t_vec_in = Vector::new(&s_in, &t);
+    let t_mr_out = MemRef::new_contiguous(&s_out, &t, &mem_space);
+    let f = get_empty_test_fn(
+        &context,
+        &[
+            t_vec_in.as_type(),
+            t_mr_out.as_type(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+        ],
+        &[],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let s0 = AffineSymbol::new(&context, 0).as_expr();
+    let s1 = AffineSymbol::new(&context, 1).as_expr();
+    let b0 = AffineBinop::new_add(d0, s0).as_expr();
+    let b1 = AffineBinop::new_add(d1, s1).as_expr();
+    let map = AffineMap::new_results(&context, 2, 2, &[b0, b1]);
+    let mut op_store = VectorStore::new(
+        &context,
+        map,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &[f_block.get_arg(2), f_block.get_arg(3), f_block.get_arg(4), f_block.get_arg(5)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_store);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}

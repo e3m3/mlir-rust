@@ -1,0 +1,59 @@
+// RUN: %O/run affine_vector_load_3 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_vector_load_3.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing the vector load operation from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::func::Return;
+use mlir::dialects::affine::VectorLoad;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::memref::MemRef;
+use mlir::types::vector::Vector;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_index = Index::new(&context).as_type();
+    let s_in = ShapeImpl::from(vec![100, 100]);
+    let s_out = ShapeImpl::from(vec![2, 8]);
+    let mem_space = DefaultMemorySpace::new();
+    let t_mr_in = MemRef::new_contiguous(&s_in, &t, &mem_space);
+    let t_vec_out = Vector::new(&s_out, &t);
+    let f = get_empty_test_fn(
+        &context,
+        &[t_mr_in.as_type(), t_index.clone(), t_index.clone()],
+        &[t_vec_out.as_type()],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let map = AffineMap::new_identity(&context, 2);
+    let mut op_load = VectorLoad::new(
+        &t_vec_out,
+        map,
+        &f_block.get_arg(0),
+        &[f_block.get_arg(1), f_block.get_arg(2)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[op_load.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_load);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}

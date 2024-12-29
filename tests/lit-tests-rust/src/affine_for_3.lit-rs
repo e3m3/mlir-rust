@@ -1,0 +1,94 @@
+// RUN: %O/run affine_for_3 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_for_3.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedIndex;
+use mlir::dialects::affine::Constant as AffineConstant;
+use mlir::dialects::affine::For;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Step;
+use mlir::dialects::affine::Yield;
+use mlir::dialects::arith::AddI;
+use mlir::dialects::arith::IntegerOverflowFlags;
+use mlir::dialects::func::Return;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::index::Index;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    context.set_allow_unregistered_dialects(true);
+    let loc = context.get_unknown_location();
+    let t = Index::new(&context).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t.clone(), t.clone(), t.clone(), t.clone()],
+        &[t.clone(), t.clone()],
+    );
+    let c5 = AffineConstant::new(&context, 5).as_expr();
+    let c128 = AffineConstant::new(&context, 128).as_expr();
+    let map0 = AffineMap::new_results(&context, 0, 0, &[c5]);
+    let map1 = AffineMap::new_results(&context, 0, 0, &[c128]);
+    let step = Step::new(&context, 1);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let op_for = For::new(
+        &context,
+        &[t.clone(), t.clone()],
+        &[],
+        &[],
+        &[f_block.get_arg(2), f_block.get_arg(3)],
+        map0,
+        map1,
+        &step,
+        &loc,
+    );
+    let region_for = op_for.as_operation().get_region(0);
+    let mut block_for = region_for.iter().next().unwrap_or_default();
+    let mut op_add0 = AddI::new(
+        &t.clone(),
+        &block_for.get_arg(1),
+        &f_block.get_arg(0),
+        IntegerOverflowFlags::None,
+        &loc,
+    )
+    .as_operation();
+    let mut op_add1 = AddI::new(
+        &t.clone(),
+        &block_for.get_arg(2),
+        &f_block.get_arg(1),
+        IntegerOverflowFlags::None,
+        &loc,
+    )
+    .as_operation();
+    let mut op_yield = Yield::new_for(
+        &[op_add0.get_result(0), op_add1.get_result(0)],
+        &op_for,
+        &loc,
+    )
+    .as_operation();
+    block_for.append_operation(&mut op_add0);
+    block_for.append_operation(&mut op_add1);
+    block_for.append_operation(&mut op_yield);
+    let mut op_ret = Return::new(
+        &f,
+        &[op_for.as_operation().get_result(0), op_for.as_operation().get_result(1)],
+        &loc,
+    )
+    .as_operation();
+    f_block.append_operation(&mut op_for.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    module.as_operation().dump();
+    Ok(())
+}
