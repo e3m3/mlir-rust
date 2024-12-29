@@ -99,10 +99,20 @@ impl Op {
 //  Operation Implemention
 ///////////////////////////////
 
+fn get_dialect(context: &Context) -> Dialect {
+    match context.load_dialect("ub") {
+        Some(d) => d,
+        None => {
+            eprintln!("Expected ub dialect to be registered in context");
+            exit(ExitCode::DialectError);
+        }
+    }
+}
+
 impl Poison {
     pub fn new(context: &Context, loc: &Location) -> Self {
         let t = IntegerType::new(context, 32);
-        let dialect = Self::get_dialect(context);
+        let dialect = get_dialect(context);
         let name = StringBacked::from(format!(
             "{}.{}",
             dialect.get_namespace(),
@@ -117,16 +127,6 @@ impl Poison {
 
     pub fn get(&self) -> &MlirOperation {
         &self.0
-    }
-
-    fn get_dialect(context: &Context) -> Dialect {
-        match context.load_dialect("ub") {
-            Some(d) => d,
-            None => {
-                eprintln!("Failed to load ub dialect");
-                exit(ExitCode::DialectError);
-            }
-        }
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
@@ -156,7 +156,7 @@ impl IOperation for Poison {
     }
 
     fn get_dialect(&self) -> Dialect {
-        Self::get_dialect(&self.as_operation().get_context())
+        get_dialect(&self.as_operation().get_context())
     }
 
     fn get_effects(&self) -> MemoryEffectList {
