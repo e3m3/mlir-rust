@@ -18,6 +18,7 @@ use crate::types;
 
 use attributes::IAttribute;
 use attributes::IAttributeNamed;
+use attributes::integer_set::IntegerSet;
 use attributes::array::Array;
 use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
@@ -34,6 +35,7 @@ use attributes::symbol_ref::SymbolRef;
 use attributes::r#type::Type as TypeAttr;
 use attributes::unit::Unit;
 use dialects::affine::Map as AffineMap;
+use dialects::affine::Set as AffineSet;
 use exit_code::ExitCode;
 use exit_code::exit;
 use ir::Attribute;
@@ -61,7 +63,7 @@ pub struct CustomAttributeData {
 ///////////////////////////////
 
 pub trait NamedAffineMap: From<MlirAttribute> + IAttributeNamed + Sized {
-    fn new(map: &AffineMap) -> Self {
+    fn new(map: AffineMap) -> Self {
         Self::from(*map.as_attribute().get())
     }
 
@@ -76,6 +78,21 @@ pub trait NamedAffineMap: From<MlirAttribute> + IAttributeNamed + Sized {
 
     fn as_affine_map(&self) -> AffineMap {
         AffineMap::from_attribute(&Attribute::from(*self.get()))
+    }
+}
+
+pub trait NamedAffineSet: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(set: AffineSet) -> Self {
+        Self::from(*IntegerSet::new(set).get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_integer_set() {
+            eprintln!("Expected integer set attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
     }
 }
 
