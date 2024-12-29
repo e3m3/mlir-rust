@@ -573,8 +573,8 @@ impl AddI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for AddI operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for AddI operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
