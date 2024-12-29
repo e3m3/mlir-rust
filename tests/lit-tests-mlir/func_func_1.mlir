@@ -6,7 +6,8 @@
 // CHECK-SAME:  func
 
 module {
-    func.func private @test(i32 {lang.self = #lang.class<className> : index}, f64, f64) -> (f64 {dialectName.attrName = 1 : i32})
+    func.func private @test(i32 {lang.self = #lang.class<className> : index}, f64, f64)
+        -> (f64 {dialectName.attrName = 1 : i32})
 }
 
 // CHECK_CAN:   module {
