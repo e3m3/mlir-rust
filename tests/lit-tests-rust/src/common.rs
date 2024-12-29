@@ -42,15 +42,27 @@ pub fn exit(code: ExitCode) -> ! {
 }
 
 pub fn get_empty_test_fn(context: &Context, inputs: &[Type], results: &[Type]) -> Func {
-    let name = StringBacked::from("test");
+    get_fn(context, "test", inputs, results, SymbolVisibilityKind::None, None, None)
+}
+
+pub fn get_fn(
+    context: &Context,
+    name: &str,
+    inputs: &[Type],
+    results: &[Type],
+    visibility: SymbolVisibilityKind,
+    input_attrs: Option<&Arguments>,
+    result_attrs: Option<&Results>,
+) -> Func {
+    let name = StringBacked::from(name);
     let loc = context.get_unknown_location();
     let t_f = FunctionType::new(context, inputs, results);
     Func::new(
         &t_f,
         &name.as_string_ref(),
-        SymbolVisibilityKind::None,
-        None,
-        None,
+        visibility,
+        input_attrs,
+        result_attrs,
         &loc,
     )
 }
@@ -69,17 +81,7 @@ pub fn get_private_fn(
     input_attrs: Option<&Arguments>,
     result_attrs: Option<&Results>,
 ) -> Func {
-    let name = StringBacked::from(name);
-    let loc = context.get_unknown_location();
-    let t_f = FunctionType::new(context, inputs, results);
-    Func::new(
-        &t_f,
-        &name.as_string_ref(),
-        SymbolVisibilityKind::Private,
-        input_attrs,
-        result_attrs,
-        &loc,
-    )
+    get_fn(context, name, inputs, results, SymbolVisibilityKind::Private, input_attrs, result_attrs)
 }
 
 pub fn get_registry() -> Registry {
