@@ -7,6 +7,9 @@ use std::fmt;
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum Interface {
+    AffineMapAccessInterface,
+    AffineReadOpInterface,
+    AffineWriteOpInterface,
     ArithFastMathInterface,
     ArithIntegerOverflowFlagsInterface,
     CallOpInterface,
@@ -21,11 +24,13 @@ pub enum Interface {
     InferTypeOpInterface,
     LinalgContractionOpInterface,
     LinalgStructuredInterface,
+    LoopLikeOpInterface,
     MaskableOpInterface,
     MemoryEffect(MemoryEffectOpInterface),
     OffsetSizeAndStrideOpInterface,
     OpAsmOpInterface,
     PromotableAllocationOpInterface,
+    RegionBranchOpInterface,
     RegionBranchTerminatorOpInterface,
     ReifyRankedShapeTypeOpInterface,
     ShapedDimOpInterface,
@@ -47,6 +52,9 @@ pub enum MemoryEffectOpInterface {
 impl fmt::Display for Interface {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
+            Interface::AffineMapAccessInterface => "affine_map_access_interface".to_string(),
+            Interface::AffineReadOpInterface => "affine_read_op_interface".to_string(),
+            Interface::AffineWriteOpInterface => "affine_write_op_interface".to_string(),
             Interface::ArithFastMathInterface => "arith_fast_math_interface".to_string(),
             Interface::ArithIntegerOverflowFlagsInterface => {
                 "arith_integer_overflow_flags_interface".to_string()
@@ -67,6 +75,7 @@ impl fmt::Display for Interface {
                 "linalg_contraction_op_interface".to_string()
             }
             Interface::LinalgStructuredInterface => "linalg_structured_interface".to_string(),
+            Interface::LoopLikeOpInterface => "loop_like_op_interface".to_string(),
             Interface::MaskableOpInterface => "maskable_op_interface".to_string(),
             Interface::MemoryEffect(e) => format!("memory_effect_op_interface({})", e),
             Interface::OffsetSizeAndStrideOpInterface => {
@@ -76,6 +85,7 @@ impl fmt::Display for Interface {
             Interface::PromotableAllocationOpInterface => {
                 "promotable_allocation_op_interface".to_string()
             }
+            Interface::RegionBranchOpInterface => "region_branch_op_interface".to_string(),
             Interface::RegionBranchTerminatorOpInterface => {
                 "region_branch_terminator_op_interface".to_string()
             }
