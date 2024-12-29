@@ -31,13 +31,13 @@ pub fn test() -> TestResult {
     let t = FloatType::new(&context, FloatLayout::F32).as_type();
     let dyn_size = Shaped::dynamic_size();
     let s_in = ShapeImpl::from(vec![dyn_size, dyn_size]);
-    let affine_d0 = AffineDim::new(&context, 0).as_expr();
-    let affine_d1 = AffineDim::new(&context, 1).as_expr();
-    let affine_s0 = AffineSymbol::new(&context, 0).as_expr();
-    let affine_expr0 = AffineBinop::new_mul(&affine_d1, &affine_s0).as_expr();
-    let affine_expr1 = AffineBinop::new_add(&affine_expr0, &affine_d0).as_expr();
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let s0 = AffineSymbol::new(&context, 0).as_expr();
+    let expr0 = AffineBinop::new_mul(d1, s0).as_expr();
+    let expr1 = AffineBinop::new_add(expr0, d0).as_expr();
     let layout = MemoryLayout::from(AffineMap::new_results(&context, s_in.rank(), 1, &[
-        affine_expr1,
+        expr1,
     ]));
     let t_mr_in = MemRef::new_contiguous(&s_in, &t, &DefaultMemorySpace::new());
     let t_mr_out = MemRef::new(&s_in, &t, &layout, &DefaultMemorySpace::new());

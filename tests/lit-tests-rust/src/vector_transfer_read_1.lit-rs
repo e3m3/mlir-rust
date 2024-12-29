@@ -56,7 +56,7 @@ pub fn test() -> TestResult {
     let affine_d1 = AffineDim::new(&context, 1).as_expr();
     let affine_d2 = AffineDim::new(&context, 2).as_expr();
     let map = AffineMap::new_results(&context, s_in.rank(), 0, &[affine_d2, affine_c0, affine_d1]);
-    let perm_attr = PermutationMap::new(&map);
+    let perm_attr = PermutationMap::new(map);
     let mut op_read = TransferRead::new(
         &t_vec_out,
         &bounds_attr,

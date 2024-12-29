@@ -46,7 +46,7 @@ pub fn test() -> TestResult {
     let bounds_attr = InBounds::new(&context, &[true]);
     let affine_c0 = AffineConstant::new(&context, 0).as_expr();
     let map = AffineMap::new_results(&context, s_in.rank(), 0, &[affine_c0]);
-    let perm_attr = PermutationMap::new(&map);
+    let perm_attr = PermutationMap::new(map);
     let mut op_read = TransferRead::new(
         &t_vec_out,
         &bounds_attr,

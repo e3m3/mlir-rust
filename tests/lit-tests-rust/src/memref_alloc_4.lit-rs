@@ -34,7 +34,7 @@ pub fn test() -> TestResult {
     let d0 = AffineDim::new(&context, 0).as_expr();
     let d1 = AffineDim::new(&context, 1).as_expr();
     let s0 = AffineSymbol::new(&context, 0).as_expr();
-    let expr0 = AffineBinop::new_add(&d0, &s0).as_expr();
+    let expr0 = AffineBinop::new_add(d0, s0).as_expr();
     let map = AffineMap::new_results(&context, s_out.rank(), 1, &[expr0, d1]);
     let layout = MemoryLayout::from(map);
     let t_mr_out = MemRef::new(&s_out, &t, &layout, &IntegerMemorySpace::new(&context, 1));
