@@ -631,8 +631,8 @@ impl AddI {
 
 impl AddUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for AddUIExtended operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for AddUIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -816,8 +816,8 @@ impl DivF {
 
 impl DivSI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for DivSI operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for DivSI operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -864,8 +864,8 @@ impl DivSI {
 
 impl DivUI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for DivUI operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for DivUI operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -976,8 +976,8 @@ impl MulI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for MulI operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for MulI operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -1034,8 +1034,8 @@ impl MulI {
 
 impl MulSIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for MulSIExtended operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for MulSIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -1086,8 +1086,8 @@ impl MulSIExtended {
 
 impl MulUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for MulUIExtended operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for MulUIExtended operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
@@ -1202,8 +1202,8 @@ impl SubI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() {
-            eprintln!("Expected integer types for SubI operands and result");
+        if !t.is_integer() && !t.is_index() {
+            eprintln!("Expected integer or index types for SubI operands and result");
             exit(ExitCode::DialectError);
         }
         if *t != lhs.get_type() || *t != rhs.get_type() {
