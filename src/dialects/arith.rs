@@ -24,6 +24,7 @@ use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedFloatOrIndexOrInteger;
+use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedParsed;
 use dialects::IOp;
 use dialects::IOperation;
@@ -56,6 +57,9 @@ pub struct FastMath(MlirAttribute);
 
 #[derive(Clone)]
 pub struct IntegerOverflow(MlirAttribute);
+
+#[derive(Clone)]
+pub struct RoundingMode(MlirAttribute);
 
 ///////////////////////////////
 //  Enums
@@ -141,7 +145,7 @@ pub enum IntegerOverflowFlags {
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]
-pub enum RoundingMode {
+pub enum RoundingModeKind {
     ToNearestEven = 0,
     Downward = 1,
     Upward = 2,
@@ -216,6 +220,9 @@ pub struct AddI(MlirOperation);
 pub struct AddUIExtended(MlirOperation);
 
 #[derive(Clone)]
+pub struct Bitcast(MlirOperation);
+
+#[derive(Clone)]
 pub struct Constant(MlirOperation);
 
 #[derive(Clone)]
@@ -226,6 +233,27 @@ pub struct DivSI(MlirOperation);
 
 #[derive(Clone)]
 pub struct DivUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct ExtF(MlirOperation);
+
+#[derive(Clone)]
+pub struct ExtSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct ExtUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct FPToSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct FPToUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct IndexCast(MlirOperation);
+
+#[derive(Clone)]
+pub struct IndexCastUI(MlirOperation);
 
 #[derive(Clone)]
 pub struct MulF(MlirOperation);
@@ -240,10 +268,22 @@ pub struct MulSIExtended(MlirOperation);
 pub struct MulUIExtended(MlirOperation);
 
 #[derive(Clone)]
+pub struct SIToFP(MlirOperation);
+
+#[derive(Clone)]
 pub struct SubF(MlirOperation);
 
 #[derive(Clone)]
 pub struct SubI(MlirOperation);
+
+#[derive(Clone)]
+pub struct TruncF(MlirOperation);
+
+#[derive(Clone)]
+pub struct TruncI(MlirOperation);
+
+#[derive(Clone)]
+pub struct UIToFP(MlirOperation);
 
 ///////////////////////////////
 //  Attribute Implementation
@@ -297,12 +337,31 @@ impl IntegerOverflow {
     }
 }
 
+impl RoundingMode {
+    pub fn new(context: &Context, k: RoundingModeKind) -> Self {
+        const WIDTH: usize = 32;
+        Self::from(*<Self as NamedInteger>::new(context, k as i64, WIDTH).get_mut())
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_kind(&self) -> RoundingModeKind {
+        RoundingModeKind::from(self.get_value())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
 ///////////////////////////////
 //  Enum Implementation
 ///////////////////////////////
 
 impl AtomicRMWKind {
-    pub fn from_i64(k: i64) -> Self {
+    pub fn from_i32(k: i32) -> Self {
         match k {
             0 => AtomicRMWKind::AddF,
             1 => AtomicRMWKind::AddI,
@@ -328,7 +387,7 @@ impl AtomicRMWKind {
 }
 
 impl CmpFPPredicate {
-    pub fn from_i64(k: i64) -> Self {
+    pub fn from_i32(k: i32) -> Self {
         match k {
             0 => CmpFPPredicate::AlwaysFalse,
             1 => CmpFPPredicate::OEQ,
@@ -355,7 +414,7 @@ impl CmpFPPredicate {
 }
 
 impl CmpIPredicate {
-    pub fn from_i64(k: i64) -> Self {
+    pub fn from_i32(k: i32) -> Self {
         match k {
             0 => CmpIPredicate::Eq,
             1 => CmpIPredicate::Ne,
@@ -376,7 +435,7 @@ impl CmpIPredicate {
 }
 
 impl FastMathFlags {
-    pub fn from_i64(k: i64) -> Self {
+    pub fn from_i32(k: i32) -> Self {
         match k {
             0 => FastMathFlags::None,
             1 => FastMathFlags::ReAssoc,
@@ -410,7 +469,7 @@ impl FastMathFlags {
 }
 
 impl IntegerOverflowFlags {
-    pub fn from_i64(k: i64) -> Self {
+    pub fn from_i32(k: i32) -> Self {
         match k {
             0 => IntegerOverflowFlags::None,
             1 => IntegerOverflowFlags::NSW,
@@ -487,14 +546,14 @@ impl Op {
     }
 }
 
-impl RoundingMode {
-    pub fn from_i64(k: i64) -> Self {
+impl RoundingModeKind {
+    pub fn from_i32(k: i32) -> Self {
         match k {
-            0 => RoundingMode::ToNearestEven,
-            1 => RoundingMode::Downward,
-            2 => RoundingMode::Upward,
-            3 => RoundingMode::TowardZero,
-            4 => RoundingMode::ToNearestAway,
+            0 => RoundingModeKind::ToNearestEven,
+            1 => RoundingModeKind::Downward,
+            2 => RoundingModeKind::Upward,
+            3 => RoundingModeKind::TowardZero,
+            4 => RoundingModeKind::ToNearestAway,
             _ => {
                 eprintln!("Invalid value for RoundingMode: {}", k);
                 exit(ExitCode::DialectError);
@@ -1428,6 +1487,42 @@ impl IAttributeNamed for ArithValue {
 
 impl NamedFloatOrIndexOrInteger for ArithValue {}
 
+impl From<i32> for AtomicRMWKind {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for AtomicRMWKind {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
+impl From<i32> for CmpFPPredicate {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for CmpFPPredicate {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
+impl From<i32> for CmpIPredicate {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for CmpIPredicate {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
 impl IOperation for Constant {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1631,6 +1726,18 @@ impl IAttributeNamed for FastMath {
 
 impl NamedParsed for FastMath {}
 
+impl From<i32> for FastMathFlags {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for FastMathFlags {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
 impl From<MlirAttribute> for IntegerOverflow {
     fn from(attr: MlirAttribute) -> Self {
         IntegerOverflow(attr)
@@ -1654,6 +1761,18 @@ impl IAttributeNamed for IntegerOverflow {
 }
 
 impl NamedParsed for IntegerOverflow {}
+
+impl From<i32> for IntegerOverflowFlags {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for IntegerOverflowFlags {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
@@ -1848,6 +1967,42 @@ impl IOperation for MulUIExtended {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirAttribute> for RoundingMode {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IAttribute for RoundingMode {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IAttributeNamed for RoundingMode {
+    fn get_name() -> &'static str {
+        "roundingmode"
+    }
+}
+
+impl NamedInteger for RoundingMode {}
+
+impl From<i32> for RoundingModeKind {
+    fn from(n: i32) -> Self {
+        Self::from_i32(n)
+    }
+}
+
+impl From<i64> for RoundingModeKind {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
     }
 }
 
@@ -2080,14 +2235,14 @@ impl fmt::Display for Op {
     }
 }
 
-impl fmt::Display for RoundingMode {
+impl fmt::Display for RoundingModeKind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            RoundingMode::ToNearestEven => "to_nearest_even",
-            RoundingMode::Downward => "downward",
-            RoundingMode::Upward => "upward",
-            RoundingMode::TowardZero => "toward_zero",
-            RoundingMode::ToNearestAway => "to_nearest_away",
+            RoundingModeKind::ToNearestEven => "to_nearest_even",
+            RoundingModeKind::Downward => "downward",
+            RoundingModeKind::Upward => "upward",
+            RoundingModeKind::TowardZero => "toward_zero",
+            RoundingModeKind::ToNearestAway => "to_nearest_away",
         })
     }
 }
