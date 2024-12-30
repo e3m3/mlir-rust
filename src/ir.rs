@@ -263,6 +263,10 @@ use types::IType;
 use types::IsPromotableTo;
 use types::unit::Unit;
 
+///////////////////////////////
+//  Constants and Macros
+///////////////////////////////
+
 const STATE_BUFFER_LENGTH: usize = 4096;
 const STATE_BUFFER_DATA_LENGTH: usize = STATE_BUFFER_LENGTH - mem::size_of::<usize>();
 
@@ -279,6 +283,10 @@ macro_rules! print_method {
     };
 }
 pub(crate) use print_method;
+
+///////////////////////////////
+//  Traits
+///////////////////////////////
 
 pub trait Destroy {
     fn destroy(&mut self) -> ();
@@ -309,6 +317,10 @@ pub trait Shape {
     }
 }
 pub type ShapeUnpacked = (isize, Vec<i64>);
+
+///////////////////////////////
+//  IR
+///////////////////////////////
 
 #[derive(Clone)]
 pub struct Attribute(MlirAttribute);
@@ -361,6 +373,9 @@ pub struct Registry(MlirDialectRegistry);
 pub struct ShapeImpl<T: Clone + Sized>(T);
 
 #[derive(Clone)]
+pub struct StringBacked(MlirStringRef, CString);
+
+#[derive(Clone)]
 pub struct StringCallback(MlirStringCallback);
 pub type StringCallbackFn = unsafe extern "C" fn(MlirStringRef, *mut c_void);
 
@@ -370,9 +385,6 @@ pub struct StringCallbackState {
     bytes_written: usize,
     data: [u8; STATE_BUFFER_DATA_LENGTH],
 }
-
-#[derive(Clone)]
-pub struct StringBacked(MlirStringRef, CString);
 
 #[derive(Clone)]
 pub struct StringRef(MlirStringRef);
@@ -390,6 +402,10 @@ pub struct TypeID(MlirTypeID);
 pub struct Value(MlirValue);
 
 pub struct ValueIter<'a>(&'a Value, Option<OpOperand>);
+
+///////////////////////////////
+//  IR Implementation
+///////////////////////////////
 
 impl Attribute {
     pub fn new() -> Self {
@@ -561,46 +577,6 @@ impl Attribute {
     }
 }
 
-impl Default for Attribute {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl fmt::Display for Attribute {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl From<MlirAttribute> for Attribute {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Attribute {
-    fn as_attribute(&self) -> Attribute {
-        self.clone()
-    }
-
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl cmp::PartialEq for Attribute {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirAttributeEqual(self.0, rhs.0))
-    }
-}
-
 impl Block {
     pub fn new(num_args: isize, args: &[Type], locs: &[Location]) -> Self {
         assert!(num_args == args.len() as isize);
@@ -734,79 +710,6 @@ impl Block {
 
     pub fn num_operations_mut(&mut self) -> &mut usize {
         &mut self.1
-    }
-}
-
-impl Default for Block {
-    fn default() -> Self {
-        Self::new_empty()
-    }
-}
-
-impl fmt::Display for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl From<MlirBlock> for Block {
-    fn from(block: MlirBlock) -> Self {
-        let mut b = Self(block, 0);
-        *b.num_operations_mut() = b.__num_operations();
-        b
-    }
-}
-
-impl Iterator for Block {
-    type Item = MlirBlock;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let block = do_unsafe!(mlirBlockGetNextInRegion(self.0));
-        if block.ptr.is_null() {
-            None
-        } else {
-            self.0 = block;
-            Some(block)
-        }
-    }
-}
-
-impl cmp::PartialEq for Block {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirBlockEqual(self.0, rhs.0))
-    }
-}
-
-impl Iterator for BlockIter<'_> {
-    type Item = Operation;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.1 {
-            None => {
-                if self.0.is_null() {
-                    return None;
-                }
-                let op = Operation::from(do_unsafe!(mlirBlockGetFirstOperation(*self.0.get())));
-                if op.is_null() {
-                    None
-                } else {
-                    self.1 = Some(op);
-                    self.1.clone()
-                }
-            }
-            Some(ref mut o) => match o.next() {
-                None => {
-                    self.1 = None;
-                    None
-                }
-                Some(o_) => {
-                    self.1 = Some(Operation::from(o_));
-                    self.1.clone()
-                }
-            },
-        }
     }
 }
 
@@ -962,30 +865,6 @@ impl Context {
     }
 }
 
-impl Default for Context {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Destroy for Context {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirContextDestroy(self.0))
-    }
-}
-
-impl From<MlirContext> for Context {
-    fn from(context: MlirContext) -> Self {
-        Self(context)
-    }
-}
-
-impl Destroy for Block {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirBlockDestroy(self.0))
-    }
-}
-
 impl Dialect {
     pub fn get(&self) -> &MlirDialect {
         &self.0
@@ -1005,18 +884,6 @@ impl Dialect {
 
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
-    }
-}
-
-impl From<MlirDialect> for Dialect {
-    fn from(dialect: MlirDialect) -> Self {
-        Self(dialect)
-    }
-}
-
-impl cmp::PartialEq for Dialect {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirDialectEqual(self.0, rhs.0))
     }
 }
 
@@ -1043,18 +910,6 @@ impl Identifier {
 
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
-    }
-}
-
-impl From<MlirIdentifier> for Identifier {
-    fn from(id: MlirIdentifier) -> Self {
-        Self(id)
-    }
-}
-
-impl cmp::PartialEq for Identifier {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirIdentifierEqual(self.0, rhs.0))
     }
 }
 
@@ -1102,32 +957,6 @@ impl Location {
     print_method!(mlirLocationPrint);
 }
 
-impl Default for Location {
-    fn default() -> Self {
-        Location::new_unknown(&Context::default())
-    }
-}
-
-impl fmt::Display for Location {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl cmp::PartialEq for Location {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirLocationEqual(self.0, rhs.0))
-    }
-}
-
-impl From<MlirLocation> for Location {
-    fn from(loc: MlirLocation) -> Self {
-        Self(loc)
-    }
-}
-
 impl LogicalResult {
     pub fn get(&self) -> &MlirLogicalResult {
         &self.0
@@ -1143,12 +972,6 @@ impl LogicalResult {
 
     pub fn get_value(&self) -> i8 {
         self.0.value
-    }
-}
-
-impl From<MlirLogicalResult> for LogicalResult {
-    fn from(loc: MlirLogicalResult) -> Self {
-        Self(loc)
     }
 }
 
@@ -1200,62 +1023,6 @@ impl Module {
         }
         region_temp.append_block(block);
         region.take_body(&mut region_temp);
-    }
-}
-
-impl Default for Module {
-    fn default() -> Self {
-        Self::new(&Location::default())
-    }
-}
-
-impl Destroy for Module {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirModuleDestroy(self.0))
-    }
-}
-
-impl fmt::Display for Module {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.as_operation().print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl From<MlirModule> for Module {
-    fn from(module: MlirModule) -> Self {
-        Self(module)
-    }
-}
-
-impl cmp::PartialEq for Module {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.as_operation() == rhs.as_operation()
-    }
-}
-
-impl Pass {
-    pub fn get(&self) -> &MlirPass {
-        &self.0
-    }
-
-    pub fn get_mut(&mut self) -> &mut MlirPass {
-        &mut self.0
-    }
-
-    pub fn is_null(&self) -> bool {
-        self.get().ptr.is_null()
-    }
-
-    pub fn register_all_passes() -> () {
-        do_unsafe!(mlirRegisterAllPasses())
-    }
-}
-
-impl From<MlirPass> for Pass {
-    fn from(pass: MlirPass) -> Self {
-        Self(pass)
     }
 }
 
@@ -1466,83 +1233,6 @@ impl Operation {
     }
 }
 
-impl Clone for Operation {
-    fn clone(&self) -> Operation {
-        Operation::from(do_unsafe!(mlirOperationClone(self.0)))
-    }
-}
-
-impl Destroy for Operation {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirOperationDestroy(self.0))
-    }
-}
-
-impl fmt::Display for Operation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl From<MlirOperation> for Operation {
-    fn from(op: MlirOperation) -> Self {
-        Self(op)
-    }
-}
-
-impl Iterator for Operation {
-    type Item = MlirOperation;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let op = do_unsafe!(mlirOperationGetNextInBlock(self.0));
-        if op.ptr.is_null() {
-            None
-        } else {
-            self.0 = op;
-            Some(op)
-        }
-    }
-}
-
-impl cmp::PartialEq for Operation {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirOperationEqual(self.0, rhs.0))
-    }
-}
-
-impl Iterator for OperationIter<'_> {
-    type Item = Region;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.1 {
-            None => {
-                if self.0.is_null() {
-                    return None;
-                }
-                let region = Region::from(do_unsafe!(mlirOperationGetFirstRegion(*self.0.get())));
-                if region.is_null() {
-                    None
-                } else {
-                    self.1 = Some(region);
-                    self.1.clone()
-                }
-            }
-            Some(ref mut r) => match r.next() {
-                None => {
-                    self.1 = None;
-                    None
-                }
-                Some(r_) => {
-                    self.1 = Some(Region::from(r_));
-                    self.1.clone()
-                }
-            },
-        }
-    }
-}
-
 impl OperationState {
     pub fn new(name: &StringRef, loc: &Location) -> Self {
         Self::from(do_unsafe!(mlirOperationStateGet(*name.get(), *loc.get())))
@@ -1610,12 +1300,6 @@ impl OperationState {
     }
 }
 
-impl From<MlirOperationState> for OperationState {
-    fn from(state: MlirOperationState) -> Self {
-        Self(state)
-    }
-}
-
 impl OpOperand {
     pub fn as_value(&self) -> Value {
         Value::from(do_unsafe!(mlirOpOperandGetValue(self.0)))
@@ -1638,23 +1322,21 @@ impl OpOperand {
     }
 }
 
-impl From<MlirOpOperand> for OpOperand {
-    fn from(op: MlirOpOperand) -> Self {
-        Self(op)
+impl Pass {
+    pub fn get(&self) -> &MlirPass {
+        &self.0
     }
-}
 
-impl Iterator for OpOperand {
-    type Item = MlirOpOperand;
+    pub fn get_mut(&mut self) -> &mut MlirPass {
+        &mut self.0
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let op = do_unsafe!(mlirOpOperandGetNextUse(self.0));
-        if op.ptr.is_null() {
-            None
-        } else {
-            self.0 = op;
-            Some(op)
-        }
+    pub fn is_null(&self) -> bool {
+        self.get().ptr.is_null()
+    }
+
+    pub fn register_all_passes() -> () {
+        do_unsafe!(mlirRegisterAllPasses())
     }
 }
 
@@ -1738,46 +1420,6 @@ impl Region {
         let n = other.num_blocks();
         do_unsafe!(mlirRegionTakeBody(self.0, *other.get()));
         *self.num_blocks_mut() = n;
-    }
-}
-
-impl Default for Region {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Destroy for Region {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirRegionDestroy(self.0))
-    }
-}
-
-impl From<MlirRegion> for Region {
-    fn from(region: MlirRegion) -> Self {
-        let mut r = Self(region, 0);
-        *r.num_blocks_mut() = r.__num_blocks();
-        r
-    }
-}
-
-impl Iterator for Region {
-    type Item = MlirRegion;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let region = do_unsafe!(mlirRegionGetNextInOperation(self.0));
-        if region.ptr.is_null() {
-            None
-        } else {
-            self.0 = region;
-            Some(region)
-        }
-    }
-}
-
-impl cmp::PartialEq for Region {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirRegionEqual(self.0, rhs.0))
     }
 }
 
@@ -1904,30 +1546,6 @@ impl Registry {
     }
 }
 
-impl Default for Registry {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Destroy for Registry {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirDialectRegistryDestroy(self.0))
-    }
-}
-
-impl From<MlirDialectRegistry> for Registry {
-    fn from(registry: MlirDialectRegistry) -> Self {
-        Self(registry)
-    }
-}
-
-impl cmp::PartialEq for dyn Shape {
-    fn eq(&self, rhs: &Self) -> bool {
-        self.unpack() == rhs.unpack()
-    }
-}
-
 impl ShapeImpl<Vec<i64>> {
     pub fn get(&self) -> &[i64] {
         self.0.as_slice()
@@ -1939,46 +1557,6 @@ impl ShapeImpl<Vec<i64>> {
 
     pub fn transpose(&self) -> Self {
         Self::from(self.to_vec_transpose())
-    }
-}
-
-impl fmt::Display for ShapeImpl<Vec<i64>> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "[{}]",
-            self.get()
-                .iter()
-                .map(|d| d.to_string())
-                .collect::<Vec<String>>()
-                .join(",")
-        )
-    }
-}
-
-impl From<Vec<i64>> for ShapeImpl<Vec<i64>> {
-    fn from(v: Vec<i64>) -> Self {
-        Self(v)
-    }
-}
-
-impl From<&Vec<i64>> for ShapeImpl<Vec<i64>> {
-    fn from(v: &Vec<i64>) -> Self {
-        Self(v.clone())
-    }
-}
-
-impl Shape for ShapeImpl<Vec<i64>> {
-    fn rank(&self) -> isize {
-        self.get().len() as isize
-    }
-
-    fn get(&self, i: isize) -> i64 {
-        if i < 0 || i >= self.rank() {
-            eprintln!("Index out of bounds for shape implementation");
-            exit(ExitCode::IRError);
-        }
-        *self.get().get(i as usize).unwrap()
     }
 }
 
@@ -2022,83 +1600,6 @@ impl StringBacked {
 
     pub fn len(&self) -> usize {
         self.0.length
-    }
-}
-
-impl Default for StringBacked {
-    fn default() -> Self {
-        Self::from(String::default())
-    }
-}
-
-impl fmt::Display for StringBacked {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_empty() {
-            return Ok(());
-        }
-        let s = match self.get_string().to_str() {
-            Ok(s) => s,
-            Err(msg) => panic!("Failed to convert CString: {}", msg),
-        };
-        write!(f, "{}", s)
-    }
-}
-
-impl From<&str> for StringBacked {
-    fn from(s: &str) -> Self {
-        match Self::from_str(s) {
-            Ok(s_) => s_,
-            Err(msg) => {
-                eprintln!(
-                    "Failed to create backed string from string '{}': {}",
-                    s, msg
-                );
-                exit(ExitCode::IRError);
-            }
-        }
-    }
-}
-
-impl From<MlirStringRef> for StringBacked {
-    fn from(s: MlirStringRef) -> Self {
-        Self::from(&s)
-    }
-}
-
-impl From<&MlirStringRef> for StringBacked {
-    fn from(s: &MlirStringRef) -> Self {
-        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
-        Self(*s, mem::take(&mut c_string))
-    }
-}
-
-impl From<String> for StringBacked {
-    fn from(s: String) -> Self {
-        Self::from(&s)
-    }
-}
-
-impl From<&String> for StringBacked {
-    fn from(s: &String) -> Self {
-        Self::from(s.as_str())
-    }
-}
-
-impl FromStr for StringBacked {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut c_string = CString::new(s).expect("Conversion to CString");
-        Ok(Self(
-            do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr())),
-            mem::take(&mut c_string),
-        ))
-    }
-}
-
-impl cmp::PartialEq for StringBacked {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
     }
 }
 
@@ -2152,24 +1653,6 @@ impl StringCallback {
     }
 }
 
-impl Default for StringCallback {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl From<MlirStringCallback> for StringCallback {
-    fn from(callback: MlirStringCallback) -> Self {
-        Self(callback)
-    }
-}
-
-impl From<StringCallbackFn> for StringCallback {
-    fn from(callback: StringCallbackFn) -> Self {
-        Self::from(Some(callback))
-    }
-}
-
 impl StringCallbackState {
     pub fn new() -> Self {
         Self {
@@ -2214,24 +1697,6 @@ impl StringCallbackState {
     }
 }
 
-impl Default for StringCallbackState {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl fmt::Display for StringCallbackState {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        const MSG: &str = "Failed to convert to string from string callback state data";
-        let Ok(mut string) = String::from_utf8(self.get_data().to_vec()) else {
-            panic!("{}", MSG)
-        };
-        string.truncate(self.num_bytes_written());
-        string.shrink_to_fit();
-        write!(f, "{}", string)
-    }
-}
-
 impl StringRef {
     pub fn as_ptr(&self) -> *const c_char {
         self.0.data
@@ -2259,44 +1724,6 @@ impl StringRef {
 
     pub fn len(&self) -> usize {
         self.0.length
-    }
-}
-
-#[allow(clippy::unnecessary_cast)]
-impl fmt::Display for StringRef {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.is_empty() {
-            return Ok(());
-        }
-        let mut v: Vec<u8> = Vec::new();
-        for i in 0..self.len() {
-            let p = do_unsafe!(self.as_ptr().add(i));
-            if !p.is_null() {
-                // The type of `*p` is `i8` on darwin and `u8` on linux.
-                v.push(do_unsafe!(*p) as u8);
-            }
-        }
-        let c_string = match CString::new(v) {
-            Ok(s) => s,
-            Err(msg) => panic!("Failed to create CString: {}", msg),
-        };
-        let s = match c_string.to_str() {
-            Ok(s) => s,
-            Err(msg) => panic!("Failed to convert CString: {}", msg),
-        };
-        write!(f, "{}", s)
-    }
-}
-
-impl From<MlirStringRef> for StringRef {
-    fn from(s: MlirStringRef) -> Self {
-        Self(s)
-    }
-}
-
-impl cmp::PartialEq for StringRef {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
     }
 }
 
@@ -2339,18 +1766,6 @@ impl SymbolTable {
 
     pub fn lookup(&self, name: &StringRef) -> Operation {
         Operation::from(do_unsafe!(mlirSymbolTableLookup(self.0, *name.get())))
-    }
-}
-
-impl Destroy for SymbolTable {
-    fn destroy(&mut self) -> () {
-        do_unsafe!(mlirSymbolTableDestroy(self.0))
-    }
-}
-
-impl From<MlirSymbolTable> for SymbolTable {
-    fn from(table: MlirSymbolTable) -> Self {
-        Self(table)
     }
 }
 
@@ -2456,48 +1871,6 @@ impl Type {
     print_method!(mlirTypePrint);
 }
 
-impl fmt::Display for Type {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
-    }
-}
-
-impl From<MlirType> for Type {
-    fn from(t: MlirType) -> Self {
-        Self(t)
-    }
-}
-
-impl GetWidth for Type {}
-
-impl IType for Type {
-    fn as_type(&self) -> Type {
-        self.clone()
-    }
-
-    fn get(&self) -> &MlirType {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirType {
-        self.get_mut()
-    }
-}
-
-impl IsPromotableTo<Self> for Type {
-    fn is_promotable_to(&self, other: &Self) -> bool {
-        <dyn IType>::is_promotable_to(self, other)
-    }
-}
-
-impl cmp::PartialEq for Type {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirTypeEqual(self.0, rhs.0))
-    }
-}
-
 impl TypeID {
     /// # Safety
     /// May dereference raw pointer input `p`
@@ -2523,18 +1896,6 @@ impl TypeID {
 
     pub fn is_null(&self) -> bool {
         self.get().ptr.is_null()
-    }
-}
-
-impl From<MlirTypeID> for TypeID {
-    fn from(id: MlirTypeID) -> Self {
-        Self(id)
-    }
-}
-
-impl cmp::PartialEq for TypeID {
-    fn eq(&self, rhs: &Self) -> bool {
-        do_unsafe!(mlirTypeIDEqual(self.0, rhs.0))
     }
 }
 
@@ -2629,11 +1990,549 @@ impl Value {
     }
 }
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut state = StringCallbackState::new();
-        self.print(&mut state);
-        write!(f, "{}", state)
+///////////////////////////////
+//  Trait Implementation
+///////////////////////////////
+
+impl Default for Attribute {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MlirAttribute> for Attribute {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IAttribute for Attribute {
+    fn as_attribute(&self) -> Attribute {
+        self.clone()
+    }
+
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl cmp::PartialEq for Attribute {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirAttributeEqual(self.0, rhs.0))
+    }
+}
+
+impl Default for Block {
+    fn default() -> Self {
+        Self::new_empty()
+    }
+}
+
+impl Destroy for Block {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirBlockDestroy(self.0))
+    }
+}
+
+impl From<MlirBlock> for Block {
+    fn from(block: MlirBlock) -> Self {
+        let mut b = Self(block, 0);
+        *b.num_operations_mut() = b.__num_operations();
+        b
+    }
+}
+
+impl Iterator for Block {
+    type Item = MlirBlock;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let block = do_unsafe!(mlirBlockGetNextInRegion(self.0));
+        if block.ptr.is_null() {
+            None
+        } else {
+            self.0 = block;
+            Some(block)
+        }
+    }
+}
+
+impl cmp::PartialEq for Block {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirBlockEqual(self.0, rhs.0))
+    }
+}
+
+impl Iterator for BlockIter<'_> {
+    type Item = Operation;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None => {
+                if self.0.is_null() {
+                    return None;
+                }
+                let op = Operation::from(do_unsafe!(mlirBlockGetFirstOperation(*self.0.get())));
+                if op.is_null() {
+                    None
+                } else {
+                    self.1 = Some(op);
+                    self.1.clone()
+                }
+            }
+            Some(ref mut o) => match o.next() {
+                None => {
+                    self.1 = None;
+                    None
+                }
+                Some(o_) => {
+                    self.1 = Some(Operation::from(o_));
+                    self.1.clone()
+                }
+            },
+        }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Destroy for Context {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirContextDestroy(self.0))
+    }
+}
+
+impl From<MlirContext> for Context {
+    fn from(context: MlirContext) -> Self {
+        Self(context)
+    }
+}
+
+impl From<MlirDialect> for Dialect {
+    fn from(dialect: MlirDialect) -> Self {
+        Self(dialect)
+    }
+}
+
+impl cmp::PartialEq for Dialect {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirDialectEqual(self.0, rhs.0))
+    }
+}
+
+impl From<MlirIdentifier> for Identifier {
+    fn from(id: MlirIdentifier) -> Self {
+        Self(id)
+    }
+}
+
+impl cmp::PartialEq for Identifier {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirIdentifierEqual(self.0, rhs.0))
+    }
+}
+
+impl Default for Location {
+    fn default() -> Self {
+        Location::new_unknown(&Context::default())
+    }
+}
+
+impl From<MlirLocation> for Location {
+    fn from(loc: MlirLocation) -> Self {
+        Self(loc)
+    }
+}
+
+impl cmp::PartialEq for Location {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirLocationEqual(self.0, rhs.0))
+    }
+}
+
+impl From<MlirLogicalResult> for LogicalResult {
+    fn from(loc: MlirLogicalResult) -> Self {
+        Self(loc)
+    }
+}
+
+impl Default for Module {
+    fn default() -> Self {
+        Self::new(&Location::default())
+    }
+}
+
+impl Destroy for Module {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirModuleDestroy(self.0))
+    }
+}
+
+impl From<MlirModule> for Module {
+    fn from(module: MlirModule) -> Self {
+        Self(module)
+    }
+}
+
+impl cmp::PartialEq for Module {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.as_operation() == rhs.as_operation()
+    }
+}
+
+impl Clone for Operation {
+    fn clone(&self) -> Operation {
+        Operation::from(do_unsafe!(mlirOperationClone(self.0)))
+    }
+}
+
+impl Destroy for Operation {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirOperationDestroy(self.0))
+    }
+}
+
+impl From<MlirOperation> for Operation {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl Iterator for Operation {
+    type Item = MlirOperation;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let op = do_unsafe!(mlirOperationGetNextInBlock(self.0));
+        if op.ptr.is_null() {
+            None
+        } else {
+            self.0 = op;
+            Some(op)
+        }
+    }
+}
+
+impl cmp::PartialEq for Operation {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirOperationEqual(self.0, rhs.0))
+    }
+}
+
+impl Iterator for OperationIter<'_> {
+    type Item = Region;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.1 {
+            None => {
+                if self.0.is_null() {
+                    return None;
+                }
+                let region = Region::from(do_unsafe!(mlirOperationGetFirstRegion(*self.0.get())));
+                if region.is_null() {
+                    None
+                } else {
+                    self.1 = Some(region);
+                    self.1.clone()
+                }
+            }
+            Some(ref mut r) => match r.next() {
+                None => {
+                    self.1 = None;
+                    None
+                }
+                Some(r_) => {
+                    self.1 = Some(Region::from(r_));
+                    self.1.clone()
+                }
+            },
+        }
+    }
+}
+
+impl From<MlirOperationState> for OperationState {
+    fn from(state: MlirOperationState) -> Self {
+        Self(state)
+    }
+}
+
+impl From<MlirOpOperand> for OpOperand {
+    fn from(op: MlirOpOperand) -> Self {
+        Self(op)
+    }
+}
+
+impl Iterator for OpOperand {
+    type Item = MlirOpOperand;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let op = do_unsafe!(mlirOpOperandGetNextUse(self.0));
+        if op.ptr.is_null() {
+            None
+        } else {
+            self.0 = op;
+            Some(op)
+        }
+    }
+}
+
+impl From<MlirPass> for Pass {
+    fn from(pass: MlirPass) -> Self {
+        Self(pass)
+    }
+}
+
+impl Default for Region {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Destroy for Region {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirRegionDestroy(self.0))
+    }
+}
+
+impl From<MlirRegion> for Region {
+    fn from(region: MlirRegion) -> Self {
+        let mut r = Self(region, 0);
+        *r.num_blocks_mut() = r.__num_blocks();
+        r
+    }
+}
+
+impl Iterator for Region {
+    type Item = MlirRegion;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let region = do_unsafe!(mlirRegionGetNextInOperation(self.0));
+        if region.ptr.is_null() {
+            None
+        } else {
+            self.0 = region;
+            Some(region)
+        }
+    }
+}
+
+impl cmp::PartialEq for Region {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirRegionEqual(self.0, rhs.0))
+    }
+}
+
+impl Default for Registry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Destroy for Registry {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirDialectRegistryDestroy(self.0))
+    }
+}
+
+impl From<MlirDialectRegistry> for Registry {
+    fn from(registry: MlirDialectRegistry) -> Self {
+        Self(registry)
+    }
+}
+
+impl cmp::PartialEq for dyn Shape {
+    fn eq(&self, rhs: &Self) -> bool {
+        self.unpack() == rhs.unpack()
+    }
+}
+
+impl From<Vec<i64>> for ShapeImpl<Vec<i64>> {
+    fn from(v: Vec<i64>) -> Self {
+        Self(v)
+    }
+}
+
+impl From<&Vec<i64>> for ShapeImpl<Vec<i64>> {
+    fn from(v: &Vec<i64>) -> Self {
+        Self(v.clone())
+    }
+}
+
+impl Shape for ShapeImpl<Vec<i64>> {
+    fn rank(&self) -> isize {
+        self.get().len() as isize
+    }
+
+    fn get(&self, i: isize) -> i64 {
+        if i < 0 || i >= self.rank() {
+            eprintln!("Index out of bounds for shape implementation");
+            exit(ExitCode::IRError);
+        }
+        *self.get().get(i as usize).unwrap()
+    }
+}
+
+impl Default for StringBacked {
+    fn default() -> Self {
+        Self::from(String::default())
+    }
+}
+
+impl From<&str> for StringBacked {
+    fn from(s: &str) -> Self {
+        match Self::from_str(s) {
+            Ok(s_) => s_,
+            Err(msg) => {
+                eprintln!(
+                    "Failed to create backed string from string '{}': {}",
+                    s, msg
+                );
+                exit(ExitCode::IRError);
+            }
+        }
+    }
+}
+
+impl From<MlirStringRef> for StringBacked {
+    fn from(s: MlirStringRef) -> Self {
+        Self::from(&s)
+    }
+}
+
+impl From<&MlirStringRef> for StringBacked {
+    fn from(s: &MlirStringRef) -> Self {
+        let mut c_string = do_unsafe!(CString::from_raw(s.data.cast_mut() as *mut c_char));
+        Self(*s, mem::take(&mut c_string))
+    }
+}
+
+impl From<String> for StringBacked {
+    fn from(s: String) -> Self {
+        Self::from(&s)
+    }
+}
+
+impl From<&String> for StringBacked {
+    fn from(s: &String) -> Self {
+        Self::from(s.as_str())
+    }
+}
+
+impl FromStr for StringBacked {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut c_string = CString::new(s).expect("Conversion to CString");
+        Ok(Self(
+            do_unsafe!(mlirStringRefCreateFromCString(c_string.as_ptr())),
+            mem::take(&mut c_string),
+        ))
+    }
+}
+
+impl cmp::PartialEq for StringBacked {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
+    }
+}
+
+impl Default for StringCallback {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MlirStringCallback> for StringCallback {
+    fn from(callback: MlirStringCallback) -> Self {
+        Self(callback)
+    }
+}
+
+impl From<StringCallbackFn> for StringCallback {
+    fn from(callback: StringCallbackFn) -> Self {
+        Self::from(Some(callback))
+    }
+}
+
+impl Default for StringCallbackState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<MlirStringRef> for StringRef {
+    fn from(s: MlirStringRef) -> Self {
+        Self(s)
+    }
+}
+
+impl cmp::PartialEq for StringRef {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirStringRefEqual(self.0, rhs.0))
+    }
+}
+
+impl Destroy for SymbolTable {
+    fn destroy(&mut self) -> () {
+        do_unsafe!(mlirSymbolTableDestroy(self.0))
+    }
+}
+
+impl From<MlirSymbolTable> for SymbolTable {
+    fn from(table: MlirSymbolTable) -> Self {
+        Self(table)
+    }
+}
+
+impl From<MlirType> for Type {
+    fn from(t: MlirType) -> Self {
+        Self(t)
+    }
+}
+
+impl GetWidth for Type {}
+
+impl IsPromotableTo<Self> for Type {
+    fn is_promotable_to(&self, other: &Self) -> bool {
+        <dyn IType>::is_promotable_to(self, other)
+    }
+}
+
+impl IType for Type {
+    fn as_type(&self) -> Type {
+        self.clone()
+    }
+
+    fn get(&self) -> &MlirType {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirType {
+        self.get_mut()
+    }
+}
+
+impl cmp::PartialEq for Type {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirTypeEqual(self.0, rhs.0))
+    }
+}
+
+impl From<MlirTypeID> for TypeID {
+    fn from(id: MlirTypeID) -> Self {
+        Self(id)
+    }
+}
+
+impl cmp::PartialEq for TypeID {
+    fn eq(&self, rhs: &Self) -> bool {
+        do_unsafe!(mlirTypeIDEqual(self.0, rhs.0))
     }
 }
 
@@ -2677,5 +2576,130 @@ impl Iterator for ValueIter<'_> {
                 }
             },
         }
+    }
+}
+
+///////////////////////////////
+//  Display
+///////////////////////////////
+
+impl fmt::Display for Attribute {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for Block {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for Location {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for Module {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.as_operation().print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for Operation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for ShapeImpl<Vec<i64>> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "[{}]",
+            self.get()
+                .iter()
+                .map(|d| d.to_string())
+                .collect::<Vec<String>>()
+                .join(",")
+        )
+    }
+}
+
+impl fmt::Display for StringBacked {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_empty() {
+            return Ok(());
+        }
+        let s = match self.get_string().to_str() {
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to convert CString: {}", msg),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl fmt::Display for StringCallbackState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        const MSG: &str = "Failed to convert to string from string callback state data";
+        let Ok(mut string) = String::from_utf8(self.get_data().to_vec()) else {
+            panic!("{}", MSG)
+        };
+        string.truncate(self.num_bytes_written());
+        string.shrink_to_fit();
+        write!(f, "{}", string)
+    }
+}
+
+#[allow(clippy::unnecessary_cast)]
+impl fmt::Display for StringRef {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.is_empty() {
+            return Ok(());
+        }
+        let mut v: Vec<u8> = Vec::new();
+        for i in 0..self.len() {
+            let p = do_unsafe!(self.as_ptr().add(i));
+            if !p.is_null() {
+                // The type of `*p` is `i8` on darwin and `u8` on linux.
+                v.push(do_unsafe!(*p) as u8);
+            }
+        }
+        let c_string = match CString::new(v) {
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to create CString: {}", msg),
+        };
+        let s = match c_string.to_str() {
+            Ok(s) => s,
+            Err(msg) => panic!("Failed to convert CString: {}", msg),
+        };
+        write!(f, "{}", s)
+    }
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.print(&mut state);
+        write!(f, "{}", state)
     }
 }
