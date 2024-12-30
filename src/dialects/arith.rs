@@ -591,10 +591,6 @@ impl AddF {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        AddF(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -655,10 +651,6 @@ impl AddI {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        AddI(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -709,10 +701,6 @@ impl AddUIExtended {
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone(), IntegerType::new_signless(&context, 1).as_type()]);
         Self::from(*op_state.create_operation().get())
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        AddUIExtended(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -772,10 +760,6 @@ impl Constant {
     pub fn new_integer(attr: &IntegerAttr, loc: &Location) -> Self {
         let t = attr.get_type();
         Self::new(&t, &ArithValue::new_integer(attr), loc)
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        Constant(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -840,10 +824,6 @@ impl DivF {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        DivF(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -896,10 +876,6 @@ impl DivSI {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        DivSI(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -942,10 +918,6 @@ impl DivUI {
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        DivUI(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -992,10 +964,6 @@ impl MulF {
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        MulF(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -1058,10 +1026,6 @@ impl MulI {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        MulI(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -1114,10 +1078,6 @@ impl MulSIExtended {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        MulSIExtended(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -1164,10 +1124,6 @@ impl MulUIExtended {
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone(), t.clone()]);
         Self::from(*op_state.create_operation().get())
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        MulUIExtended(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -1218,10 +1174,6 @@ impl SubF {
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
         Self::from(*op_state.create_operation().get())
-    }
-
-    pub fn from(op: MlirOperation) -> Self {
-        SubF(op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -1284,10 +1236,6 @@ impl SubI {
         Self::from(*op_state.create_operation().get())
     }
 
-    pub fn from(op: MlirOperation) -> Self {
-        SubI(op)
-    }
-
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
@@ -1320,6 +1268,12 @@ impl SubI {
 ///////////////////////////////
 //  Trait Implementation
 ///////////////////////////////
+
+impl From<MlirOperation> for AddF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
 
 impl IOperation for AddF {
     fn get(&self) -> &MlirOperation {
@@ -1369,6 +1323,12 @@ impl IOperation for AddF {
     }
 }
 
+impl From<MlirOperation> for AddI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for AddI {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1415,6 +1375,12 @@ impl IOperation for AddI {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirOperation> for AddUIExtended {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
@@ -1523,6 +1489,12 @@ impl From<i64> for CmpIPredicate {
     }
 }
 
+impl From<MlirOperation> for Constant {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for Constant {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1560,6 +1532,12 @@ impl IOperation for Constant {
 
     fn get_traits(&self) -> &'static [Trait] {
         &[Trait::AlwaysSpeculatableImplTrait, Trait::ConstantLike]
+    }
+}
+
+impl From<MlirOperation> for DivF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
@@ -1610,6 +1588,12 @@ impl IOperation for DivF {
     }
 }
 
+impl From<MlirOperation> for DivSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for DivSI {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1653,6 +1637,12 @@ impl IOperation for DivSI {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirOperation> for DivUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
@@ -1780,6 +1770,12 @@ impl IOp for Op {
     }
 }
 
+impl From<MlirOperation> for MulF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for MulF {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1825,6 +1821,12 @@ impl IOperation for MulF {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirOperation> for MulI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
@@ -1878,6 +1880,12 @@ impl IOperation for MulI {
     }
 }
 
+impl From<MlirOperation> for MulSIExtended {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for MulSIExtended {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -1921,6 +1929,12 @@ impl IOperation for MulSIExtended {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirOperation> for MulUIExtended {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
@@ -2006,6 +2020,12 @@ impl From<i64> for RoundingModeKind {
     }
 }
 
+impl From<MlirOperation> for SubF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
 impl IOperation for SubF {
     fn get(&self) -> &MlirOperation {
         self.get()
@@ -2050,6 +2070,12 @@ impl IOperation for SubF {
             Trait::Tensorizable,
             Trait::Vectorizable,
         ]
+    }
+}
+
+impl From<MlirOperation> for SubI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
     }
 }
 
