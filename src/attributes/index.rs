@@ -4,10 +4,8 @@
 #![allow(dead_code)]
 
 use mlir_sys::MlirAttribute;
-use mlir_sys::mlirIndexTypeGetTypeID;
 
 use crate::attributes;
-use crate::do_unsafe;
 use crate::exit_code;
 use crate::ir;
 
@@ -50,10 +48,12 @@ impl Index {
         &mut self.0
     }
 
-    /// NOTE: No getters for index attribute are currently provided by the C API.
-    /// As a hack, use the type ID for for an index type.
+    /// NOTE:   No getters for index attribute are currently provided by the C API.
+    ///         As a hack, grab the ID from a freshly parsed index attribute.
     pub fn get_type_id() -> TypeID {
-        TypeID::from(do_unsafe!(mlirIndexTypeGetTypeID()))
+        let context = Context::new();
+        let attr = Self::new(&context, 0).as_attribute();
+        attr.get_type_id()
     }
 }
 
