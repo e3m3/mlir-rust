@@ -33,7 +33,7 @@ impl String {
         Self::from(do_unsafe!(mlirStringAttrGet(*context.get(), *s.get())))
     }
 
-    pub fn new_typed(s: &StringRef, t: &Type) -> Self {
+    pub fn new_typed(t: &Type, s: &StringRef) -> Self {
         Self::from(do_unsafe!(mlirStringAttrTypedGet(*t.get(), *s.get())))
     }
 
