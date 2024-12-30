@@ -1,4 +1,4 @@
-// RUN: %O/run affine_load_2 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_load_2.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run affine_load_2 | @mlir-opt --canonicalize | @filecheck %M/affine_load_2.mlir --check-prefix=CHECK_CAN
 // COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
 // COM: constructing the load operation from the affine dialect namespace.
 
@@ -72,6 +72,6 @@ pub fn test() -> TestResult {
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

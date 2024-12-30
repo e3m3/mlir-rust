@@ -1,4 +1,4 @@
-// RUN: %O/run func_constant_1 2>&1 | @mlir-opt | @filecheck %M/func_constant_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run func_constant_1 | @mlir-opt | @filecheck %M/func_constant_1.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
@@ -40,6 +40,6 @@ pub fn test() -> TestResult {
     block.append_operation(&mut f_callee.as_operation());
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

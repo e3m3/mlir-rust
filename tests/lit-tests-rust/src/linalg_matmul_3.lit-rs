@@ -1,4 +1,4 @@
-// RUN: %O/run linalg_matmul_3 2>&1 | @filecheck %M/linalg_matmul_3.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run linalg_matmul_3 | @filecheck %M/linalg_matmul_3.mlir --check-prefix=CHECK_CAN
 // COM: Bypass processing via `mlir-opt <args>` since indexing maps is incorrectly dropped after
 //      automatic canonicalization done by `Module::dump()`.
 
@@ -67,6 +67,6 @@ pub fn test() -> TestResult {
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

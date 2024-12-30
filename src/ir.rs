@@ -1215,6 +1215,14 @@ impl Destroy for Module {
     }
 }
 
+impl fmt::Display for Module {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut state = StringCallbackState::new();
+        self.as_operation().print(&mut state);
+        write!(f, "{}", state)
+    }
+}
+
 impl From<MlirModule> for Module {
     fn from(module: MlirModule) -> Self {
         Self(module)

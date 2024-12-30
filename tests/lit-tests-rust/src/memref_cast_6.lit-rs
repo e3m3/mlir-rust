@@ -1,4 +1,4 @@
-// RUN: %O/run memref_cast_6 2>&1 | @mlir-opt | @filecheck %M/memref_cast_6.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run memref_cast_6 | @mlir-opt | @filecheck %M/memref_cast_6.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
@@ -37,6 +37,6 @@ pub fn test() -> TestResult {
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

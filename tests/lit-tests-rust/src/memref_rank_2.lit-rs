@@ -1,4 +1,4 @@
-// RUN: %O/run memref_rank_2 2>&1 | @mlir-opt --canonicalize | @filecheck %M/memref_rank_2.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run memref_rank_2 | @mlir-opt --canonicalize | @filecheck %M/memref_rank_2.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
@@ -36,6 +36,6 @@ pub fn test() -> TestResult {
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

@@ -1,4 +1,4 @@
-// RUN: %O/run affine_for_4 2>&1 | @mlir-opt --canonicalize | @filecheck %M/affine_for_4.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run affine_for_4 | @mlir-opt --canonicalize | @filecheck %M/affine_for_4.mlir --check-prefix=CHECK_CAN
 // COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
 // COM: constructing operations from the affine dialect namespace.
 
@@ -65,6 +65,6 @@ pub fn test() -> TestResult {
     block.append_operation(&mut f_bb.as_operation());
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

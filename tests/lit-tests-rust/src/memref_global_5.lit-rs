@@ -1,4 +1,4 @@
-// RUN: %O/run memref_global_5 2>&1 | @mlir-opt | @filecheck %M/memref_global_5.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run memref_global_5 | @mlir-opt | @filecheck %M/memref_global_5.mlir --check-prefix=CHECK_CAN
 
 extern crate mlir;
 
@@ -59,6 +59,6 @@ pub fn test() -> TestResult {
     block.append_operation(&mut op_global);
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }

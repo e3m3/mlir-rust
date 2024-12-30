@@ -1,4 +1,4 @@
-// RUN: %O/run func_func_1 2>&1 | @mlir-opt --allow-unregistered-dialect | @filecheck %M/func_func_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run func_func_1 | @mlir-opt --allow-unregistered-dialect | @filecheck %M/func_func_1.mlir --check-prefix=CHECK_CAN
 // COM: The flag for allowing unregistered dialects is needed both in the IR generation and
 // COM: the call to `mlir-opt`.
 
@@ -60,7 +60,7 @@ pub fn test() -> TestResult {
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
     module.take_body(&mut block);
-    module.as_operation().dump();
+    println!("{}", module);
     Ok(())
 }
 
