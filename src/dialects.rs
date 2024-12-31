@@ -7,6 +7,7 @@ use mlir_sys::MlirOperation;
 
 use std::cmp;
 use std::fmt;
+use std::hash;
 
 use crate::effects;
 use crate::interfaces;
@@ -54,7 +55,7 @@ pub trait IOperation {
     fn get_interfaces(&self) -> &'static [Interface];
     fn get_mut(&mut self) -> &mut MlirOperation;
     fn get_name(&self) -> &'static str;
-    fn get_op(&self) -> &'static dyn IOp;
+    fn get_op(&self) -> OpRef;
     fn get_traits(&self) -> &'static [Trait];
 
     fn as_operation(&self) -> Operation {
@@ -62,9 +63,26 @@ pub trait IOperation {
     }
 }
 
+pub type OpRef = &'static dyn IOp;
+
+pub type StaticOpList = &'static [OpRef];
+
+pub fn static_op_list_to_string(ops: StaticOpList) -> String {
+    let s_vec: Vec<String> = ops.iter().map(|op| op.to_string()).collect();
+    s_vec.join(",")
+}
+
+impl hash::Hash for dyn IOp {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.get_name().hash(state);
+    }
+}
+
+impl cmp::Eq for dyn IOp {}
+
 impl cmp::PartialEq for dyn IOp {
     fn eq(&self, rhs: &Self) -> bool {
-        self.to_string() == rhs.to_string()
+        self.get_name() == rhs.get_name()
     }
 }
 

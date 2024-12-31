@@ -3,14 +3,31 @@
 
 #![allow(dead_code)]
 
+use std::collections::HashSet;
 use std::fmt;
 
 use crate::dialects;
-use dialects::IOp;
+use crate::do_unsafe;
 
-pub type StaticOpList = &'static [&'static dyn IOp];
+use dialects::OpRef;
+use dialects::StaticOpList;
+use dialects::static_op_list_to_string;
 
-#[derive(Clone, Copy, PartialEq)]
+/// Expresses a 1:1 binary relationship between an Op and a Trait.
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub enum Bool {
+    False(OpRef, Trait),
+    True(OpRef, Trait),
+}
+
+/// Expresses a Many:Many binary relationship between Ops and Traits.
+#[derive(Clone, Eq, PartialEq)]
+pub enum BoolSet {
+    False(HashSet<OpRef>, HashSet<Trait>),
+    True(HashSet<OpRef>, HashSet<Trait>),
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub enum Trait {
     AffineScope,
     AlwaysSpeculatableImplTrait,
@@ -36,6 +53,82 @@ pub enum Trait {
     Tensorizable,
     Terminator,
     Vectorizable,
+}
+
+impl Bool {
+    pub fn new_false(op: OpRef, t: Trait) -> Self {
+        Self::False(op, t)
+    }
+
+    pub fn new_true(op: OpRef, t: Trait) -> Self {
+        Self::True(op, t)
+    }
+
+    pub fn get_op(&self) -> &OpRef {
+        match self {
+            Self::False(op, _) => op,
+            Self::True(op, _) => op,
+        }
+    }
+
+    pub fn get_trait(&self) -> &Trait {
+        match self {
+            Self::False(_, t) => t,
+            Self::True(_, t) => t,
+        }
+    }
+}
+
+impl BoolSet {
+    pub fn new_false(ops_: &[OpRef], ts_: &[Trait]) -> Self {
+        let mut ops = HashSet::<OpRef>::default();
+        let mut ts = HashSet::<Trait>::default();
+        ops_.iter().for_each(|&op| { let _ = ops.insert(op); });
+        ts_.iter().for_each(|&t| { let _ = ts.insert(t); });
+        Self::False(ops, ts)
+    }
+
+    pub fn new_true(ops_: &[OpRef], ts_: &[Trait]) -> Self {
+        let mut ops = HashSet::<OpRef>::default();
+        let mut ts = HashSet::<Trait>::default();
+        ops_.iter().for_each(|&op| { let _ = ops.insert(op); });
+        ts_.iter().for_each(|&t| { let _ = ts.insert(t); });
+        Self::True(ops, ts)
+    }
+
+    pub fn get_ops(&self) -> &HashSet<OpRef> {
+        match self {
+            Self::False(ops, _) => ops,
+            Self::True(ops, _) => ops,
+        }
+    }
+
+    pub fn get_ops_mut(&mut self) -> &mut HashSet<OpRef> {
+        let ops = (self.get_ops() as *const HashSet<OpRef>).cast_mut();
+        match do_unsafe!(ops.as_mut()) {
+            Some(ops) => ops,
+            None => {
+                panic!("Failed to get mutable reference to operations in set");
+            },
+        }
+    }
+
+    pub fn get_traits(&self) -> &HashSet<Trait> {
+        match self {
+            Self::False(_, ts) => ts,
+            Self::True(_, ts) => ts,
+        }
+    }
+
+    pub fn get_traits_mut(&mut self) -> &mut HashSet<Trait> {
+        let ts = (self.get_traits() as *const HashSet<Trait>).cast_mut();
+        match do_unsafe!(ts.as_mut()) {
+            Some(ts) => ts,
+            None => {
+                panic!("Failed to get mutable reference to traits in set");
+            },
+        }
+    }
 }
 
 impl fmt::Display for Trait {
@@ -74,9 +167,4 @@ impl fmt::Display for Trait {
             Trait::Vectorizable => "vectorizable".to_string(),
         })
     }
-}
-
-fn static_op_list_to_string(ops: StaticOpList) -> String {
-    let s_vec: Vec<String> = ops.iter().map(|op| op.to_string()).collect();
-    s_vec.join(",")
 }
