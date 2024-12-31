@@ -2377,7 +2377,7 @@ impl cmp::PartialEq for Yield {
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            Op::Bitcast => "BitCastOp",
+            Op::Bitcast => "BitcastOp",
             Op::Cast => "CastOp",
             Op::CollapseShape => "CollapseShapeOp",
             Op::Concat => "ConcatOp",
