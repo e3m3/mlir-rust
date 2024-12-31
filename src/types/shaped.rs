@@ -32,10 +32,6 @@ use types::IType;
 pub struct Shaped(MlirType);
 
 impl Shaped {
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_shaped() {
             eprint!("Cannot coerce type to shaped type: ");
@@ -43,7 +39,7 @@ impl Shaped {
             eprintln!();
             exit(ExitCode::IRError);
         }
-        Shaped(*t.get())
+        Self(*t.get())
     }
 
     pub fn dim_size(&self, i: isize) -> i64 {
@@ -169,6 +165,24 @@ impl Shaped {
                 }
             })
         })
+    }
+}
+
+impl From<MlirType> for Shaped {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Shaped {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Shaped {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 
