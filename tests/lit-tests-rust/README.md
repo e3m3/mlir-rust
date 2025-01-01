@@ -1,6 +1,6 @@
 #  Copyright
 
-Copyright 2024, Giordano Salvador
+Copyright 2024-2025, Giordano Salvador
 SPDX-License-Identifier: BSD-3-Clause
 
 Author/Maintainer:  Giordano Salvador <73959795+e3m3@users.noreply.github.com>

@@ -1,0 +1,43 @@
+// RUN: %O/run arith_addui_extended_4 | @mlir-opt | @filecheck %M/arith_addui_extended_4.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::arith::AddUIExtended;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::vector::Vector;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let s = ShapeImpl::from(vec![10]);
+    let t_elem = Index::new(&context).as_type();
+    let t = Vector::new(&s, &t_elem).as_type();
+    let t_flag_elem = IntegerType::new_signless(&context, 1).as_type();
+    let t_flag = Vector::new(&s, &t_flag_elem).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[
+        t.clone(),
+        t_flag.clone(),
+    ]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_add =
+        AddUIExtended::new(&t, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
+    let mut op_ret =
+        Return::new(&f, &[op_add.get_result(0), op_add.get_result(1)], &loc).as_operation();
+    f_block.append_operation(&mut op_add);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}

@@ -1,0 +1,34 @@
+// RUN: %O/run arith_bitcast_1 | @mlir-opt | @filecheck %M/arith_bitcast_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::arith::Bitcast;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::integer::Integer as IntegerType;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_src = IntegerType::new(&context, 32).as_type();
+    let t_dst = FloatType::new(&context, FloatLayout::F32).as_type();
+    let f = get_empty_test_fn(&context, &[t_src.clone()], &[t_dst.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_cast = Bitcast::new(&t_dst, &f_block.get_arg(0), &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_cast.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_cast);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
