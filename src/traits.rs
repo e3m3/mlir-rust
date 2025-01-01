@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -83,16 +83,24 @@ impl BoolSet {
     pub fn new_false(ops_: &[OpRef], ts_: &[Trait]) -> Self {
         let mut ops = HashSet::<OpRef>::default();
         let mut ts = HashSet::<Trait>::default();
-        ops_.iter().for_each(|&op| { let _ = ops.insert(op); });
-        ts_.iter().for_each(|&t| { let _ = ts.insert(t); });
+        ops_.iter().for_each(|&op| {
+            let _ = ops.insert(op);
+        });
+        ts_.iter().for_each(|&t| {
+            let _ = ts.insert(t);
+        });
         Self::False(ops, ts)
     }
 
     pub fn new_true(ops_: &[OpRef], ts_: &[Trait]) -> Self {
         let mut ops = HashSet::<OpRef>::default();
         let mut ts = HashSet::<Trait>::default();
-        ops_.iter().for_each(|&op| { let _ = ops.insert(op); });
-        ts_.iter().for_each(|&t| { let _ = ts.insert(t); });
+        ops_.iter().for_each(|&op| {
+            let _ = ops.insert(op);
+        });
+        ts_.iter().for_each(|&t| {
+            let _ = ts.insert(t);
+        });
         Self::True(ops, ts)
     }
 
@@ -109,7 +117,7 @@ impl BoolSet {
             Some(ops) => ops,
             None => {
                 panic!("Failed to get mutable reference to operations in set");
-            },
+            }
         }
     }
 
@@ -126,7 +134,7 @@ impl BoolSet {
             Some(ts) => ts,
             None => {
                 panic!("Failed to get mutable reference to traits in set");
-            },
+            }
         }
     }
 }
