@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -44,21 +44,15 @@ impl UnrankedMemRef {
     }
 
     pub fn as_shaped(&self) -> Shaped {
-        Shaped::from(self.0)
-    }
-
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
+        Shaped::from(*self.get())
     }
 
     pub fn from_type(t: &Type) -> Self {
         if !t.is_unranked_memref() {
-            eprint!("Cannot coerce type to unranked mem ref type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to unranked mem ref type: {}", t);
             exit(ExitCode::IRError);
         }
-        UnrankedMemRef(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -67,7 +61,7 @@ impl UnrankedMemRef {
 
     pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
         // Why is this capitalized differently?
-        T::from_checked(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(self.0)))
+        T::from_checked(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -76,6 +70,24 @@ impl UnrankedMemRef {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirUnrankedMemRefTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for UnrankedMemRef {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for UnrankedMemRef {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for UnrankedMemRef {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

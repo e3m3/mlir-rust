@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -61,18 +61,12 @@ impl Integer {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_integer() {
-            eprint!("Cannot coerce type to integer type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to integer type: {}", t);
             exit(ExitCode::IRError);
         }
-        Integer(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -84,7 +78,7 @@ impl Integer {
     }
 
     pub fn get_width(&self) -> usize {
-        do_unsafe!(mlirIntegerTypeGetWidth(self.0)) as usize
+        do_unsafe!(mlirIntegerTypeGetWidth(*self.get())) as usize
     }
 
     pub fn get_type_id() -> TypeID {
@@ -96,15 +90,33 @@ impl Integer {
     }
 
     pub fn is_signed(&self) -> bool {
-        do_unsafe!(mlirIntegerTypeIsSigned(self.0))
+        do_unsafe!(mlirIntegerTypeIsSigned(*self.get()))
     }
 
     pub fn is_signless(&self) -> bool {
-        do_unsafe!(mlirIntegerTypeIsSignless(self.0))
+        do_unsafe!(mlirIntegerTypeIsSignless(*self.get()))
     }
 
     pub fn is_unsigned(&self) -> bool {
-        do_unsafe!(mlirIntegerTypeIsUnsigned(self.0))
+        do_unsafe!(mlirIntegerTypeIsUnsigned(*self.get()))
+    }
+}
+
+impl From<MlirType> for Integer {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Integer {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Integer {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

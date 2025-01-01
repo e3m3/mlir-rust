@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -104,22 +104,16 @@ impl MemRef {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_memref() {
-            eprint!("Cannot coerce type to mem ref type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to mem ref type: {}", t);
             exit(ExitCode::IRError);
         }
-        MemRef(*t.get())
+        Self(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {
-        Shaped::from(self.0)
+        Shaped::from(*self.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -127,11 +121,11 @@ impl MemRef {
     }
 
     pub fn get_affine_map(&self) -> AffineMap {
-        AffineMap::from(do_unsafe!(mlirMemRefTypeGetAffineMap(self.0)))
+        AffineMap::from(do_unsafe!(mlirMemRefTypeGetAffineMap(*self.get())))
     }
 
     pub fn get_layout<T: From<MlirAttribute>>(&self) -> T {
-        T::from(do_unsafe!(mlirMemRefTypeGetLayout(self.0)))
+        T::from(do_unsafe!(mlirMemRefTypeGetLayout(*self.get())))
     }
 
     pub fn get_matching_suffix<L: NamedMemoryLayout, S: NamedMemorySpace>(
@@ -149,7 +143,7 @@ impl MemRef {
     }
 
     pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
-        T::from_checked(do_unsafe!(mlirMemRefTypeGetMemorySpace(self.0)))
+        T::from_checked(do_unsafe!(mlirMemRefTypeGetMemorySpace(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -165,7 +159,7 @@ impl MemRef {
         let mut strides = vec![0; rank];
         let mut offset = vec![0; rank];
         let result = LogicalResult::from(do_unsafe!(mlirMemRefTypeGetStridesAndOffset(
-            self.0,
+            *self.get(),
             strides.as_mut_ptr(),
             offset.as_mut_ptr(),
         )));
@@ -180,6 +174,24 @@ impl MemRef {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirMemRefTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for MemRef {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for MemRef {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for MemRef {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

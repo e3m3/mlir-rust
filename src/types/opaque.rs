@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -34,18 +34,12 @@ impl Opaque {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_opaque() {
-            eprint!("Cannot coerce type to opaque type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to opaque type: {}", t);
             exit(ExitCode::IRError);
         }
-        Opaque(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -53,7 +47,7 @@ impl Opaque {
     }
 
     pub fn get_data(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirOpaqueTypeGetData(self.0)))
+        StringRef::from(do_unsafe!(mlirOpaqueTypeGetData(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -61,11 +55,29 @@ impl Opaque {
     }
 
     pub fn get_namespace(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirOpaqueTypeGetDialectNamespace(self.0)))
+        StringRef::from(do_unsafe!(mlirOpaqueTypeGetDialectNamespace(*self.get())))
     }
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirOpaqueTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for Opaque {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Opaque {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Opaque {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -34,18 +34,12 @@ impl Tuple {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_tuple() {
-            eprint!("Cannot coerce type to tuple type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to tuple type: {}", t);
             exit(ExitCode::IRError);
         }
-        Tuple(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -58,12 +52,14 @@ impl Tuple {
 
     pub fn get_type(&self, i: isize) -> Type {
         if i >= self.num_types() || i < 0 {
-            eprint!("Index '{}' out of bounds for tuple type: ", i);
-            self.as_type().dump();
-            eprintln!();
+            eprintln!(
+                "Index '{}' out of bounds for tuple type: {}",
+                i,
+                self.as_type()
+            );
             exit(ExitCode::IRError);
         }
-        Type::from(do_unsafe!(mlirTupleTypeGetType(self.0, i)))
+        Type::from(do_unsafe!(mlirTupleTypeGetType(*self.get(), i)))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -71,7 +67,25 @@ impl Tuple {
     }
 
     pub fn num_types(&self) -> isize {
-        do_unsafe!(mlirTupleTypeGetNumTypes(self.0))
+        do_unsafe!(mlirTupleTypeGetNumTypes(*self.get()))
+    }
+}
+
+impl From<MlirType> for Tuple {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Tuple {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Tuple {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -39,18 +39,12 @@ impl Function {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_function() {
-            eprint!("Cannot coerce type to function type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to function type: {}", t);
             exit(ExitCode::IRError);
         }
-        Function(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -59,12 +53,14 @@ impl Function {
 
     pub fn get_input(&self, i: isize) -> Type {
         if i >= self.num_inputs() || i < 0 {
-            eprint!("Index '{}' out of bounds for function type input: ", i);
-            self.as_type().dump();
-            eprintln!();
+            eprintln!(
+                "Index '{}' out of bounds for function type input: {}",
+                i,
+                self.as_type()
+            );
             exit(ExitCode::IRError);
         }
-        Type::from(do_unsafe!(mlirFunctionTypeGetInput(self.0, i)))
+        Type::from(do_unsafe!(mlirFunctionTypeGetInput(*self.get(), i)))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -73,12 +69,14 @@ impl Function {
 
     pub fn get_result(&self, i: isize) -> Type {
         if i >= self.num_results() || i < 0 {
-            eprint!("Index '{}' out of bounds for function type result: ", i);
-            self.as_type().dump();
-            eprintln!();
+            eprintln!(
+                "Index '{}' out of bounds for function type result: {}",
+                i,
+                self.as_type()
+            );
             exit(ExitCode::IRError);
         }
-        Type::from(do_unsafe!(mlirFunctionTypeGetResult(self.0, i)))
+        Type::from(do_unsafe!(mlirFunctionTypeGetResult(*self.get(), i)))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -86,11 +84,29 @@ impl Function {
     }
 
     pub fn num_inputs(&self) -> isize {
-        do_unsafe!(mlirFunctionTypeGetNumInputs(self.0))
+        do_unsafe!(mlirFunctionTypeGetNumInputs(*self.get()))
     }
 
     pub fn num_results(&self) -> isize {
-        do_unsafe!(mlirFunctionTypeGetNumResults(self.0))
+        do_unsafe!(mlirFunctionTypeGetNumResults(*self.get()))
+    }
+}
+
+impl From<MlirType> for Function {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Function {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Function {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

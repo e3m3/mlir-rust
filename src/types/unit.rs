@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -29,18 +29,12 @@ impl Unit {
         Self::from(*UnitAttr::new(context).as_attribute().get_type().get())
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_unit() {
-            eprint!("Cannot coerce type to unit type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to unit type: {}", t);
             exit(ExitCode::IRError);
         }
-        Unit(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -53,6 +47,24 @@ impl Unit {
 
     pub fn get_type_id() -> TypeID {
         UnitAttr::get_type_id()
+    }
+}
+
+impl From<MlirType> for Unit {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Unit {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Unit {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

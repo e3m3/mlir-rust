@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -60,22 +60,16 @@ impl RankedTensor {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_ranked_tensor() {
-            eprint!("Cannot coerce type to ranked tensor type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to ranked tensor type: {}", t);
             exit(ExitCode::IRError);
         }
-        RankedTensor(*t.get())
+        Self(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {
-        Shaped::from(self.0)
+        Shaped::from(*self.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -83,7 +77,7 @@ impl RankedTensor {
     }
 
     pub fn get_encoding(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirRankedTensorTypeGetEncoding(self.0)))
+        Attribute::from(do_unsafe!(mlirRankedTensorTypeGetEncoding(*self.get())))
     }
 
     pub fn get_matching_suffix(&self, other: &Self) -> Option<Self> {
@@ -107,7 +101,7 @@ impl RankedTensor {
     pub fn has_matching_ranks(&self, other: &Self) -> bool {
         let s = self.as_shaped();
         let s_other = other.as_shaped();
-        s.rank().unwrap_or(0) == s_other.rank().unwrap_or(0)
+        s.rank().unwrap_or(-1) == s_other.rank().unwrap_or(-1)
     }
 
     pub fn has_matching_static_dimensions(&self, other: &Self) -> bool {
@@ -127,6 +121,24 @@ impl RankedTensor {
             }
         }
         true
+    }
+}
+
+impl From<MlirType> for RankedTensor {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for RankedTensor {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for RankedTensor {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

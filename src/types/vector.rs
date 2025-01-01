@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -71,22 +71,16 @@ impl Vector {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_vector() {
-            eprint!("Cannot coerce type to vector type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to vector type: {}", t);
             exit(ExitCode::IRError);
         }
-        Vector(*t.get())
+        Self(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {
-        Shaped::from(self.0)
+        Shaped::from(*self.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -111,11 +105,29 @@ impl Vector {
     }
 
     pub fn is_scalable(&self) -> bool {
-        do_unsafe!(mlirVectorTypeIsScalable(self.0))
+        do_unsafe!(mlirVectorTypeIsScalable(*self.get()))
     }
 
     pub fn is_scalable_dim(&self, i: isize) -> bool {
-        do_unsafe!(mlirVectorTypeIsDimScalable(self.0, i))
+        do_unsafe!(mlirVectorTypeIsDimScalable(*self.get(), i))
+    }
+}
+
+impl From<MlirType> for Vector {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Vector {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Vector {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

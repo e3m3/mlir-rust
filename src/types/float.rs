@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -87,21 +87,15 @@ impl Float {
             Layout::F64 => mlirF64TypeGet(*context.get()),
             Layout::TF32 => mlirTF32TypeGet(*context.get()),
         });
-        Float(t, layout)
-    }
-
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
+        Self(t, layout)
     }
 
     pub fn from_type(t: &Type) -> Self {
         if !t.is_float() {
-            eprint!("Cannot coerce type to float type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to float type: {}", t);
             exit(ExitCode::IRError);
         }
-        let mut f = Float(*t.get(), Layout::F32); // Unused layout
+        let mut f = Self(*t.get(), Layout::F32); // Unused layout
         f.1 = if f.is_f8_e5_m2() {
             Layout::F8E5M2
         } else if f.is_f8_e4_m3() {
@@ -125,9 +119,7 @@ impl Float {
         } else if f.is_tf32() {
             Layout::TF32
         } else {
-            eprint!("Unexpected float layout for type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Unexpected float layout for type: {}", t);
             exit(ExitCode::IRError);
         };
         f
@@ -162,7 +154,7 @@ impl Float {
     }
 
     pub fn get_width(&self) -> usize {
-        do_unsafe!(mlirFloatTypeGetWidth(self.0)) as usize
+        do_unsafe!(mlirFloatTypeGetWidth(*self.get())) as usize
     }
 
     pub fn is(&self, layout: Layout) -> bool {
@@ -182,47 +174,65 @@ impl Float {
     }
 
     pub fn is_f8_e5_m2(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E5M2(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E5M2(*self.get()))
     }
 
     pub fn is_f8_e4_m3(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E4M3(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E4M3(*self.get()))
     }
 
     pub fn is_f8_e4_m3_fn(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E4M3FN(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E4M3FN(*self.get()))
     }
 
     pub fn is_f8_e5_m2_fnuz(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E5M2FNUZ(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E5M2FNUZ(*self.get()))
     }
 
     pub fn is_f8_e4_m3_fnuz(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E4M3FNUZ(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E4M3FNUZ(*self.get()))
     }
 
     pub fn is_f8_e4_m3_b11_fnuz(&self) -> bool {
-        do_unsafe!(mlirTypeIsAFloat8E4M3B11FNUZ(self.0))
+        do_unsafe!(mlirTypeIsAFloat8E4M3B11FNUZ(*self.get()))
     }
 
     pub fn is_bf16(&self) -> bool {
-        do_unsafe!(mlirTypeIsABF16(self.0))
+        do_unsafe!(mlirTypeIsABF16(*self.get()))
     }
 
     pub fn is_f16(&self) -> bool {
-        do_unsafe!(mlirTypeIsAF16(self.0))
+        do_unsafe!(mlirTypeIsAF16(*self.get()))
     }
 
     pub fn is_f32(&self) -> bool {
-        do_unsafe!(mlirTypeIsAF32(self.0))
+        do_unsafe!(mlirTypeIsAF32(*self.get()))
     }
 
     pub fn is_f64(&self) -> bool {
-        do_unsafe!(mlirTypeIsAF64(self.0))
+        do_unsafe!(mlirTypeIsAF64(*self.get()))
     }
 
     pub fn is_tf32(&self) -> bool {
-        do_unsafe!(mlirTypeIsATF32(self.0))
+        do_unsafe!(mlirTypeIsATF32(*self.get()))
+    }
+}
+
+impl From<MlirType> for Float {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Float {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Float {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

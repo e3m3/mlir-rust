@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -27,18 +27,12 @@ impl Complex {
         Self::from(do_unsafe!(mlirComplexTypeGet(*element.get())))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_complex() {
-            eprint!("Cannot coerce type to complex type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to complex type: {}", t);
             exit(ExitCode::IRError);
         }
-        Complex(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -46,7 +40,7 @@ impl Complex {
     }
 
     pub fn get_element_type(&self) -> Type {
-        Type::from(do_unsafe!(mlirComplexTypeGetElementType(self.0)))
+        Type::from(do_unsafe!(mlirComplexTypeGetElementType(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -55,6 +49,24 @@ impl Complex {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirComplexTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for Complex {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for Complex {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for Complex {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

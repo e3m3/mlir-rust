@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -34,16 +34,14 @@ pub struct Shaped(MlirType);
 impl Shaped {
     pub fn from_type(t: &Type) -> Self {
         if !t.is_shaped() {
-            eprint!("Cannot coerce type to shaped type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to shaped type: {}", t);
             exit(ExitCode::IRError);
         }
         Self(*t.get())
     }
 
     pub fn dim_size(&self, i: isize) -> i64 {
-        do_unsafe!(mlirShapedTypeGetDimSize(self.0, i))
+        do_unsafe!(mlirShapedTypeGetDimSize(*self.get(), i))
     }
 
     pub fn dynamic_size() -> i64 {
@@ -59,7 +57,7 @@ impl Shaped {
     }
 
     pub fn get_element_type(&self) -> Type {
-        Type::from(do_unsafe!(mlirShapedTypeGetElementType(self.0)))
+        Type::from(do_unsafe!(mlirShapedTypeGetElementType(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -109,7 +107,7 @@ impl Shaped {
     }
 
     pub fn has_rank(&self) -> bool {
-        do_unsafe!(mlirShapedTypeHasRank(self.0))
+        do_unsafe!(mlirShapedTypeHasRank(*self.get()))
     }
 
     pub fn has_dynamic_dims(&self) -> bool {
@@ -121,11 +119,11 @@ impl Shaped {
     }
 
     pub fn is_static(&self) -> bool {
-        do_unsafe!(mlirShapedTypeHasStaticShape(self.0))
+        do_unsafe!(mlirShapedTypeHasStaticShape(*self.get()))
     }
 
     pub fn is_dynamic_dim(&self, i: isize) -> bool {
-        do_unsafe!(mlirShapedTypeIsDynamicDim(self.0, i))
+        do_unsafe!(mlirShapedTypeIsDynamicDim(*self.get(), i))
     }
 
     pub fn is_dynamic_size(i: i64) -> bool {
@@ -138,7 +136,7 @@ impl Shaped {
 
     pub fn rank(&self) -> Option<i64> {
         if self.has_rank() {
-            Some(do_unsafe!(mlirShapedTypeGetRank(self.0)))
+            Some(do_unsafe!(mlirShapedTypeGetRank(*self.get())))
         } else {
             None
         }

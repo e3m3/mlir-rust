@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -27,18 +27,12 @@ impl None {
         Self::from(do_unsafe!(mlirNoneTypeGet(*context.get())))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_none() {
-            eprint!("Cannot coerce type to none type: ");
-            t.dump();
-            eprintln!();
+            eprintln!("Cannot coerce type to none type: {}", t);
             exit(ExitCode::IRError);
         }
-        None(*t.get())
+        Self(*t.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -51,6 +45,24 @@ impl None {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirNoneTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for None {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for None {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for None {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 

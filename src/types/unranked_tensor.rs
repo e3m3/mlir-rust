@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -36,22 +36,16 @@ impl UnrankedTensor {
         )))
     }
 
-    pub fn from(t: MlirType) -> Self {
-        Self::from_type(&Type::from(t))
-    }
-
     pub fn from_type(t: &Type) -> Self {
         if !t.is_unranked_tensor() {
-            eprint!("Cannot coerce type to unranked tensor type: ");
-            t.dump();
-            eprintln!();
+            eprint!("Cannot coerce type to unranked tensor type: {}", t);
             exit(ExitCode::IRError);
         }
-        UnrankedTensor(*t.get())
+        Self(*t.get())
     }
 
     pub fn as_shaped(&self) -> Shaped {
-        Shaped::from(self.0)
+        Shaped::from(*self.get())
     }
 
     pub fn get(&self) -> &MlirType {
@@ -64,6 +58,24 @@ impl UnrankedTensor {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirUnrankedTensorTypeGetTypeID()))
+    }
+}
+
+impl From<MlirType> for UnrankedTensor {
+    fn from(t: MlirType) -> Self {
+        Self::from(Type::from(t))
+    }
+}
+
+impl From<Type> for UnrankedTensor {
+    fn from(t: Type) -> Self {
+        Self::from(&t)
+    }
+}
+
+impl From<&Type> for UnrankedTensor {
+    fn from(t: &Type) -> Self {
+        Self::from_type(t)
     }
 }
 
