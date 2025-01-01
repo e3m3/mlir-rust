@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -475,11 +475,7 @@ impl Extract {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Extract.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Extract);
         let mut args = vec![source.clone()];
         args.append(&mut pos.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -539,11 +535,7 @@ impl ExtractElement {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtractElement.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtractElement);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone(), pos.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -572,11 +564,7 @@ impl ExtractElement {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtractElement.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtractElement);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -619,11 +607,7 @@ impl FromElements {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::FromElements.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::FromElements);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(args);
         op_state.add_results(&[t.as_type()]);
@@ -685,11 +669,7 @@ impl Load {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Load.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Load);
         let mut args = vec![base.clone()];
         args.append(&mut indices.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -719,11 +699,7 @@ impl Load {
 impl Print {
     pub fn new(context: &Context, args: &[Value], p: PunctuationKind, loc: &Location) -> Self {
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Print.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Print);
         let punc_attr = Punctuation::new(context, p);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[punc_attr.as_named_attribute()]);
@@ -733,11 +709,7 @@ impl Print {
 
     pub fn new_string(context: &Context, s: &StringLiteral, loc: &Location) -> Self {
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Print.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Print);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[s.as_named_attribute()]);
         Self::from(*op_state.create_operation().get())
@@ -842,11 +814,7 @@ impl Store {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Store.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Store);
         let mut args = vec![value.clone(), base.clone()];
         args.append(&mut indices.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -936,11 +904,7 @@ impl TransferRead {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::TransferRead.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::TransferRead);
         let mut args: Vec<Value> = Vec::new();
         let mut opseg_sizes: Vec<i32> = Vec::new();
         args.push(source.clone());
@@ -1017,11 +981,7 @@ impl TransferWrite {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::TransferWrite.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::TransferWrite);
         let mut args: Vec<Value> = Vec::new();
         let mut opseg_sizes: Vec<i32> = Vec::new();
         args.push(value.clone());
@@ -1064,11 +1024,7 @@ impl TransferWrite {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_vector();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::TransferWrite.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::TransferWrite);
         let mut args: Vec<Value> = Vec::new();
         let mut opseg_sizes: Vec<i32> = Vec::new();
         args.push(value.clone());

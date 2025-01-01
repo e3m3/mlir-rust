@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -31,7 +31,6 @@ use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
-use ir::StringBacked;
 use traits::Trait;
 use types::IType;
 use types::integer::Integer as IntegerType;
@@ -113,11 +112,7 @@ impl Poison {
     pub fn new(context: &Context, loc: &Location) -> Self {
         let t = IntegerType::new(context, 32);
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Poison.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Poison);
         let value = PoisonValue::new(context);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[value.as_named_attribute()]);

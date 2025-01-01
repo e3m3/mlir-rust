@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -332,11 +332,7 @@ impl Alloc {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Alloc.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Alloc);
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
@@ -423,11 +419,7 @@ impl Alloca {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Alloca.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Alloca);
         let mut args: Vec<Value> = Vec::new();
         args.append(&mut dyn_sizes.to_vec());
         args.append(&mut syms.to_vec());
@@ -477,11 +469,7 @@ impl Cast {
     fn new(t: &Type, source: &Value, loc: &Location) -> Self {
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Cast.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Cast);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -638,11 +626,7 @@ impl Copy {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Copy.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Copy);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone(), target.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -668,11 +652,7 @@ impl Dealloc {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Dealloc.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Dealloc);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
         Self::from(*op_state.create_operation().get())
@@ -712,11 +692,7 @@ impl Dim {
         }
         let t = Index::new(context);
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Dim.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Dim);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone(), index.clone()]);
         op_state.add_results(&[t.as_type()]);
@@ -751,11 +727,7 @@ impl GetGlobal {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::GetGlobal.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::GetGlobal);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[global_ref.as_named_attribute()]);
         op_state.add_results(&[t.as_type()]);
@@ -792,11 +764,7 @@ impl Global {
     ) -> Self {
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Global.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Global);
         let mut attrs = vec![sym_name.as_named_attribute(), t.as_named_attribute()];
         if let Some(visibility_) = SymbolVisibility::new(&context, visibility) {
             attrs.push(visibility_.as_named_attribute());
@@ -957,11 +925,7 @@ impl Load {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Load.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Load);
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -1010,11 +974,7 @@ impl Rank {
         }
         let t = Index::new(context);
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Rank.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Rank);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[source.clone()]);
         op_state.add_results(&[t.as_type()]);
@@ -1075,11 +1035,7 @@ impl Store {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Store.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Store);
         let mut args = vec![value.clone(), target.clone()];
         args.append(&mut indices.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -1130,11 +1086,7 @@ impl Transpose {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Transpose.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Transpose);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[p.as_named_attribute()]);
         op_state.add_operands(&[source.clone()]);
@@ -1218,11 +1170,7 @@ impl View {
         }
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_memref();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::View.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::View);
         let mut args = vec![source.clone(), byte_shift.clone()];
         args.append(&mut sizes.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -1014,11 +1014,7 @@ impl Apply {
         }
         let t = Index::new(context);
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Apply.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Apply);
         let attr = NamedMap::from(*map.as_attribute().get_mut());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1051,11 +1047,7 @@ impl DelinearizeIndex {
         let n_dynamic = dynamic_basis.len() as i32;
         let t = Index::new(context);
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::DelinearizeIndex.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::DelinearizeIndex);
         let mut operands = vec![index.clone()];
         operands.append(&mut dynamic_basis.to_vec());
         let results: Vec<Type> = (0..n_dynamic).map(|_| t.as_type()).collect();
@@ -1116,11 +1108,7 @@ impl For {
             exit(ExitCode::DialectError);
         }
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::For.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::For);
         let mut operands: Vec<Value> = vec![];
         operands.append(&mut ops_lower_bounds.to_vec());
         operands.append(&mut ops_upper_bounds.to_vec());
@@ -1176,8 +1164,7 @@ impl If {
         loc: &Location,
     ) -> Self {
         let dialect = get_dialect(context);
-        let name =
-            StringBacked::from(format!("{}.{}", dialect.get_namespace(), Op::If.get_name(),));
+        let name = dialect.get_op_name(&Op::If);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[condition.as_named_attribute()]);
         op_state.add_operands(inputs);
@@ -1263,11 +1250,7 @@ impl Load {
         }
         let context = t.get_context();
         let dialect = get_dialect(&context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Load.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Load);
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
         let attr = NamedMap::from(*map.as_attribute().get_mut());
@@ -1322,11 +1305,7 @@ impl Store {
             exit(ExitCode::DialectError);
         }
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Store.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Store);
         let mut args = vec![value.clone(), target.clone()];
         args.append(&mut indices.to_vec());
         let attr = NamedMap::from(*map.as_attribute().get_mut());
@@ -1384,11 +1363,7 @@ impl VectorLoad {
         }
         let context = t.get_context();
         let dialect = get_dialect(&context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::VectorLoad.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::VectorLoad);
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
         let attr = NamedMap::from(*map.as_attribute().get_mut());
@@ -1458,11 +1433,7 @@ impl VectorStore {
             exit(ExitCode::DialectError);
         }
         let dialect = get_dialect(context);
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::VectorStore.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::VectorStore);
         let mut args = vec![value.clone(), source.clone()];
         args.append(&mut indices.to_vec());
         let attr = NamedMap::from(*map.as_attribute().get_mut());
@@ -1497,11 +1468,7 @@ impl Yield {
         dialect: &Dialect,
         loc: &Location,
     ) -> Self {
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Yield.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Yield);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(values);
         Self::from(*op_state.create_operation().get(), *parent, *parent_op)

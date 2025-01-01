@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -180,11 +180,7 @@ impl Call {
     pub fn new(callee: &Callee, t: &[Type], args: &[Value], loc: &Location) -> Self {
         let context = callee.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Call.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Call);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[callee.as_named_attribute()]);
         op_state.add_operands(args);
@@ -242,11 +238,7 @@ impl CallIndirect {
         let t: Vec<Type> = (0..t_f.num_results()).map(|i| t_f.get_result(i)).collect();
         let context = f.get_type().get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::CallIndirect.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::CallIndirect);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&args_);
         op_state.add_results(&t);
@@ -278,11 +270,7 @@ impl Constant {
     pub fn new(op: &Func, loc: &Location) -> Self {
         let context = op.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Constant.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Constant);
         let attr = Referee::new(&context, op.get_symbol_ref().get_value().as_ref().unwrap());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -330,11 +318,7 @@ impl Func {
     ) -> Self {
         let context = t.as_type().get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Func.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Func);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         let mut block = Block::default();
         let _operands: Vec<Value> = (0..t.num_inputs())
@@ -466,11 +450,7 @@ impl Return {
         }
         let context = parent.get_context();
         let dialect = context.get_dialect_func();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Return.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Return);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(args);
         Self::from(*op_state.create_operation().get(), symbol_ref)

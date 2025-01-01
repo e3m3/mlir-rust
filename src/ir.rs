@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -250,12 +250,14 @@ use std::ptr;
 use std::str::FromStr;
 
 use crate::attributes;
+use crate::dialects;
 use crate::do_unsafe;
 use crate::exit_code;
 use crate::types;
 
 use attributes::IAttribute;
 use attributes::named::Named;
+use dialects::IOp;
 use exit_code::ExitCode;
 use exit_code::exit;
 use types::GetWidth;
@@ -880,6 +882,10 @@ impl Dialect {
 
     pub fn get_namespace(&self) -> StringRef {
         StringRef::from(do_unsafe!(mlirDialectGetNamespace(self.0)))
+    }
+
+    pub fn get_op_name(&self, op: &dyn IOp) -> StringBacked {
+        StringBacked::from(format!("{}.{}", self.get_namespace(), op.get_name(),))
     }
 
     pub fn is_null(&self) -> bool {

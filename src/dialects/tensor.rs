@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -350,11 +350,7 @@ impl Bitcast {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Bitcast.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Bitcast);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
         op_state.add_results(&[t.as_type()]);
@@ -424,11 +420,7 @@ impl Cast {
         }
         let context = s.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Cast.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Cast);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
         op_state.add_results(&[s.as_type()]);
@@ -516,11 +508,7 @@ impl CollapseShape {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::CollapseShape.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::CollapseShape);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[reassoc.as_named_attribute()]);
         op_state.add_operands(&[value.clone()]);
@@ -611,11 +599,7 @@ impl Concat {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Concat.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Concat);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[dim.as_named_attribute()]);
         op_state.add_operands(values);
@@ -667,11 +651,7 @@ impl Dim {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Dim.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Dim);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone(), index.clone()]);
         op_state.add_results(&[Index::new(context).as_type()]);
@@ -710,11 +690,7 @@ impl Empty {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Empty.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Empty);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(sizes);
         op_state.add_results(&[t.as_type()]);
@@ -817,11 +793,7 @@ impl ExpandShape {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExpandShape.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExpandShape);
         let mut args = vec![source.clone()];
         args.append(&mut shape.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -897,11 +869,7 @@ impl Extract {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Extract.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Extract);
         let mut args = vec![source.clone()];
         args.append(&mut indices.to_vec());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
@@ -967,11 +935,7 @@ impl ExtractSlice {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtractSlice.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtractSlice);
         let mut args = vec![source.clone()];
         args.append(&mut offsets.to_vec());
         args.append(&mut sizes.to_vec());
@@ -1066,11 +1030,7 @@ impl FromElements {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::FromElements.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::FromElements);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(elements);
         op_state.add_results(&[t.as_type()]);
@@ -1117,11 +1077,7 @@ impl Generate {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Generate.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Generate);
         let rank = s.rank().unwrap_or(-1) as isize;
         let t_index = Index::new(&context).as_type();
         let t_indices: Vec<Type> = (0..rank).map(|_| t_index.clone()).collect();
@@ -1216,11 +1172,7 @@ impl Pad {
         }
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Pad.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Pad);
         let opseg_attr = OperandSegmentSizes::new(&context, &[
             1,
             values_low.len() as i32,
@@ -1297,11 +1249,7 @@ impl Rank {
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Rank.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Rank);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
         op_state.add_results(&[Index::new(context).as_type()]);
@@ -1335,11 +1283,7 @@ impl Reshape {
         let t = s.as_type();
         let context = t.get_context();
         let dialect = context.get_dialect_tensor();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Reshape.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Reshape);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone(), shape.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1427,11 +1371,7 @@ impl Yield {
         dialect: &Dialect,
         loc: &Location,
     ) -> Self {
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Yield.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Yield);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[value.clone()]);
         Self::from(*op_state.create_operation().get(), *parent, *parent_op)

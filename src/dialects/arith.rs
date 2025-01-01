@@ -770,11 +770,7 @@ impl AddF {
         check_binary_operation_float_types(Op::AddF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::AddF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::AddF);
         let attr = FastMath::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -823,11 +819,7 @@ impl AddI {
         check_binary_operation_integer_types(Op::AddI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::AddI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::AddI);
         let attr = IntegerOverflow::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -883,11 +875,7 @@ impl AddUIExtended {
             t_flags_elem
         };
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::AddUIExtended.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::AddUIExtended);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone(), t_flags]);
@@ -926,11 +914,7 @@ impl Bitcast {
         check_type_width(Op::Bitcast, CmpIPredicate::Eq, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Bitcast.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Bitcast);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -954,11 +938,7 @@ impl Constant {
         }
         let context = attr.as_attribute().get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Constant.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Constant);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_results(&[t.clone()]);
@@ -1022,11 +1002,7 @@ impl DivF {
         check_binary_operation_float_types(Op::DivF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::DivF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::DivF);
         let attr = FastMath::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1069,11 +1045,7 @@ impl DivSI {
         check_binary_operation_integer_types(Op::DivSI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::DivSI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::DivSI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1106,11 +1078,7 @@ impl DivUI {
         check_binary_operation_integer_types(Op::DivUI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::DivUI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::DivUI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1147,11 +1115,7 @@ impl ExtF {
         check_type_width(Op::ExtF, CmpIPredicate::Slt, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtF);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         if let Some(flags_) = flags {
             let attr_fastmath = FastMath::new(&context, flags_);
@@ -1188,11 +1152,7 @@ impl ExtSI {
         check_type_width(Op::ExtSI, CmpIPredicate::Slt, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtSI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtSI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1217,11 +1177,7 @@ impl ExtUI {
         check_type_width(Op::ExtUI, CmpIPredicate::Slt, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::ExtUI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::ExtUI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1246,11 +1202,7 @@ impl FPToSI {
         check_type_width(Op::FPToSI, CmpIPredicate::Eq, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::FPToSI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::FPToSI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1275,11 +1227,7 @@ impl FPToUI {
         check_type_width(Op::FPToUI, CmpIPredicate::Eq, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::FPToUI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::FPToUI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1306,11 +1254,7 @@ impl IndexCast {
         check_type_shape(Op::IndexCast, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::IndexCast.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::IndexCast);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1337,11 +1281,7 @@ impl IndexCastUI {
         check_type_shape(Op::IndexCastUI, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::IndexCastUI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::IndexCastUI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1362,11 +1302,7 @@ impl MulF {
         check_binary_operation_float_types(Op::MulF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::MulF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::MulF);
         let attr = FastMath::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1415,11 +1351,7 @@ impl MulI {
         check_binary_operation_integer_types(Op::MulI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::MulI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::MulI);
         let attr = IntegerOverflow::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1462,11 +1394,7 @@ impl MulSIExtended {
         check_binary_operation_integer_types(Op::MulSIExtended, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::MulSIExtended.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::MulSIExtended);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone(), t.clone()]);
@@ -1503,11 +1431,7 @@ impl MulUIExtended {
         check_binary_operation_integer_types(Op::MulUIExtended, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::MulUIExtended.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::MulUIExtended);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone(), t.clone()]);
@@ -1548,11 +1472,7 @@ impl SIToFP {
         check_type_width(Op::SIToFP, CmpIPredicate::Eq, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::SIToFP.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::SIToFP);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1573,11 +1493,7 @@ impl SubF {
         check_binary_operation_float_types(Op::SubF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::SubF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::SubF);
         let attr = FastMath::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1626,11 +1542,7 @@ impl SubI {
         check_binary_operation_integer_types(Op::SubI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::SubI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::SubI);
         let attr = IntegerOverflow::new(&context, flags);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
@@ -1683,11 +1595,7 @@ impl TruncF {
         check_type_width(Op::TruncF, CmpIPredicate::Sgt, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::TruncF.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::TruncF);
         let mut attrs: Vec<Named> = vec![];
         if let Some(flags_) = flags {
             let attr_fastmath = FastMath::new(&context, flags_);
@@ -1738,11 +1646,7 @@ impl TruncI {
         check_type_width(Op::TruncI, CmpIPredicate::Sgt, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::TruncI.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::TruncI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -1767,11 +1671,7 @@ impl UIToFP {
         check_type_width(Op::UIToFP, CmpIPredicate::Eq, &t_input, t);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::UIToFP.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::UIToFP);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[input.clone()]);
         op_state.add_results(&[t.clone()]);

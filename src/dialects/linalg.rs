@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -427,7 +427,7 @@ pub trait ElementwiseBinaryOperation:
         }
         Self::__check_operands(op, lhs, rhs, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
+        let name = dialect.get_op_name(op);
         let mut region = Region::new();
         let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
         region.append_block(&mut Block::new(
@@ -465,7 +465,7 @@ pub trait ElementwiseBinaryOperation:
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
+        let name = dialect.get_op_name(op);
         let mut region = Region::new();
         let t_elem = t.as_shaped().get_element_type();
         region.append_block(&mut Block::new(
@@ -523,7 +523,7 @@ pub trait ElementwiseUnaryOperation:
         }
         Self::__check_operands(op, input, output);
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
+        let name = dialect.get_op_name(op);
         let mut region = Region::new();
         let t_elem = Shaped::from_type(&output.get_type()).get_element_type();
         region.append_block(&mut Block::new(2, &[t_elem.clone(), t_elem.clone()], &[
@@ -556,7 +556,7 @@ pub trait ElementwiseUnaryOperation:
         Self::__check_result(op, t, &output.get_type());
         let context = t.get_context();
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!("{}.{}", dialect.get_namespace(), op.get_name(),));
+        let name = dialect.get_op_name(op);
         let mut region = Region::new();
         let t_elem = t.as_shaped().get_element_type();
         region.append_block(&mut Block::new(2, &[t_elem.clone(), t_elem.clone()], &[
@@ -1802,11 +1802,7 @@ impl Floor {
 impl Index {
     pub fn new(context: &Context, dim: &Dimension, loc: &Location) -> Self {
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Index.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Index);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[dim.as_named_attribute()]);
         Self::from(*op_state.create_operation().get())
@@ -2661,11 +2657,7 @@ impl Vecmat {
 impl Yield {
     pub fn new(context: &Context, values: &[Value], loc: &Location) -> Self {
         let dialect = context.get_dialect_linalg();
-        let name = StringBacked::from(format!(
-            "{}.{}",
-            dialect.get_namespace(),
-            Op::Yield.get_name(),
-        ));
+        let name = dialect.get_op_name(&Op::Yield);
         let mut region = Region::new();
         region.append_block(&mut Block::new_empty());
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
