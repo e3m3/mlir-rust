@@ -1,6 +1,6 @@
 #  Copyright
 
-Copyright 2024, Giordano Salvador
+Copyright 2024-2025, Giordano Salvador
 SPDX-License-Identifier: BSD-3-Clause
 
 Author/Maintainer:  Giordano Salvador <73959795+e3m3@users.noreply.github.com>
@@ -18,7 +18,7 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 
 ##  Prerequisites
 
-*   rust-2021
+*   rust-2024
 
 *   llvm-19, clang-19, and mlir-sys (or llvm version matching mlir-sys)
 
