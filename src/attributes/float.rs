@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -43,15 +43,13 @@ impl Float {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_float() {
-            eprint!("Cannot coerce attribute to float attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_float() {
+            eprintln!("Cannot coerce attribute to float attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Float(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -67,7 +65,25 @@ impl Float {
     }
 
     pub fn get_value(&self) -> f64 {
-        do_unsafe!(mlirFloatAttrGetValueDouble(self.0))
+        do_unsafe!(mlirFloatAttrGetValueDouble(*self.get()))
+    }
+}
+
+impl From<MlirAttribute> for Float {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Float {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Float {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

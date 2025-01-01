@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -29,15 +29,13 @@ impl Index {
         Self::from_checked(*attr.get())
     }
 
-    pub fn from_checked(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_index() {
-            eprint!("Cannot coerce attribute to index attribute type: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_index() {
+            eprintln!("Cannot coerce attribute to index attribute type: {}", attr);
             exit(ExitCode::IRError);
         }
-        Self::from(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -60,6 +58,18 @@ impl Index {
 impl From<MlirAttribute> for Index {
     fn from(attr: MlirAttribute) -> Self {
         Self(attr)
+    }
+}
+
+impl From<Attribute> for Index {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Index {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

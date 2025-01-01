@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -40,15 +40,16 @@ impl Integer {
         Self::from(do_unsafe!(mlirIntegerAttrGet(*t.get(), value)))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_integer() {
-            eprint!("Cannot coerce attribute to integer attribute type: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_integer() {
+            eprintln!(
+                "Cannot coerce attribute to integer attribute type: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        Integer(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -76,7 +77,7 @@ impl Integer {
     }
 
     pub fn get_uint(&self) -> u64 {
-        do_unsafe!(mlirIntegerAttrGetValueUInt(self.0))
+        do_unsafe!(mlirIntegerAttrGetValueUInt(*self.get()))
     }
 
     pub fn has_index_width(&self) -> bool {
@@ -86,6 +87,24 @@ impl Integer {
     #[inline]
     pub const fn index_width() -> usize {
         Self::WIDTH_INDEX
+    }
+}
+
+impl From<MlirAttribute> for Integer {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Integer {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Integer {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

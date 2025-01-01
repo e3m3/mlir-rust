@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -76,7 +76,7 @@ impl DenseResourceElements {
         is_mut: bool,
         deleter: Option<DeleterFn>,
     ) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -88,12 +88,12 @@ impl DenseResourceElements {
                 user_data.as_mut_ptr(),
             )),
             Layout::Inferred,
-        )
+        ))
     }
 
     pub fn new_bool(t: &Shaped, name: &StringRef, elements: &[bool]) -> Self {
         let e: Vec<c_int> = elements.iter().map(|e| *e as c_int).collect();
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseBoolResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -101,11 +101,11 @@ impl DenseResourceElements {
                 e.as_ptr(),
             )),
             Layout::Bool,
-        )
+        ))
     }
 
     pub fn new_f32(t: &Shaped, name: &StringRef, elements: &[f32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseFloatResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -113,11 +113,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::F32,
-        )
+        ))
     }
 
     pub fn new_f64(t: &Shaped, name: &StringRef, elements: &[f64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseDoubleResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -125,11 +125,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::F64,
-        )
+        ))
     }
 
     pub fn new_i8(t: &Shaped, name: &StringRef, elements: &[i8]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseInt8ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -137,11 +137,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::I8,
-        )
+        ))
     }
 
     pub fn new_i16(t: &Shaped, name: &StringRef, elements: &[i16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseInt16ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -149,11 +149,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::I16,
-        )
+        ))
     }
 
     pub fn new_i32(t: &Shaped, name: &StringRef, elements: &[i32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseInt32ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -161,11 +161,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::I32,
-        )
+        ))
     }
 
     pub fn new_i64(t: &Shaped, name: &StringRef, elements: &[i64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseInt64ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -173,11 +173,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::I64,
-        )
+        ))
     }
 
     pub fn new_u8(t: &Shaped, name: &StringRef, elements: &[u8]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseUInt8ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -185,11 +185,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::U8,
-        )
+        ))
     }
 
     pub fn new_u16(t: &Shaped, name: &StringRef, elements: &[u16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseUInt16ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -197,11 +197,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::U16,
-        )
+        ))
     }
 
     pub fn new_u32(t: &Shaped, name: &StringRef, elements: &[u32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseUInt32ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -209,11 +209,11 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::U32,
-        )
+        ))
     }
 
     pub fn new_u64(t: &Shaped, name: &StringRef, elements: &[u64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirUnmanagedDenseUInt64ResourceElementsAttrGet(
                 *t.get(),
                 *name.get(),
@@ -221,18 +221,19 @@ impl DenseResourceElements {
                 elements.as_ptr(),
             )),
             Layout::U64,
-        )
+        ))
     }
 
-    pub fn from(attr: MlirAttribute, layout: Layout) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_dense_elements_resource() {
-            eprint!("Cannot coerce attribute to dense resource elements attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute, layout: Layout) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_dense_elements_resource() {
+            eprintln!(
+                "Cannot coerce attribute to dense resource elements attribute: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        DenseResourceElements(attr, layout)
+        Self::from((attr_, layout))
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -240,31 +241,31 @@ impl DenseResourceElements {
     }
 
     pub fn get_bool(&self, i: isize) -> bool {
-        do_unsafe!(mlirDenseBoolResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseBoolResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_f32(&self, i: isize) -> f32 {
-        do_unsafe!(mlirDenseFloatResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseFloatResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_f64(&self, i: isize) -> f64 {
-        do_unsafe!(mlirDenseDoubleResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseDoubleResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_i8(&self, i: isize) -> i8 {
-        do_unsafe!(mlirDenseInt8ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseInt8ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_i16(&self, i: isize) -> i16 {
-        do_unsafe!(mlirDenseInt16ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseInt16ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_i32(&self, i: isize) -> i32 {
-        do_unsafe!(mlirDenseInt32ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseInt32ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_i64(&self, i: isize) -> i64 {
-        do_unsafe!(mlirDenseInt64ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseInt64ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_layout(&self) -> Layout {
@@ -276,19 +277,25 @@ impl DenseResourceElements {
     }
 
     pub fn get_u8(&self, i: isize) -> u8 {
-        do_unsafe!(mlirDenseUInt8ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseUInt8ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_u16(&self, i: isize) -> u16 {
-        do_unsafe!(mlirDenseUInt16ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseUInt16ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_u32(&self, i: isize) -> u32 {
-        do_unsafe!(mlirDenseUInt32ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseUInt32ResourceElementsAttrGetValue(*self.get(), i))
     }
 
     pub fn get_u64(&self, i: isize) -> u64 {
-        do_unsafe!(mlirDenseUInt64ResourceElementsAttrGetValue(self.0, i))
+        do_unsafe!(mlirDenseUInt64ResourceElementsAttrGetValue(*self.get(), i))
+    }
+}
+
+impl From<(MlirAttribute, Layout)> for DenseResourceElements {
+    fn from((attr, layout): (MlirAttribute, Layout)) -> Self {
+        Self(attr, layout)
     }
 }
 

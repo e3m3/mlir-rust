@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -38,15 +38,16 @@ impl SparseElements {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_sparse_elements() {
-            eprint!("Cannot coerce attribute to sparse elements attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_sparse_elements() {
+            eprintln!(
+                "Cannot coerce attribute to sparse elements attribute: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        SparseElements(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -54,7 +55,7 @@ impl SparseElements {
     }
 
     pub fn get_indices(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirSparseElementsAttrGetIndices(self.0)))
+        Attribute::from(do_unsafe!(mlirSparseElementsAttrGetIndices(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -66,7 +67,25 @@ impl SparseElements {
     }
 
     pub fn get_values(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirSparseElementsAttrGetValues(self.0)))
+        Attribute::from(do_unsafe!(mlirSparseElementsAttrGetValues(*self.get())))
+    }
+}
+
+impl From<MlirAttribute> for SparseElements {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for SparseElements {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for SparseElements {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

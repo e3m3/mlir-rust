@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -37,15 +37,16 @@ impl StridedLayout {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_strided_layout() {
-            eprint!("Cannot coerce attribute to strided layout attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_strided_layout() {
+            eprintln!(
+                "Cannot coerce attribute to strided layout attribute: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        StridedLayout(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -57,14 +58,14 @@ impl StridedLayout {
     }
 
     pub fn get_offset(&self) -> i64 {
-        do_unsafe!(mlirStridedLayoutAttrGetOffset(self.0))
+        do_unsafe!(mlirStridedLayoutAttrGetOffset(*self.get()))
     }
 
     pub fn get_stride(&self, i: isize) -> Result<i64, String> {
         if i < 0 || i >= self.num_strides() {
             Err("Index is out of bounds for strides of memory reference".to_string())
         } else {
-            Ok(do_unsafe!(mlirStridedLayoutAttrGetStride(self.0, i)))
+            Ok(do_unsafe!(mlirStridedLayoutAttrGetStride(*self.get(), i)))
         }
     }
 
@@ -89,11 +90,29 @@ impl StridedLayout {
     }
 
     pub fn num_strides(&self) -> isize {
-        do_unsafe!(mlirStridedLayoutAttrGetNumStrides(self.0))
+        do_unsafe!(mlirStridedLayoutAttrGetNumStrides(*self.get()))
     }
 
     pub fn rank(&self) -> isize {
         self.num_strides()
+    }
+}
+
+impl From<MlirAttribute> for StridedLayout {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for StridedLayout {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for StridedLayout {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

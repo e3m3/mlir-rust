@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -28,15 +28,13 @@ impl Bool {
         Self::from(do_unsafe!(mlirBoolAttrGet(*context.get(), value as c_int)))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_bool() {
-            eprint!("Cannot coerce attribute to bool attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_bool() {
+            eprintln!("Cannot coerce attribute to bool attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Bool(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -48,7 +46,25 @@ impl Bool {
     }
 
     pub fn get_value(&self) -> bool {
-        do_unsafe!(mlirBoolAttrGetValue(self.0))
+        do_unsafe!(mlirBoolAttrGetValue(*self.get()))
+    }
+}
+
+impl From<MlirAttribute> for Bool {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Bool {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Bool {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

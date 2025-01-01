@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -27,15 +27,13 @@ impl Type {
         Self::from(do_unsafe!(mlirTypeAttrGet(*t.get())))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_type() {
-            eprint!("Cannot coerce attribute to type attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_type() {
+            eprintln!("Cannot coerce attribute to type attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Type(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -47,11 +45,29 @@ impl Type {
     }
 
     pub fn get_type(&self) -> ir::Type {
-        ir::Type::from(do_unsafe!(mlirTypeAttrGetValue(self.0)))
+        ir::Type::from(do_unsafe!(mlirTypeAttrGetValue(*self.get())))
     }
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirTypeAttrGetTypeID()))
+    }
+}
+
+impl From<MlirAttribute> for Type {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Type {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Type {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -27,15 +27,13 @@ impl Unit {
         Self::from(do_unsafe!(mlirUnitAttrGet(*context.get())))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_unit() {
-            eprint!("Cannot coerce attribute to unit attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_unit() {
+            eprint!("Cannot coerce attribute to unit attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Unit(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -48,6 +46,24 @@ impl Unit {
 
     pub fn get_type_id() -> TypeID {
         TypeID::from(do_unsafe!(mlirUnitAttrGetTypeID()))
+    }
+}
+
+impl From<MlirAttribute> for Unit {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Unit {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Unit {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

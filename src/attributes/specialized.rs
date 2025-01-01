@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -422,7 +422,7 @@ pub trait NamedI32DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 
     fn as_dense_array(&self) -> DenseArray {
-        DenseArray::from(*self.get(), DenseArrayLayout::I32)
+        DenseArray::from((*self.get(), DenseArrayLayout::I32))
     }
 
     fn num_elements(&self) -> isize {
@@ -445,7 +445,7 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 
     fn as_dense_array(&self) -> DenseArray {
-        DenseArray::from(*self.get(), DenseArrayLayout::I64)
+        DenseArray::from((*self.get(), DenseArrayLayout::I64))
     }
 
     fn num_elements(&self) -> isize {

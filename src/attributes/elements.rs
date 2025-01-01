@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -23,15 +23,13 @@ use ir::Shape;
 pub struct Elements(MlirAttribute);
 
 impl Elements {
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_elements() {
-            eprint!("Cannot coerce attribute to elements attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_elements() {
+            eprintln!("Cannot coerce attribute to elements attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Elements(attr)
+        Self::from(attr)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -46,7 +44,7 @@ impl Elements {
         let r = shape.rank();
         let mut s: Vec<u64> = shape.to_vec().iter().map(|i| *i as u64).collect();
         Attribute::from(do_unsafe!(mlirElementsAttrGetValue(
-            self.0,
+            *self.get(),
             r,
             s.as_mut_ptr()
         )))
@@ -55,11 +53,29 @@ impl Elements {
     pub fn is_valid_value(&self, shape: &dyn Shape) -> bool {
         let r = shape.rank();
         let mut s: Vec<u64> = shape.to_vec().iter().map(|i| *i as u64).collect();
-        do_unsafe!(mlirElementsAttrIsValidIndex(self.0, r, s.as_mut_ptr()))
+        do_unsafe!(mlirElementsAttrIsValidIndex(*self.get(), r, s.as_mut_ptr()))
     }
 
     pub fn num_elements(&self) -> isize {
-        do_unsafe!(mlirElementsAttrGetNumElements(self.0)) as isize
+        do_unsafe!(mlirElementsAttrGetNumElements(*self.get())) as isize
+    }
+}
+
+impl From<MlirAttribute> for Elements {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Elements {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Elements {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -37,15 +37,13 @@ impl String {
         Self::from(do_unsafe!(mlirStringAttrTypedGet(*t.get(), *s.get())))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_string() {
-            eprint!("Cannot coerce attribute to string attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_string() {
+            eprintln!("Cannot coerce attribute to string attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        String(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -57,7 +55,7 @@ impl String {
     }
 
     pub fn get_string(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirStringAttrGetValue(self.0)))
+        StringRef::from(do_unsafe!(mlirStringAttrGetValue(*self.get())))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -68,6 +66,24 @@ impl String {
 impl fmt::Display for String {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.get_string())
+    }
+}
+
+impl From<MlirAttribute> for String {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for String {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for String {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -34,15 +34,13 @@ impl Array {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_array() {
-            eprint!("Cannot coerce attribute to array attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_array() {
+            eprintln!("Cannot coerce attribute to array attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Array(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -50,7 +48,7 @@ impl Array {
     }
 
     pub fn get_element(&self, i: isize) -> Attribute {
-        Attribute::from(do_unsafe!(mlirArrayAttrGetElement(self.0, i)))
+        Attribute::from(do_unsafe!(mlirArrayAttrGetElement(*self.get(), i)))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -62,7 +60,25 @@ impl Array {
     }
 
     pub fn num_elements(&self) -> isize {
-        do_unsafe!(mlirArrayAttrGetNumElements(self.0))
+        do_unsafe!(mlirArrayAttrGetNumElements(*self.get()))
+    }
+}
+
+impl From<MlirAttribute> for Array {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Array {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Array {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

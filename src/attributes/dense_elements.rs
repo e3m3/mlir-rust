@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -103,294 +103,274 @@ pub enum Layout {
 impl DenseElements {
     pub fn new(t: &Shaped, elements: &[Attribute]) -> Self {
         let e: Vec<MlirAttribute> = elements.iter().map(|a| *a.get()).collect();
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrGet(
                 *t.get(),
                 e.len() as isize,
                 e.as_ptr(),
             )),
             Layout::Inferred,
-        )
+        ))
     }
 
     /// # Safety
     /// May dereference raw pointer 'buffer'.
     pub unsafe fn new_raw(t: &Shaped, size: usize, buffer: *const c_void) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrRawBufferGet(*t.get(), size, buffer)),
             Layout::Inferred,
-        )
+        ))
     }
 
     pub fn new_reshape(t: &Shaped, attr: &Self) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrReshapeGet(*attr.get(), *t.get())),
             Layout::Inferred,
-        )
+        ))
     }
 
     pub fn new_splat(t: &Shaped, element: &Attribute) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrSplatGet(*t.get(), *element.get())),
             Layout::Inferred,
-        )
+        ))
     }
 
     pub fn new_bool(t: &Shaped, elements: &[bool]) -> Self {
         let e: Vec<c_int> = elements.iter().map(|e| *e as c_int).collect();
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrBoolGet(
                 *t.get(),
                 e.len() as isize,
                 e.as_ptr(),
             )),
             Layout::Bool,
-        )
+        ))
     }
 
     pub fn new_bool_splat(t: &Shaped, element: bool) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrBoolSplatGet(*t.get(), element)),
             Layout::Bool,
-        )
+        ))
     }
 
     pub fn new_bf16(t: &Shaped, elements: &[u16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrBFloat16Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::BF16,
-        )
+        ))
     }
 
     pub fn new_f16(t: &Shaped, elements: &[u16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrFloat16Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::F16,
-        )
+        ))
     }
 
     pub fn new_f32(t: &Shaped, elements: &[f32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrFloatGet(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::F32,
-        )
+        ))
     }
 
     pub fn new_f32_splat(t: &Shaped, element: f32) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrFloatSplatGet(*t.get(), element)),
             Layout::F32,
-        )
+        ))
     }
 
     pub fn new_f64(t: &Shaped, elements: &[f64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrDoubleGet(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::F64,
-        )
+        ))
     }
 
     pub fn new_f64_splat(t: &Shaped, element: f64) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrDoubleSplatGet(*t.get(), element)),
             Layout::F64,
-        )
+        ))
     }
 
     pub fn new_i8(t: &Shaped, elements: &[i8]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt8Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::I8,
-        )
+        ))
     }
 
     pub fn new_i8_splat(t: &Shaped, element: i8) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt8SplatGet(*t.get(), element)),
             Layout::I8,
-        )
+        ))
     }
 
     pub fn new_i16(t: &Shaped, elements: &[i16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt16Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::I16,
-        )
+        ))
     }
 
     pub fn new_i32(t: &Shaped, elements: &[i32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt32Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::I32,
-        )
+        ))
     }
 
     pub fn new_i32_splat(t: &Shaped, element: i32) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt32SplatGet(*t.get(), element)),
             Layout::I32,
-        )
+        ))
     }
 
     pub fn new_i64(t: &Shaped, elements: &[i64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt64Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::I64,
-        )
+        ))
     }
 
     pub fn new_i64_splat(t: &Shaped, element: i64) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrInt64SplatGet(*t.get(), element)),
             Layout::I64,
-        )
+        ))
     }
 
     pub fn new_string(t: &Shaped, elements: &[StringRef]) -> Self {
         let mut e: Vec<MlirStringRef> = elements.iter().map(|e| *e.get()).collect();
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrStringGet(
                 *t.get(),
                 e.len() as isize,
                 e.as_mut_ptr(),
             )),
             Layout::String,
-        )
+        ))
     }
 
     pub fn new_u8(t: &Shaped, elements: &[u8]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt8Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::U8,
-        )
+        ))
     }
 
     pub fn new_u8_splat(t: &Shaped, element: u8) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt8SplatGet(*t.get(), element)),
             Layout::U8,
-        )
+        ))
     }
 
     pub fn new_u16(t: &Shaped, elements: &[u16]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt16Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::U16,
-        )
+        ))
     }
 
     pub fn new_u32(t: &Shaped, elements: &[u32]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt32Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::U32,
-        )
+        ))
     }
 
     pub fn new_u32_splat(t: &Shaped, element: u32) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt32SplatGet(*t.get(), element)),
             Layout::U32,
-        )
+        ))
     }
 
     pub fn new_u64(t: &Shaped, elements: &[u64]) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt64Get(
                 *t.get(),
                 elements.len() as isize,
                 elements.as_ptr(),
             )),
             Layout::U64,
-        )
+        ))
     }
 
     pub fn new_u64_splat(t: &Shaped, element: u64) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirDenseElementsAttrUInt64SplatGet(*t.get(), element)),
             Layout::U64,
-        )
+        ))
     }
 
     pub fn as_elements(&self) -> Elements {
         Elements::from(*self.get())
     }
 
-    pub fn from(attr: MlirAttribute, layout: Layout) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_dense_elements() {
-            eprint!("Cannot coerce attribute to dense elements attribute: ");
-            attr_.dump();
-            eprintln!();
+    /// TODO:   Type-specific dense elements checks not working.
+    ///         E.g.: `is_dense_elements_int()` is false for `new_i32()`.
+    pub fn from_checked(attr_: MlirAttribute, layout: Layout) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_dense_elements() {
+            eprintln!(
+                "Cannot coerce attribute to dense elements attribute: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        // TODO: Type-specific dense elements checks not working.
-        //if match layout {
-        //    Layout::Bool        => false,
-        //    Layout::BF16        => attr_.is_dense_elements_float(),
-        //    Layout::F16         => attr_.is_dense_elements_float(),
-        //    Layout::F32         => attr_.is_dense_elements_float(),
-        //    Layout::F64         => attr_.is_dense_elements_float(),
-        //    Layout::I8          => attr_.is_dense_elements_int(),
-        //    Layout::I16         => attr_.is_dense_elements_int(),
-        //    Layout::I32         => attr_.is_dense_elements_int(),
-        //    Layout::I64         => attr_.is_dense_elements_int(),
-        //    Layout::Inferred    => false,
-        //    Layout::String      => false,
-        //    Layout::U8          => attr_.is_dense_elements_int(),
-        //    Layout::U16         => attr_.is_dense_elements_int(),
-        //    Layout::U32         => attr_.is_dense_elements_int(),
-        //    Layout::U64         => attr_.is_dense_elements_int(),
-        //} {
-        //    eprint!("Cannot coerce attribute to dense elements layout '{}': ", layout);
-        //    attr_.dump();
-        //    eprintln!();
-        //    exit(ExitCode::IRError);
-        //}
-        DenseElements(attr, layout)
+        Self::from((attr_, layout))
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -398,55 +378,55 @@ impl DenseElements {
     }
 
     pub fn get_bool(&self, i: isize) -> bool {
-        do_unsafe!(mlirDenseElementsAttrGetBoolValue(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetBoolValue(*self.get(), i))
     }
 
     pub fn get_bool_splat(&self) -> bool {
-        do_unsafe!(mlirDenseElementsAttrGetBoolSplatValue(self.0)) != 0
+        do_unsafe!(mlirDenseElementsAttrGetBoolSplatValue(*self.get())) != 0
     }
 
     pub fn get_f32(&self, i: isize) -> f32 {
-        do_unsafe!(mlirDenseElementsAttrGetFloatValue(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetFloatValue(*self.get(), i))
     }
 
     pub fn get_f32_splat(&self) -> f32 {
-        do_unsafe!(mlirDenseElementsAttrGetFloatSplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetFloatSplatValue(*self.get()))
     }
 
     pub fn get_f64(&self, i: isize) -> f64 {
-        do_unsafe!(mlirDenseElementsAttrGetDoubleValue(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetDoubleValue(*self.get(), i))
     }
 
     pub fn get_f64_splat(&self) -> f64 {
-        do_unsafe!(mlirDenseElementsAttrGetDoubleSplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetDoubleSplatValue(*self.get()))
     }
 
     pub fn get_i8(&self, i: isize) -> i8 {
-        do_unsafe!(mlirDenseElementsAttrGetInt8Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetInt8Value(*self.get(), i))
     }
 
     pub fn get_i8_splat(&self) -> i8 {
-        do_unsafe!(mlirDenseElementsAttrGetInt8SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetInt8SplatValue(*self.get()))
     }
 
     pub fn get_i16(&self, i: isize) -> i16 {
-        do_unsafe!(mlirDenseElementsAttrGetInt16Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetInt16Value(*self.get(), i))
     }
 
     pub fn get_i32(&self, i: isize) -> i32 {
-        do_unsafe!(mlirDenseElementsAttrGetInt32Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetInt32Value(*self.get(), i))
     }
 
     pub fn get_i32_splat(&self) -> i32 {
-        do_unsafe!(mlirDenseElementsAttrGetInt32SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetInt32SplatValue(*self.get()))
     }
 
     pub fn get_i64(&self, i: isize) -> i64 {
-        do_unsafe!(mlirDenseElementsAttrGetInt64Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetInt64Value(*self.get(), i))
     }
 
     pub fn get_i64_splat(&self) -> i64 {
-        do_unsafe!(mlirDenseElementsAttrGetInt64SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetInt64SplatValue(*self.get()))
     }
 
     pub fn get_layout(&self) -> Layout {
@@ -458,19 +438,24 @@ impl DenseElements {
     }
 
     pub fn get_raw_data(&self) -> *const c_void {
-        do_unsafe!(mlirDenseElementsAttrGetRawData(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetRawData(*self.get()))
     }
 
     pub fn get_splat(&self) -> Attribute {
-        Attribute::from(do_unsafe!(mlirDenseElementsAttrGetSplatValue(self.0)))
+        Attribute::from(do_unsafe!(mlirDenseElementsAttrGetSplatValue(*self.get())))
     }
 
     pub fn get_string(&self, i: isize) -> StringRef {
-        StringRef::from(do_unsafe!(mlirDenseElementsAttrGetStringValue(self.0, i)))
+        StringRef::from(do_unsafe!(mlirDenseElementsAttrGetStringValue(
+            *self.get(),
+            i
+        )))
     }
 
     pub fn get_string_splat(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirDenseElementsAttrGetStringSplatValue(self.0)))
+        StringRef::from(do_unsafe!(mlirDenseElementsAttrGetStringSplatValue(
+            *self.get()
+        )))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -478,35 +463,41 @@ impl DenseElements {
     }
 
     pub fn get_u8(&self, i: isize) -> u8 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt8Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetUInt8Value(*self.get(), i))
     }
 
     pub fn get_u8_splat(&self) -> u8 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt8SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetUInt8SplatValue(*self.get()))
     }
 
     pub fn get_u16(&self, i: isize) -> u16 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt16Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetUInt16Value(*self.get(), i))
     }
 
     pub fn get_u32(&self, i: isize) -> u32 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt32Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetUInt32Value(*self.get(), i))
     }
 
     pub fn get_u32_splat(&self) -> u32 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt32SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetUInt32SplatValue(*self.get()))
     }
 
     pub fn get_u64(&self, i: isize) -> u64 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt64Value(self.0, i))
+        do_unsafe!(mlirDenseElementsAttrGetUInt64Value(*self.get(), i))
     }
 
     pub fn get_u64_splat(&self) -> u64 {
-        do_unsafe!(mlirDenseElementsAttrGetUInt64SplatValue(self.0))
+        do_unsafe!(mlirDenseElementsAttrGetUInt64SplatValue(*self.get()))
     }
 
     pub fn is_splat(&self) -> bool {
-        do_unsafe!(mlirDenseElementsAttrIsSplat(self.0))
+        do_unsafe!(mlirDenseElementsAttrIsSplat(*self.get()))
+    }
+}
+
+impl From<(MlirAttribute, Layout)> for DenseElements {
+    fn from((attr, layout): (MlirAttribute, Layout)) -> Self {
+        Self(attr, layout)
     }
 }
 

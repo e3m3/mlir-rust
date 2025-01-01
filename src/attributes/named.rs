@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -25,20 +25,21 @@ impl Named {
         Named::from(do_unsafe!(mlirNamedAttributeGet(*id.get(), *attr.get())))
     }
 
-    pub fn from(attr: MlirNamedAttribute) -> Self {
-        Named(attr)
-    }
-
     pub fn get(&self) -> &MlirNamedAttribute {
         &self.0
     }
 
     pub fn get_identifier(&self) -> Identifier {
-        Identifier::from(self.0.name)
+        Identifier::from(self.get().name)
     }
 
     pub fn get_mut(&mut self) -> &mut MlirNamedAttribute {
         &mut self.0
+    }
+}
+impl From<MlirNamedAttribute> for Named {
+    fn from(attr: MlirNamedAttribute) -> Self {
+        Self(attr)
     }
 }
 

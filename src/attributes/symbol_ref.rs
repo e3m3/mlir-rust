@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -50,15 +50,16 @@ impl SymbolRef {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_symbol_ref() {
-            eprint!("Cannot coerce attribute to symbol reference attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_symbol_ref() {
+            eprintln!(
+                "Cannot coerce attribute to symbol reference attribute: {}",
+                attr
+            );
             exit(ExitCode::IRError);
         }
-        SymbolRef(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -66,7 +67,7 @@ impl SymbolRef {
     }
 
     pub fn get_leaf(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirSymbolRefAttrGetLeafReference(self.0)))
+        StringRef::from(do_unsafe!(mlirSymbolRefAttrGetLeafReference(*self.get())))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirAttribute {
@@ -81,11 +82,14 @@ impl SymbolRef {
             );
             exit(ExitCode::IRError);
         }
-        Attribute::from(do_unsafe!(mlirSymbolRefAttrGetNestedReference(self.0, i)))
+        Attribute::from(do_unsafe!(mlirSymbolRefAttrGetNestedReference(
+            *self.get(),
+            i
+        )))
     }
 
     pub fn get_root(&self) -> StringRef {
-        StringRef::from(do_unsafe!(mlirSymbolRefAttrGetRootReference(self.0)))
+        StringRef::from(do_unsafe!(mlirSymbolRefAttrGetRootReference(*self.get())))
     }
 
     pub fn get_type_id() -> TypeID {
@@ -96,7 +100,7 @@ impl SymbolRef {
     pub fn get_value(&self) -> Option<StringRef> {
         if self.as_attribute().is_flat_symbol_ref() {
             Some(StringRef::from(do_unsafe!(mlirFlatSymbolRefAttrGetValue(
-                self.0
+                *self.get()
             ))))
         } else {
             None
@@ -104,7 +108,7 @@ impl SymbolRef {
     }
 
     pub fn num_nested_references(&self) -> isize {
-        do_unsafe!(mlirSymbolRefAttrGetNumNestedReferences(self.0))
+        do_unsafe!(mlirSymbolRefAttrGetNumNestedReferences(*self.get()))
     }
 }
 
@@ -114,6 +118,24 @@ impl fmt::Display for SymbolRef {
             None => "".to_string(),
             Some(s) => s.to_string(),
         })
+    }
+}
+
+impl From<MlirAttribute> for SymbolRef {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for SymbolRef {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for SymbolRef {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 

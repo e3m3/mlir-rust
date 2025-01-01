@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -38,15 +38,13 @@ impl Dictionary {
         )))
     }
 
-    pub fn from(attr: MlirAttribute) -> Self {
-        let attr_ = Attribute::from(attr);
-        if !attr_.is_dictionary() {
-            eprint!("Cannot coerce attribute to dictionary attribute: ");
-            attr_.dump();
-            eprintln!();
+    pub fn from_checked(attr_: MlirAttribute) -> Self {
+        let attr = Attribute::from(attr_);
+        if !attr.is_dictionary() {
+            eprintln!("Cannot coerce attribute to dictionary attribute: {}", attr);
             exit(ExitCode::IRError);
         }
-        Dictionary(attr)
+        Self::from(attr_)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -54,12 +52,12 @@ impl Dictionary {
     }
 
     pub fn get_element(&self, i: isize) -> named::Named {
-        named::Named::from(do_unsafe!(mlirDictionaryAttrGetElement(self.0, i)))
+        named::Named::from(do_unsafe!(mlirDictionaryAttrGetElement(*self.get(), i)))
     }
 
     pub fn get_element_by_name(&self, name: &StringRef) -> Attribute {
         Attribute::from(do_unsafe!(mlirDictionaryAttrGetElementByName(
-            self.0,
+            *self.get(),
             *name.get()
         )))
     }
@@ -73,7 +71,25 @@ impl Dictionary {
     }
 
     pub fn num_elements(&self) -> isize {
-        do_unsafe!(mlirDictionaryAttrGetNumElements(self.0))
+        do_unsafe!(mlirDictionaryAttrGetNumElements(*self.get()))
+    }
+}
+
+impl From<MlirAttribute> for Dictionary {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl From<Attribute> for Dictionary {
+    fn from(attr: Attribute) -> Self {
+        Self::from(&attr)
+    }
+}
+
+impl From<&Attribute> for Dictionary {
+    fn from(attr: &Attribute) -> Self {
+        Self::from(*attr.get())
     }
 }
 
