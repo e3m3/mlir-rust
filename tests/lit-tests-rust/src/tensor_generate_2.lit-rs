@@ -1,10 +1,76 @@
 // RUN: %O/run tensor_generate_2 | @mlir-opt | @filecheck %M/tensor_generate_2.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for index is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the index dialect namespace.
 
-// COM: TODO: Implement required arith and index operations for generate body.
-// XFAIL: *
+extern crate mlir;
 
-use crate::common::TestResult;
+use crate::common::*;
+
+use mlir::attributes::float::Float as FloatAttr;
+use mlir::dialects::IOperation;
+use mlir::dialects::arith::AddF;
+use mlir::dialects::arith::Constant;
+use mlir::dialects::arith::FastMathFlags;
+use mlir::dialects::arith::SIToFP;
+use mlir::dialects::func::Return;
+use mlir::dialects::index::CastS;
+use mlir::dialects::tensor::Generate;
+use mlir::dialects::tensor::Yield;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::ranked_tensor::RankedTensor;
+use mlir::types::shaped::Shaped;
 
 pub fn test() -> TestResult {
-    Err("Unimplemented".to_string())
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    context.set_allow_unregistered_dialects(true);
+    let loc = context.get_unknown_location();
+    let t = FloatType::new(&context, FloatLayout::F32);
+    let t_int = IntegerType::new(&context, 32);
+    let t_index = Index::new(&context).as_type();
+    let dyn_size = Shaped::dynamic_size();
+    let s_out = ShapeImpl::from(vec![dyn_size, 3, dyn_size]);
+    let t_tnsr_out = RankedTensor::new(&s_out, &t.as_type());
+    let f = get_empty_test_fn(&context, &[t_index.clone(), t_index.clone()], &[
+        t_tnsr_out.as_type()
+    ]);
+    let mut f_op = f.as_operation();
+    let f_region = f_op.iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let tensor_gen = Generate::new(&t_tnsr_out, &[f_block.get_arg(0), f_block.get_arg(1)], &loc);
+    let mut op_gen = tensor_gen.as_operation();
+    let gen_region = op_gen.iter().next().unwrap_or_default();
+    let mut gen_block = gen_region.iter().next().unwrap_or_default();
+    let mut op_const = Constant::new_float(&FloatAttr::new(&t, 10.0), &loc).as_operation();
+    let mut op_cast0 = CastS::new_integer(&t_int, &gen_block.get_arg(1), &loc).as_operation();
+    let mut op_cast1 = SIToFP::new(&t.as_type(), &op_cast0.get_result(0), &loc).as_operation();
+    let mut op_add = AddF::new(
+        &t.as_type(),
+        &op_cast1.get_result(0),
+        &op_const.get_result(0),
+        FastMathFlags::None,
+        &loc,
+    )
+    .as_operation();
+    let mut op_yield = Yield::new_generate(&op_add.get_result(0), &tensor_gen, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_gen.get_result(0)], &loc).as_operation();
+    gen_block.append_operation(&mut op_cast0);
+    gen_block.append_operation(&mut op_cast1);
+    gen_block.append_operation(&mut op_add);
+    gen_block.append_operation(&mut op_yield);
+    f_block.append_operation(&mut op_const);
+    f_block.append_operation(&mut op_gen);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_op);
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
 }

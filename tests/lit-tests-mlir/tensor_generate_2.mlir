@@ -11,10 +11,8 @@
 
 module {
     func.func @test(%m : index, %n : index) -> tensor<?x3x?xf32>
-        attributes { unused_attr = "test" }
     {
         %init = arith.constant 10.0 : f32
-
         %tnsr = tensor.generate %m, %n {
         ^bb0(%i : index, %j : index, %k : index):
             %j0 = index.casts %j : index to i32
@@ -22,13 +20,12 @@ module {
             %elem = arith.addf %init, %j1 : f32
             tensor.yield %elem : f32
         } : tensor<?x3x?xf32>
-
         return %tnsr : tensor<?x3x?xf32>
     }
 }
 
 // CHECK_CAN:   module {
-// CHECK_CAN:       func.func @test(%arg0: index, %arg1: index) -> tensor<?x3x?xf32> attributes {unused_attr = "test"} {
+// CHECK_CAN:       func.func @test(%arg0: index, %arg1: index) -> tensor<?x3x?xf32> {
 // CHECK_CAN:           %cst = arith.constant 1.000000e+01 : f32
 // CHECK_CAN:           %generated = tensor.generate %arg0, %arg1 {
 // CHECK_CAN:           ^bb0(%arg2: index, %arg3: index, %arg4: index):
@@ -52,6 +49,6 @@ module {
 // CHECK_GEN:               %4 = "arith.addf"(%0, %3) <{fastmath = #arith.fastmath<none>}> : (f32, f32) -> f32
 // CHECK_GEN:               "tensor.yield"(%4) : (f32) -> ()
 // CHECK_GEN:           }) : (index, index) -> tensor<?x3x?xf32>
-// CHECK_GEN:           "func.return"(%1) : (tensor<?x3x?xf32>) -> ()
-// CHECK_GEN:       }) {unused_attr = "test"} : () -> ()
+// CHECK_GEN:       "func.return"(%1) : (tensor<?x3x?xf32>) -> ()
+// CHECK_GEN:       }) : () -> ()
 // CHECK_GEN:   }) : () -> ()
