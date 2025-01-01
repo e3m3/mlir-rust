@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -22,6 +22,7 @@ use attributes::IAttributeNamed;
 use attributes::float::Float as FloatAttr;
 use attributes::index::Index as IndexAttr;
 use attributes::integer::Integer as IntegerAttr;
+use attributes::named::Named;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedFloatOrIndexOrInteger;
 use attributes::specialized::NamedInteger;
@@ -38,12 +39,18 @@ use ir::Context;
 use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
+use ir::Shape;
+use ir::ShapeImpl;
 use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
+use types::GetWidth;
 use types::IType;
 use types::integer::Integer as IntegerType;
+use types::ranked_tensor::RankedTensor;
+use types::shaped::Shaped;
+use types::vector::Vector;
 
 ///////////////////////////////
 //  Attributes
@@ -286,6 +293,187 @@ pub struct TruncI(MlirOperation);
 pub struct UIToFP(MlirOperation);
 
 ///////////////////////////////
+//  Support
+///////////////////////////////
+
+fn check_binary_operation_types(
+    is_type: fn(&Type) -> bool,
+    op: Op,
+    t: &Type,
+    lhs: &Value,
+    rhs: &Value,
+) -> () {
+    let t_lhs = lhs.get_type();
+    let t_rhs = rhs.get_type();
+    let (t_elem, t_elem_lhs, t_elem_rhs) = if t.is_shaped() {
+        let isnt_tensor_vector_result = !t.is_tensor() && !t.is_vector();
+        let isnt_tensor_vector_lhs = !t_lhs.is_tensor() && !t_lhs.is_vector();
+        let isnt_tensor_vector_rhs = !t_rhs.is_tensor() && !t_rhs.is_vector();
+        if isnt_tensor_vector_result || isnt_tensor_vector_lhs || isnt_tensor_vector_rhs {
+            eprintln!(
+                "Expected tensor or vector types for shaped {} operands and result",
+                op.get_name(),
+            );
+            exit(ExitCode::DialectError);
+        }
+        let t_elem = Shaped::from(t).get_element_type();
+        let t_elem_lhs = Shaped::from(t_lhs).get_element_type();
+        let t_elem_rhs = Shaped::from(t_rhs).get_element_type();
+        (t_elem, t_elem_lhs, t_elem_rhs)
+    } else {
+        (t.clone(), t_lhs, t_rhs)
+    };
+    if !is_type(&t_elem) {
+        eprintln!("Unexpected type for {} operands and result", op.get_name());
+        exit(ExitCode::DialectError);
+    }
+    if t_elem != t_elem_lhs || t_elem != t_elem_rhs {
+        eprintln!(
+            "Expected matching types for {} operands and result",
+            op.get_name()
+        );
+        exit(ExitCode::DialectError);
+    }
+}
+
+fn check_binary_operation_float_types(op: Op, t: &Type, lhs: &Value, rhs: &Value) -> () {
+    let is_type: fn(&Type) -> bool = Type::is_float;
+    check_binary_operation_types(is_type, op, t, lhs, rhs);
+}
+
+fn check_binary_operation_integer_types(op: Op, t: &Type, lhs: &Value, rhs: &Value) -> () {
+    let is_type: fn(&Type) -> bool = |t: &Type| t.is_index() || t.is_integer();
+    check_binary_operation_types(is_type, op, t, lhs, rhs);
+}
+
+/// TODO: Check memref.
+fn check_element_type(is_type: fn(&Type) -> bool, op: Op, t: &Type, do_exit: bool) -> bool {
+    let name = op.get_name();
+    let t_elem = if t.is_shaped() {
+        if !t.is_tensor() && !t.is_vector() {
+            if do_exit {
+                eprintln!("Expected tensor or vector type for {} operation", name);
+                exit(ExitCode::DialectError);
+            } else {
+                return false;
+            }
+        }
+        Shaped::from(t).get_element_type()
+    } else {
+        t.clone()
+    };
+    if is_type(&t_elem) {
+        true
+    } else if do_exit {
+        eprintln!("Unexpected element type for {} operation", name);
+        exit(ExitCode::DialectError);
+    } else {
+        false
+    }
+}
+
+fn check_element_type_float(op: Op, t: &Type, do_exit: bool) -> bool {
+    check_element_type(Type::is_float, op, t, do_exit)
+}
+
+fn check_element_type_index(op: Op, t: &Type, do_exit: bool) -> bool {
+    check_element_type(Type::is_index, op, t, do_exit)
+}
+
+fn check_element_type_integer(op: Op, t: &Type, do_exit: bool) -> bool {
+    check_element_type(Type::is_integer, op, t, do_exit)
+}
+
+fn check_element_type_integer_like(op: Op, t: &Type, do_exit: bool) -> bool {
+    let is_type: fn(&Type) -> bool = |t: &Type| t.is_index() || t.is_integer();
+    check_element_type(is_type, op, t, do_exit)
+}
+
+fn check_type_shape(op: Op, t_src: &Type, t_dst: &Type) -> () {
+    let is_match_memref = t_src.is_memref() && t_dst.is_memref();
+    let is_match_tensor = t_src.is_tensor() && t_dst.is_tensor();
+    let is_match_vector = t_src.is_vector() && t_dst.is_vector();
+    let is_match_non_shaped = !t_src.is_shaped() && !t_dst.is_shaped();
+    if !(is_match_memref || is_match_tensor || is_match_vector || is_match_non_shaped) {
+        eprintln!(
+            "Expected matching shape for source and result type of {} operation",
+            op.get_name()
+        );
+        exit(ExitCode::DialectError);
+    }
+}
+
+fn check_type_width(op: Op, pred: CmpIPredicate, t_src: &Type, t_dst: &Type) -> () {
+    let name = op.get_name();
+    let Some(w_src) = t_src.get_width() else {
+        eprintln!("Expected width for source type of {} operation", name);
+        exit(ExitCode::DialectError);
+    };
+    let Some(w_dst) = t_dst.get_width() else {
+        eprintln!("Expected width for destination type of {} operation", name);
+        exit(ExitCode::DialectError);
+    };
+    if !match pred {
+        CmpIPredicate::Eq => w_src == w_dst,
+        CmpIPredicate::Ne => w_src != w_dst,
+        CmpIPredicate::Slt | CmpIPredicate::Ult => w_src < w_dst,
+        CmpIPredicate::Sle | CmpIPredicate::Ule => w_src <= w_dst,
+        CmpIPredicate::Sgt | CmpIPredicate::Ugt => w_src > w_dst,
+        CmpIPredicate::Sge | CmpIPredicate::Uge => w_src >= w_dst,
+    } {
+        eprintln!(
+            "Expected source type width ({}) {} destination type width ({}) for {} operation",
+            w_src,
+            pred.get_operator_symbol(),
+            w_dst,
+            name,
+        );
+        exit(ExitCode::DialectError);
+    }
+}
+
+fn check_unary_operation_types(is_type: fn(&Type) -> bool, op: Op, t: &Type, input: &Value) -> () {
+    let t_input = input.get_type();
+    let (t_elem, t_elem_input) = if t.is_shaped() {
+        let isnt_tensor_vector_result = !t.is_tensor() && !t.is_vector();
+        let isnt_tensor_vector_input = !t_input.is_tensor() && !t_input.is_vector();
+        if isnt_tensor_vector_result || isnt_tensor_vector_input {
+            eprintln!(
+                "Expected tensor or vector types for shaped {} operands and result",
+                op.get_name(),
+            );
+            exit(ExitCode::DialectError);
+        }
+        let t_elem = Shaped::from(t).get_element_type();
+        let t_elem_input = Shaped::from(t_input).get_element_type();
+        (t_elem, t_elem_input)
+    } else {
+        (t.clone(), t_input)
+    };
+    if !is_type(&t_elem) {
+        eprintln!("Unexpected type for {} operands and result", op.get_name());
+        exit(ExitCode::DialectError);
+    }
+    if t_elem != t_elem_input {
+        eprintln!(
+            "Expected matching types for {} operands and result",
+            op.get_name()
+        );
+        exit(ExitCode::DialectError);
+    }
+}
+
+fn check_unary_operation_float_types(op: Op, t: &Type, input: &Value) -> () {
+    let is_type: fn(&Type) -> bool = Type::is_float;
+    check_unary_operation_types(is_type, op, t, input);
+}
+
+fn check_unary_operation_integer_types(op: Op, t: &Type, input: &Value) -> () {
+    let is_type: fn(&Type) -> bool = |t: &Type| t.is_index() || t.is_integer();
+    check_unary_operation_types(is_type, op, t, input);
+}
+
+///////////////////////////////
 //  Attribute Implementation
 ///////////////////////////////
 
@@ -432,6 +620,17 @@ impl CmpIPredicate {
             }
         }
     }
+
+    pub fn get_operator_symbol(&self) -> &'static str {
+        match self {
+            CmpIPredicate::Eq => "==",
+            CmpIPredicate::Ne => "!=",
+            CmpIPredicate::Sge | CmpIPredicate::Uge => ">=",
+            CmpIPredicate::Sgt | CmpIPredicate::Ugt => ">",
+            CmpIPredicate::Sle | CmpIPredicate::Ule => "<=",
+            CmpIPredicate::Slt | CmpIPredicate::Ult => "<",
+        }
+    }
 }
 
 impl FastMathFlags {
@@ -568,14 +767,7 @@ impl RoundingModeKind {
 
 impl AddF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if !t.is_float() {
-            eprintln!("Expected integer types for AddF operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddF operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_float_types(Op::AddF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -628,14 +820,7 @@ impl AddI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for AddI operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddI operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::AddI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -682,15 +867,21 @@ impl AddI {
 
 impl AddUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for AddUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for AddUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::AddUIExtended, t, lhs, rhs);
         let context = t.get_context();
+        let s = if t.is_shaped() {
+            Some(ShapeImpl::from(Shaped::from(t).to_vec()))
+        } else {
+            None
+        };
+        let t_flags_elem = IntegerType::new_signless(&context, 1).as_type();
+        let t_flags = if t.is_tensor() {
+            RankedTensor::new(&s.unwrap(), &t_flags_elem).as_type()
+        } else if t.is_vector() {
+            Vector::new(&s.unwrap(), &t_flags_elem).as_type()
+        } else {
+            t_flags_elem
+        };
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
             "{}.{}",
@@ -699,7 +890,7 @@ impl AddUIExtended {
         ));
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
-        op_state.add_results(&[t.clone(), IntegerType::new_signless(&context, 1).as_type()]);
+        op_state.add_results(&[t.clone(), t_flags]);
         Self::from(*op_state.create_operation().get())
     }
 
@@ -728,8 +919,39 @@ impl AddUIExtended {
     }
 }
 
+impl Bitcast {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_type_shape(Op::Bitcast, &t_input, t);
+        check_type_width(Op::Bitcast, CmpIPredicate::Eq, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::Bitcast.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl Constant {
     fn new(t: &Type, attr: &ArithValue, loc: &Location) -> Self {
+        if !t.is_float() && !t.is_index() && !t.is_integer() {
+            eprintln!("Expected float, index, or integer arith value for constant");
+            exit(ExitCode::DialectError);
+        }
         let context = attr.as_attribute().get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -737,10 +959,6 @@ impl Constant {
             dialect.get_namespace(),
             Op::Constant.get_name(),
         ));
-        if !t.is_float() && !t.is_index() && !t.is_integer() {
-            eprintln!("Expected float, index, or integer arith value for constant");
-            exit(ExitCode::DialectError);
-        }
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_attributes(&[attr.as_named_attribute()]);
         op_state.add_results(&[t.clone()]);
@@ -801,14 +1019,7 @@ impl Constant {
 
 impl DivF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if !t.is_float() {
-            eprintln!("Expected integer types for DivF operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivF operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_float_types(Op::DivF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -855,14 +1066,7 @@ impl DivF {
 
 impl DivSI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for DivSI operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivSI operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::DivSI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -899,14 +1103,7 @@ impl DivSI {
 
 impl DivUI {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for DivUI operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for DivUI operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::DivUI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -941,16 +1138,228 @@ impl DivUI {
     }
 }
 
+impl ExtF {
+    pub fn new(t: &Type, input: &Value, flags: Option<FastMathFlags>, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_float(Op::ExtF, t, true);
+        check_element_type_float(Op::ExtF, &t_input, true);
+        check_type_shape(Op::ExtF, &t_input, t);
+        check_type_width(Op::ExtF, CmpIPredicate::Slt, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::ExtF.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        if let Some(flags_) = flags {
+            let attr_fastmath = FastMath::new(&context, flags_);
+            op_state.add_attributes(&[attr_fastmath.as_named_attribute()]);
+        }
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl ExtSI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::ExtSI, t, true);
+        check_element_type_integer_like(Op::ExtSI, &t_input, true);
+        check_type_shape(Op::ExtSI, &t_input, t);
+        check_type_width(Op::ExtSI, CmpIPredicate::Slt, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::ExtSI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl ExtUI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::ExtUI, t, true);
+        check_element_type_integer_like(Op::ExtUI, &t_input, true);
+        check_type_shape(Op::ExtUI, &t_input, t);
+        check_type_width(Op::ExtUI, CmpIPredicate::Slt, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::ExtUI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl FPToSI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::FPToSI, t, true);
+        check_element_type_float(Op::FPToSI, &t_input, true);
+        check_type_shape(Op::FPToSI, &t_input, t);
+        check_type_width(Op::FPToSI, CmpIPredicate::Eq, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::FPToSI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl FPToUI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::FPToUI, t, true);
+        check_element_type_float(Op::FPToUI, &t_input, true);
+        check_type_shape(Op::FPToUI, &t_input, t);
+        check_type_width(Op::FPToUI, CmpIPredicate::Eq, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::FPToUI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl IndexCast {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        if check_element_type_index(Op::IndexCast, t, false) {
+            check_element_type_integer(Op::IndexCast, &t_input, true);
+        } else {
+            check_element_type_index(Op::IndexCast, &t_input, true);
+        }
+        check_type_shape(Op::IndexCast, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::IndexCast.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl IndexCastUI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        if check_element_type_index(Op::IndexCast, t, false) {
+            check_element_type_integer(Op::IndexCast, &t_input, true);
+        } else {
+            check_element_type_index(Op::IndexCast, &t_input, true);
+        }
+        check_type_shape(Op::IndexCastUI, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::IndexCastUI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl MulF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if !t.is_float() {
-            eprintln!("Expected integer types for MulF operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulF operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_float_types(Op::MulF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1003,14 +1412,7 @@ impl MulI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for MulI operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulI operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::MulI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1057,14 +1459,7 @@ impl MulI {
 
 impl MulSIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for MulSIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulSIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::MulSIExtended, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1105,14 +1500,7 @@ impl MulSIExtended {
 
 impl MulUIExtended {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for MulUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for MulUIExtended operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::MulUIExtended, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1151,16 +1539,38 @@ impl MulUIExtended {
     }
 }
 
+impl SIToFP {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::SIToFP, &t_input, true);
+        check_element_type_float(Op::SIToFP, t, true);
+        check_type_shape(Op::SIToFP, &t_input, t);
+        check_type_width(Op::SIToFP, CmpIPredicate::Eq, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::SIToFP.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl SubF {
     pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
-        if !t.is_float() {
-            eprintln!("Expected integer types for SubF operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for SubF operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_float_types(Op::SubF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1213,14 +1623,7 @@ impl SubI {
         flags: IntegerOverflowFlags,
         loc: &Location,
     ) -> Self {
-        if !t.is_integer() && !t.is_index() {
-            eprintln!("Expected integer or index types for SubI operands and result");
-            exit(ExitCode::DialectError);
-        }
-        if *t != lhs.get_type() || *t != rhs.get_type() {
-            eprintln!("Expected matching types for SubI operands and result");
-            exit(ExitCode::DialectError);
-        }
+        check_binary_operation_integer_types(Op::SubI, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = StringBacked::from(format!(
@@ -1262,6 +1665,125 @@ impl SubI {
 
     pub fn get_rhs(&self) -> Value {
         self.as_operation().get_operand(1)
+    }
+}
+
+impl TruncF {
+    pub fn new(
+        t: &Type,
+        input: &Value,
+        flags: Option<FastMathFlags>,
+        mode: Option<RoundingModeKind>,
+        loc: &Location,
+    ) -> Self {
+        let t_input = input.get_type();
+        check_element_type_float(Op::TruncF, t, true);
+        check_element_type_float(Op::TruncF, &t_input, true);
+        check_type_shape(Op::TruncF, &t_input, t);
+        check_type_width(Op::TruncF, CmpIPredicate::Sgt, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::TruncF.get_name(),
+        ));
+        let mut attrs: Vec<Named> = vec![];
+        if let Some(flags_) = flags {
+            let attr_fastmath = FastMath::new(&context, flags_);
+            attrs.push(attr_fastmath.as_named_attribute())
+        }
+        if let Some(mode_) = mode {
+            let attr_rounding_mode = RoundingMode::new(&context, mode_);
+            attrs.push(attr_rounding_mode.as_named_attribute());
+        }
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&attrs);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mode(&self) -> RoundingMode {
+        let attr_name = StringBacked::from(RoundingMode::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        RoundingMode::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl TruncI {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::TruncI, t, true);
+        check_element_type_integer_like(Op::TruncI, &t_input, true);
+        check_type_shape(Op::TruncI, &t_input, t);
+        check_type_width(Op::TruncI, CmpIPredicate::Sgt, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::TruncI.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl UIToFP {
+    pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
+        let t_input = input.get_type();
+        check_element_type_integer_like(Op::UIToFP, &t_input, true);
+        check_element_type_float(Op::UIToFP, t, true);
+        check_type_shape(Op::UIToFP, &t_input, t);
+        check_type_width(Op::UIToFP, CmpIPredicate::Eq, &t_input, t);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = StringBacked::from(format!(
+            "{}.{}",
+            dialect.get_namespace(),
+            Op::UIToFP.get_name(),
+        ));
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[input.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
     }
 }
 
@@ -1462,6 +1984,58 @@ impl From<i32> for AtomicRMWKind {
 impl From<i64> for AtomicRMWKind {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
+    }
+}
+
+impl From<MlirOperation> for Bitcast {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Bitcast {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Bitcast.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::Bitcast
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
     }
 }
 
@@ -1692,6 +2266,165 @@ impl IOperation for DivUI {
     }
 }
 
+impl From<MlirOperation> for ExtF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ExtF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ExtF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ExtF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for ExtSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ExtSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ExtSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ExtSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for ExtUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ExtUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ExtUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ExtUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 impl From<MlirAttribute> for FastMath {
     fn from(attr: MlirAttribute) -> Self {
         FastMath(attr)
@@ -1728,9 +2461,219 @@ impl From<i64> for FastMathFlags {
     }
 }
 
+impl From<MlirOperation> for FPToSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for FPToSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::FPToSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::FPToSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for FPToUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for FPToUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::FPToUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::FPToUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for IndexCast {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for IndexCast {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::IndexCast.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::IndexCast
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for IndexCastUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for IndexCastUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::IndexCastUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::IndexCastUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 impl From<MlirAttribute> for IntegerOverflow {
     fn from(attr: MlirAttribute) -> Self {
-        IntegerOverflow(attr)
+        Self(attr)
     }
 }
 
@@ -2020,6 +2963,58 @@ impl From<i64> for RoundingModeKind {
     }
 }
 
+impl From<MlirOperation> for SIToFP {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for SIToFP {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::SIToFP.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::SIToFP
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 impl From<MlirOperation> for SubF {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -2113,6 +3108,165 @@ impl IOperation for SubI {
 
     fn get_op(&self) -> &'static dyn IOp {
         &Op::SubI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for TruncF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for TruncF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ArithRoundingModeInterface,
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::TruncF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::TruncF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for TruncI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for TruncI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::TruncI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::TruncI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for UIToFP {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for UIToFP {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::CastOpInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::UIToFP.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::UIToFP
     }
 
     fn get_traits(&self) -> &'static [Trait] {
