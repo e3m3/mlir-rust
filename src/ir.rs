@@ -256,6 +256,7 @@ use crate::exit_code;
 use crate::types;
 
 use attributes::IAttribute;
+use attributes::IAttributeNamed;
 use attributes::named::Named;
 use dialects::IOp;
 use exit_code::ExitCode;
@@ -1213,6 +1214,14 @@ impl Operation {
         ))
     }
 
+    pub fn set_named_attribute_discardable(&mut self, attr: &Named) -> () {
+        self.set_attribute_discardable(&attr.get_identifier().as_string(), &attr.as_attribute());
+    }
+
+    pub fn set_named_attribute_inherent(&mut self, attr: &Named) -> () {
+        self.set_attribute_inherent(&attr.get_identifier().as_string(), &attr.as_attribute());
+    }
+
     pub fn set_operand(&mut self, i: isize, value: &Value) -> () {
         do_unsafe!(mlirOperationSetOperand(*self.get_mut(), i, *value.get()))
     }
@@ -1224,6 +1233,14 @@ impl Operation {
             values.len() as isize,
             v.as_ptr()
         ))
+    }
+
+    pub fn set_specialized_attribute_discardable(&mut self, attr: &impl IAttributeNamed) -> () {
+        self.set_named_attribute_discardable(&attr.as_named_attribute());
+    }
+
+    pub fn set_specialized_attribute_inherent(&mut self, attr: &impl IAttributeNamed) -> () {
+        self.set_named_attribute_inherent(&attr.as_named_attribute());
     }
 
     pub fn set_successor(&mut self, i: isize, block: &mut Block) -> () {
