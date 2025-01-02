@@ -1,0 +1,80 @@
+// RUN: %O/run func_func_2 | @mlir-opt | @filecheck %M/func_func_2.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+extern crate mlir_sys;
+
+use crate::common::*;
+
+use mlir_sys::MlirAttribute;
+
+use mlir::attributes::IAttribute;
+use mlir::attributes::IAttributeNamed;
+use mlir::attributes::specialized::NamedString;
+use mlir::dialects::IOperation;
+use mlir::ir::Block;
+use mlir::ir::StringBacked;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::integer::Integer as IntegerType;
+
+#[derive(Clone)]
+pub struct FunctionClass(MlirAttribute);
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let t_float = FloatType::new(&context, FloatLayout::F64).as_type();
+    let t_int = IntegerType::new(&context, 32).as_type();
+    let mut f = get_private_fn(
+        &context,
+        "test",
+        &[t_int.clone(), t_float.clone(), t_float.clone()],
+        &[t_float.clone()],
+        None,
+        None,
+    )
+    .as_operation();
+    let f_class_string = StringBacked::from("kernel");
+    let f_class = FunctionClass::new(&context, &f_class_string.as_string_ref());
+    f.set_specialized_attribute_discardable(&f_class);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f);
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
+
+impl FunctionClass {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl From<MlirAttribute> for FunctionClass {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr)
+    }
+}
+
+impl IAttribute for FunctionClass {
+    fn get(&self) -> &MlirAttribute {
+        self.get()
+    }
+
+    fn get_mut(&mut self) -> &mut MlirAttribute {
+        self.get_mut()
+    }
+}
+
+impl IAttributeNamed for FunctionClass {
+    fn get_name() -> &'static str {
+        "fn_class"
+    }
+}
+
+impl NamedString for FunctionClass {}
