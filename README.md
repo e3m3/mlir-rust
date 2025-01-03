@@ -64,13 +64,13 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 *   Container build and test [podman][6] [[6]]:
 
     ```shell
-    podman build -t calcc -f container/Containerfile .
+    podman build -t mlir-rust -f container/Containerfile .
     ```
 
 *   Container build and test [docker][7] [[7]]:
 
     ```shell
-    docker build -t calcc -f container/Dockerfile .
+    docker build -t mlir-rust -f container/Dockerfile .
     ```
 
 *   If `make` is installed, you can build the image by running:
