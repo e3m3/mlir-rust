@@ -9,11 +9,12 @@ extern crate mlir_sys;
 
 use crate::common::*;
 
-use mlir::attributes::IAttribute;
+use mlir::attributes;
 use mlir::attributes::IAttributeNamed;
 use mlir::attributes::dictionary::Dictionary;
 use mlir::attributes::specialized::NamedAffineSet;
 use mlir::attributes::specialized::NamedArrayOfDictionaries;
+use mlir::attributes::specialized::SpecializedAttribute;
 use mlir::dialects::IOperation;
 use mlir::dialects::affine::Binary as AffineBinop;
 use mlir::dialects::affine::Dim as AffineDim;
@@ -84,26 +85,4 @@ impl HoareConstraints {
     }
 }
 
-impl From<MlirAttribute> for HoareConstraints {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for HoareConstraints {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for HoareConstraints {
-    fn get_name() -> &'static str {
-        "hoare.constraints"
-    }
-}
-
-impl NamedAffineSet for HoareConstraints {}
+SpecializedAttribute!("hoare.constraints" = impl NamedAffineSet for HoareConstraints {});

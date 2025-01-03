@@ -29,6 +29,7 @@ use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
 use attributes::specialized::NamedType;
 use attributes::specialized::NamedUnit;
+use attributes::specialized::SpecializedAttribute;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IOp;
 use dialects::IOperation;
@@ -1200,29 +1201,7 @@ impl View {
 //  Trait Implemention
 ///////////////////////////////
 
-impl From<MlirAttribute> for Alignment {
-    fn from(attr: MlirAttribute) -> Self {
-        Alignment(attr)
-    }
-}
-
-impl IAttribute for Alignment {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Alignment {
-    fn get_name() -> &'static str {
-        "alignment"
-    }
-}
-
-impl NamedInteger for Alignment {}
+SpecializedAttribute!("alignment" = impl NamedInteger for Alignment {});
 
 impl IOperation for Alloc {
     fn get(&self) -> &MlirOperation {
@@ -1520,53 +1499,9 @@ impl IOperation for Global {
     }
 }
 
-impl From<MlirAttribute> for InitialValue {
-    fn from(attr: MlirAttribute) -> Self {
-        InitialValue(attr)
-    }
-}
+SpecializedAttribute!("initial_value" = impl NamedInitialization for InitialValue {});
 
-impl IAttribute for InitialValue {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for InitialValue {
-    fn get_name() -> &'static str {
-        "initial_value"
-    }
-}
-
-impl NamedInitialization for InitialValue {}
-
-impl From<MlirAttribute> for IsConstant {
-    fn from(attr: MlirAttribute) -> Self {
-        IsConstant(attr)
-    }
-}
-
-impl IAttribute for IsConstant {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IsConstant {
-    fn get_name() -> &'static str {
-        "constant"
-    }
-}
-
-impl NamedUnit for IsConstant {}
+SpecializedAttribute!("constant" = impl NamedUnit for IsConstant {});
 
 impl IOperation for Load {
     fn get(&self) -> &MlirOperation {
@@ -1612,29 +1547,7 @@ impl IOp for Op {
     }
 }
 
-impl From<MlirAttribute> for Permutation {
-    fn from(attr: MlirAttribute) -> Self {
-        Permutation(attr)
-    }
-}
-
-impl IAttribute for Permutation {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Permutation {
-    fn get_name() -> &'static str {
-        "permutation"
-    }
-}
-
-impl NamedPermutation for Permutation {}
+SpecializedAttribute!("permutation" = impl NamedPermutation for Permutation {});
 
 impl IOperation for Rank {
     fn get(&self) -> &MlirOperation {
@@ -1749,53 +1662,9 @@ impl IOperation for Transpose {
     }
 }
 
-impl From<MlirAttribute> for GlobalRef {
-    fn from(attr: MlirAttribute) -> Self {
-        GlobalRef(attr)
-    }
-}
+SpecializedAttribute!("name" = impl NamedSymbolRef for GlobalRef {});
 
-impl IAttribute for GlobalRef {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for GlobalRef {
-    fn get_name() -> &'static str {
-        "name"
-    }
-}
-
-impl NamedSymbolRef for GlobalRef {}
-
-impl From<MlirAttribute> for GlobalType {
-    fn from(attr: MlirAttribute) -> Self {
-        GlobalType(attr)
-    }
-}
-
-impl IAttribute for GlobalType {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for GlobalType {
-    fn get_name() -> &'static str {
-        "type"
-    }
-}
-
-impl NamedType for GlobalType {}
+SpecializedAttribute!("type" = impl NamedType for GlobalType {});
 
 impl IOperation for View {
     fn get(&self) -> &MlirOperation {

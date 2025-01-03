@@ -9,13 +9,14 @@ use crate::common::*;
 
 use mlir_sys::MlirAttribute;
 
-use mlir::attributes::IAttribute;
+use mlir::attributes;
 use mlir::attributes::IAttributeNamed;
 use mlir::attributes::dictionary::Dictionary;
 use mlir::attributes::specialized::CustomAttributeData;
 use mlir::attributes::specialized::NamedArrayOfDictionaries;
 use mlir::attributes::specialized::NamedInteger;
 use mlir::attributes::specialized::NamedOpaque;
+use mlir::attributes::specialized::SpecializedAttribute;
 use mlir::dialects::IOperation;
 use mlir::dialects::func::Arguments;
 use mlir::dialects::func::Results;
@@ -97,50 +98,6 @@ impl GenericIntegerAttribute {
     }
 }
 
-impl From<MlirAttribute> for ClassNameAttribute {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("lang.self" = impl NamedOpaque for ClassNameAttribute {});
 
-impl IAttribute for ClassNameAttribute {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for ClassNameAttribute {
-    fn get_name() -> &'static str {
-        "lang.self"
-    }
-}
-
-impl NamedOpaque for ClassNameAttribute {}
-
-impl From<MlirAttribute> for GenericIntegerAttribute {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for GenericIntegerAttribute {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for GenericIntegerAttribute {
-    fn get_name() -> &'static str {
-        "dialectName.attrName"
-    }
-}
-
-impl NamedInteger for GenericIntegerAttribute {}
+SpecializedAttribute!("dialectName.attrName" = impl NamedInteger for GenericIntegerAttribute {});

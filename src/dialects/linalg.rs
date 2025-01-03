@@ -26,6 +26,7 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedParsed;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::affine::Dim as AffineDim;
@@ -2812,29 +2813,7 @@ impl From<i32> for BinaryFunctionKind {
     }
 }
 
-impl From<MlirAttribute> for BinaryFunction {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for BinaryFunction {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for BinaryFunction {
-    fn get_name() -> &'static str {
-        "linalg.fun"
-    }
-}
-
-impl NamedInteger for BinaryFunction {}
+SpecializedAttribute!("linalg.fun" = impl NamedInteger for BinaryFunction {});
 
 impl From<i32> for CastKind {
     fn from(n: i32) -> Self {
@@ -2842,29 +2821,7 @@ impl From<i32> for CastKind {
     }
 }
 
-impl From<MlirAttribute> for Cast {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Cast {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Cast {
-    fn get_name() -> &'static str {
-        "cast"
-    }
-}
-
-impl NamedParsed for Cast {}
+SpecializedAttribute!("cast" = impl NamedParsed for Cast {});
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Ceil);
 
@@ -3516,29 +3473,7 @@ impl IOperation for Index {
     }
 }
 
-impl From<MlirAttribute> for IndexingMaps {
-    fn from(attr: MlirAttribute) -> Self {
-        IndexingMaps(attr)
-    }
-}
-
-impl IAttribute for IndexingMaps {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IndexingMaps {
-    fn get_name() -> &'static str {
-        "linalg.memoized_indexing_maps"
-    }
-}
-
-impl NamedArrayOfAffineMaps for IndexingMaps {}
+SpecializedAttribute!("linalg.memoized_indexing_maps" = impl NamedArrayOfAffineMaps for IndexingMaps {});
 
 impl From<i32> for IteratorTypeKind {
     fn from(n: i32) -> Self {
@@ -3546,29 +3481,7 @@ impl From<i32> for IteratorTypeKind {
     }
 }
 
-impl From<MlirAttribute> for IteratorType {
-    fn from(attr: MlirAttribute) -> Self {
-        IteratorType(attr)
-    }
-}
-
-impl IAttribute for IteratorType {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IteratorType {
-    fn get_name() -> &'static str {
-        "iterator_type"
-    }
-}
-
-impl NamedInteger for IteratorType {}
+SpecializedAttribute!("iterator_type" = impl NamedInteger for IteratorType {});
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Log);
 
@@ -4267,29 +4180,7 @@ impl IOp for Op {
     }
 }
 
-impl From<MlirAttribute> for Permutation {
-    fn from(attr: MlirAttribute) -> Self {
-        Permutation(attr)
-    }
-}
-
-impl IAttribute for Permutation {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Permutation {
-    fn get_name() -> &'static str {
-        "permutation"
-    }
-}
-
-impl NamedI64DenseArray for Permutation {}
+SpecializedAttribute!("permutation" = impl NamedI64DenseArray for Permutation {});
 
 impl_ElementwiseUnaryOpMatchingTypeOperandsAndShapedResult!(Reciprocal);
 
@@ -4784,29 +4675,7 @@ impl From<i32> for UnaryFunctionKind {
     }
 }
 
-impl From<MlirAttribute> for UnaryFunction {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for UnaryFunction {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for UnaryFunction {
-    fn get_name() -> &'static str {
-        "linalg.fun"
-    }
-}
-
-impl NamedInteger for UnaryFunction {}
+SpecializedAttribute!("linalg.fun" = impl NamedInteger for UnaryFunction {});
 
 impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult!(Vecmat);
 

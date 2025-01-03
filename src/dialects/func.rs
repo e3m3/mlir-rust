@@ -25,6 +25,7 @@ use attributes::specialized::NamedArrayOfDictionaries;
 use attributes::specialized::NamedFunction;
 use attributes::specialized::NamedString;
 use attributes::specialized::NamedSymbolRef;
+use attributes::specialized::SpecializedAttribute;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IOp;
 use dialects::IOperation;
@@ -477,29 +478,7 @@ impl Return {
 //  Trait Implementation
 ///////////////////////////////
 
-impl From<MlirAttribute> for Arguments {
-    fn from(attr: MlirAttribute) -> Self {
-        Arguments(attr)
-    }
-}
-
-impl IAttribute for Arguments {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Arguments {
-    fn get_name() -> &'static str {
-        "arg_attrs"
-    }
-}
-
-impl NamedArrayOfDictionaries for Arguments {}
+SpecializedAttribute!("arg_attrs" = impl NamedArrayOfDictionaries for Arguments {});
 
 impl IOperation for Call {
     fn get(&self) -> &MlirOperation {
@@ -535,29 +514,7 @@ impl IOperation for Call {
     }
 }
 
-impl From<MlirAttribute> for Callee {
-    fn from(attr: MlirAttribute) -> Self {
-        Callee(attr)
-    }
-}
-
-impl IAttribute for Callee {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Callee {
-    fn get_name() -> &'static str {
-        "callee"
-    }
-}
-
-impl NamedSymbolRef for Callee {}
+SpecializedAttribute!("callee" = impl NamedSymbolRef for Callee {});
 
 impl IOperation for CallIndirect {
     fn get(&self) -> &MlirOperation {
@@ -675,29 +632,7 @@ impl IOperation for Func {
     }
 }
 
-impl From<MlirAttribute> for FunctionAttr {
-    fn from(attr: MlirAttribute) -> Self {
-        FunctionAttr(attr)
-    }
-}
-
-impl IAttribute for FunctionAttr {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for FunctionAttr {
-    fn get_name() -> &'static str {
-        "function_type"
-    }
-}
-
-impl NamedFunction for FunctionAttr {}
+SpecializedAttribute!("function_type" = impl NamedFunction for FunctionAttr {});
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
@@ -705,53 +640,9 @@ impl IOp for Op {
     }
 }
 
-impl From<MlirAttribute> for Referee {
-    fn from(attr: MlirAttribute) -> Self {
-        Referee(attr)
-    }
-}
+SpecializedAttribute!("value" = impl NamedSymbolRef for Referee {});
 
-impl IAttribute for Referee {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Referee {
-    fn get_name() -> &'static str {
-        "value"
-    }
-}
-
-impl NamedSymbolRef for Referee {}
-
-impl From<MlirAttribute> for Results {
-    fn from(attr: MlirAttribute) -> Self {
-        Results(attr)
-    }
-}
-
-impl IAttribute for Results {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Results {
-    fn get_name() -> &'static str {
-        "res_attrs"
-    }
-}
-
-impl NamedArrayOfDictionaries for Results {}
+SpecializedAttribute!("res_attrs" = impl NamedArrayOfDictionaries for Results {});
 
 impl IOperation for Return {
     fn get(&self) -> &MlirOperation {

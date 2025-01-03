@@ -18,7 +18,6 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IAttribute;
 use attributes::IAttributeNamed;
 use attributes::bool::Bool as BoolAttr;
 use attributes::specialized::CustomAttributeData;
@@ -29,6 +28,7 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedParsed;
 use attributes::specialized::NamedString;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::common::NonTemporal;
@@ -1377,53 +1377,9 @@ impl IOperation for Load {
     }
 }
 
-impl From<MlirAttribute> for InBounds {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("in_bounds" = impl NamedArrayOfBools for InBounds {});
 
-impl IAttribute for InBounds {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for InBounds {
-    fn get_name() -> &'static str {
-        "in_bounds"
-    }
-}
-
-impl NamedArrayOfBools for InBounds {}
-
-impl From<MlirAttribute> for Offsets {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Offsets {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Offsets {
-    fn get_name() -> &'static str {
-        "offsets"
-    }
-}
-
-impl NamedArrayOfIntegers for Offsets {}
+SpecializedAttribute!("offsets" = impl NamedArrayOfIntegers for Offsets {});
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
@@ -1467,53 +1423,9 @@ impl IOperation for Print {
     }
 }
 
-impl From<MlirAttribute> for PermutationMap {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("permutation_map" = impl NamedAffineMap for PermutationMap {});
 
-impl IAttribute for PermutationMap {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for PermutationMap {
-    fn get_name() -> &'static str {
-        "permutation_map"
-    }
-}
-
-impl NamedAffineMap for PermutationMap {}
-
-impl From<MlirAttribute> for Punctuation {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Punctuation {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Punctuation {
-    fn get_name() -> &'static str {
-        "punctuation"
-    }
-}
-
-impl NamedParsed for Punctuation {}
+SpecializedAttribute!("punctuation" = impl NamedParsed for Punctuation {});
 
 impl From<i32> for PunctuationKind {
     fn from(n: i32) -> Self {
@@ -1554,29 +1466,7 @@ impl FromStr for PunctuationKind {
     }
 }
 
-impl From<MlirAttribute> for Sizes {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Sizes {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Sizes {
-    fn get_name() -> &'static str {
-        "sizes"
-    }
-}
-
-impl NamedArrayOfIntegers for Sizes {}
+SpecializedAttribute!("sizes" = impl NamedArrayOfIntegers for Sizes {});
 
 impl IOperation for Store {
     fn get(&self) -> &MlirOperation {
@@ -1612,77 +1502,11 @@ impl IOperation for Store {
     }
 }
 
-impl From<MlirAttribute> for Strides {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("strides" = impl NamedArrayOfIntegers for Strides {});
 
-impl IAttribute for Strides {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
+SpecializedAttribute!("static_position" = impl NamedI64DenseArray for StaticPosition {});
 
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Strides {
-    fn get_name() -> &'static str {
-        "strides"
-    }
-}
-
-impl NamedArrayOfIntegers for Strides {}
-
-impl From<MlirAttribute> for StaticPosition {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for StaticPosition {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticPosition {
-    fn get_name() -> &'static str {
-        "static_position"
-    }
-}
-
-impl NamedI64DenseArray for StaticPosition {}
-
-impl From<MlirAttribute> for StringLiteral {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for StringLiteral {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StringLiteral {
-    fn get_name() -> &'static str {
-        "stringLiteral"
-    }
-}
-
-impl NamedString for StringLiteral {}
+SpecializedAttribute!("stringLiteral" = impl NamedString for StringLiteral {});
 
 impl IOperation for TransferRead {
     fn get(&self) -> &MlirOperation {

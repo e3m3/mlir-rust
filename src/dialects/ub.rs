@@ -15,10 +15,10 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IAttribute;
 use attributes::IAttributeNamed;
 use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedOpaque;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use effects::MEFF_NO_MEMORY_EFFECT;
@@ -182,29 +182,7 @@ impl IOperation for Poison {
     }
 }
 
-impl From<MlirAttribute> for PoisonValue {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for PoisonValue {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for PoisonValue {
-    fn get_name() -> &'static str {
-        "value"
-    }
-}
-
-impl NamedOpaque for PoisonValue {}
+SpecializedAttribute!("value" = impl NamedOpaque for PoisonValue {});
 
 ///////////////////////////////
 //  Display

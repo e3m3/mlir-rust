@@ -18,7 +18,6 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IAttribute;
 use attributes::IAttributeNamed;
 use attributes::array::Array;
 use attributes::specialized::NamedArrayOfIntegerArrays;
@@ -26,6 +25,7 @@ use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedUnit;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::common::Dimension;
@@ -1828,29 +1828,7 @@ impl IOperation for FromElements {
     }
 }
 
-impl From<MlirAttribute> for GatherDimensions {
-    fn from(attr: MlirAttribute) -> Self {
-        GatherDimensions(attr)
-    }
-}
-
-impl IAttribute for GatherDimensions {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for GatherDimensions {
-    fn get_name() -> &'static str {
-        "gather_dims"
-    }
-}
-
-impl NamedI64DenseArray for GatherDimensions {}
+SpecializedAttribute!("gather_dims" = impl NamedI64DenseArray for GatherDimensions {});
 
 impl IOperation for Generate {
     fn get(&self) -> &MlirOperation {
@@ -1893,53 +1871,9 @@ impl IOperation for Generate {
     }
 }
 
-impl From<MlirAttribute> for InnerDimensionsPosition {
-    fn from(attr: MlirAttribute) -> Self {
-        InnerDimensionsPosition(attr)
-    }
-}
+SpecializedAttribute!("inner_dims_pos" = impl NamedI64DenseArray for InnerDimensionsPosition {});
 
-impl IAttribute for InnerDimensionsPosition {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for InnerDimensionsPosition {
-    fn get_name() -> &'static str {
-        "inner_dims_pos"
-    }
-}
-
-impl NamedI64DenseArray for InnerDimensionsPosition {}
-
-impl From<MlirAttribute> for NoFold {
-    fn from(attr: MlirAttribute) -> Self {
-        NoFold(attr)
-    }
-}
-
-impl IAttribute for NoFold {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for NoFold {
-    fn get_name() -> &'static str {
-        "nofold"
-    }
-}
-
-impl NamedUnit for NoFold {}
+SpecializedAttribute!("nofold" = impl NamedUnit for NoFold {});
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
@@ -1947,29 +1881,7 @@ impl IOp for Op {
     }
 }
 
-impl From<MlirAttribute> for OuterDimensionsPermutation {
-    fn from(attr: MlirAttribute) -> Self {
-        OuterDimensionsPermutation(attr)
-    }
-}
-
-impl IAttribute for OuterDimensionsPermutation {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for OuterDimensionsPermutation {
-    fn get_name() -> &'static str {
-        "outer_dims_perm"
-    }
-}
-
-impl NamedI64DenseArray for OuterDimensionsPermutation {}
+SpecializedAttribute!("outer_dims_perm" = impl NamedI64DenseArray for OuterDimensionsPermutation {});
 
 impl IOperation for Pad {
     fn get(&self) -> &MlirOperation {
@@ -2053,29 +1965,7 @@ impl IOperation for Rank {
     }
 }
 
-impl From<MlirAttribute> for Reassociation {
-    fn from(attr: MlirAttribute) -> Self {
-        Reassociation(attr)
-    }
-}
-
-impl IAttribute for Reassociation {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Reassociation {
-    fn get_name() -> &'static str {
-        "reassociation"
-    }
-}
-
-impl NamedArrayOfIntegerArrays for Reassociation {}
+SpecializedAttribute!("reassociation" = impl NamedArrayOfIntegerArrays for Reassociation {});
 
 impl IOperation for Reshape {
     fn get(&self) -> &MlirOperation {
@@ -2115,149 +2005,17 @@ impl IOperation for Reshape {
     }
 }
 
-impl From<MlirAttribute> for ScatterDimensions {
-    fn from(attr: MlirAttribute) -> Self {
-        ScatterDimensions(attr)
-    }
-}
+SpecializedAttribute!("scatter_dims" = impl NamedI64DenseArray for ScatterDimensions {});
 
-impl IAttribute for ScatterDimensions {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
+SpecializedAttribute!("static_high" = impl NamedI64DenseArray for StaticHigh {});
 
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
+SpecializedAttribute!("static_inner_tiles" = impl NamedI64DenseArray for StaticInnerTiles {});
 
-impl IAttributeNamed for ScatterDimensions {
-    fn get_name() -> &'static str {
-        "scatter_dims"
-    }
-}
+SpecializedAttribute!("static_output_shape" = impl NamedI64DenseArray for StaticOutputShape {});
 
-impl NamedI64DenseArray for ScatterDimensions {}
+SpecializedAttribute!("static_low" = impl NamedI64DenseArray for StaticLow {});
 
-impl From<MlirAttribute> for StaticHigh {
-    fn from(attr: MlirAttribute) -> Self {
-        StaticHigh(attr)
-    }
-}
-
-impl IAttribute for StaticHigh {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticHigh {
-    fn get_name() -> &'static str {
-        "static_high"
-    }
-}
-
-impl NamedI64DenseArray for StaticHigh {}
-
-impl From<MlirAttribute> for StaticInnerTiles {
-    fn from(attr: MlirAttribute) -> Self {
-        StaticInnerTiles(attr)
-    }
-}
-
-impl IAttribute for StaticInnerTiles {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticInnerTiles {
-    fn get_name() -> &'static str {
-        "static_inner_tiles"
-    }
-}
-
-impl NamedI64DenseArray for StaticInnerTiles {}
-
-impl From<MlirAttribute> for StaticOutputShape {
-    fn from(attr: MlirAttribute) -> Self {
-        StaticOutputShape(attr)
-    }
-}
-
-impl IAttribute for StaticOutputShape {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticOutputShape {
-    fn get_name() -> &'static str {
-        "static_output_shape"
-    }
-}
-
-impl NamedI64DenseArray for StaticOutputShape {}
-
-impl From<MlirAttribute> for StaticLow {
-    fn from(attr: MlirAttribute) -> Self {
-        StaticLow(attr)
-    }
-}
-
-impl IAttribute for StaticLow {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticLow {
-    fn get_name() -> &'static str {
-        "static_low"
-    }
-}
-
-impl NamedI64DenseArray for StaticLow {}
-
-impl From<MlirAttribute> for Unique {
-    fn from(attr: MlirAttribute) -> Self {
-        Unique(attr)
-    }
-}
-
-impl IAttribute for Unique {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Unique {
-    fn get_name() -> &'static str {
-        "unique"
-    }
-}
-
-impl NamedUnit for Unique {}
+SpecializedAttribute!("unique" = impl NamedUnit for Unique {});
 
 impl IOperation for Yield {
     fn get(&self) -> &MlirOperation {

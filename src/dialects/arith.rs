@@ -27,6 +27,7 @@ use attributes::specialized::CustomAttributeData;
 use attributes::specialized::NamedFloatOrIndexOrInteger;
 use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedParsed;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use effects::MEFF_NO_MEMORY_EFFECT;
@@ -1851,29 +1852,7 @@ impl IOperation for AddUIExtended {
     }
 }
 
-impl From<MlirAttribute> for ArithValue {
-    fn from(attr: MlirAttribute) -> Self {
-        ArithValue(attr)
-    }
-}
-
-impl IAttribute for ArithValue {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for ArithValue {
-    fn get_name() -> &'static str {
-        "value"
-    }
-}
-
-impl NamedFloatOrIndexOrInteger for ArithValue {}
+SpecializedAttribute!("value" = impl NamedFloatOrIndexOrInteger for ArithValue {});
 
 impl From<i32> for AtomicRMWKind {
     fn from(n: i32) -> Self {
@@ -2325,29 +2304,7 @@ impl IOperation for ExtUI {
     }
 }
 
-impl From<MlirAttribute> for FastMath {
-    fn from(attr: MlirAttribute) -> Self {
-        FastMath(attr)
-    }
-}
-
-impl IAttribute for FastMath {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for FastMath {
-    fn get_name() -> &'static str {
-        "fastmath"
-    }
-}
-
-impl NamedParsed for FastMath {}
+SpecializedAttribute!("fastmath" = impl NamedParsed for FastMath {});
 
 impl From<i32> for FastMathFlags {
     fn from(n: i32) -> Self {
@@ -2571,29 +2528,7 @@ impl IOperation for IndexCastUI {
     }
 }
 
-impl From<MlirAttribute> for IntegerOverflow {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for IntegerOverflow {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IntegerOverflow {
-    fn get_name() -> &'static str {
-        "overflowFlags"
-    }
-}
-
-impl NamedParsed for IntegerOverflow {}
+SpecializedAttribute!("overflowFlags" = impl NamedParsed for IntegerOverflow {});
 
 impl From<i32> for IntegerOverflowFlags {
     fn from(n: i32) -> Self {
@@ -2827,29 +2762,7 @@ impl IOperation for MulUIExtended {
     }
 }
 
-impl From<MlirAttribute> for RoundingMode {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for RoundingMode {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for RoundingMode {
-    fn get_name() -> &'static str {
-        "roundingmode"
-    }
-}
-
-impl NamedInteger for RoundingMode {}
+SpecializedAttribute!("roundingmode" = impl NamedInteger for RoundingMode {});
 
 impl From<i32> for RoundingModeKind {
     fn from(n: i32) -> Self {

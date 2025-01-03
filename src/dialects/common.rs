@@ -15,8 +15,6 @@ use crate::exit_code;
 use crate::ir;
 use crate::types;
 
-use attributes::IAttribute;
-use attributes::IAttributeNamed;
 use attributes::integer::Integer as IntegerAttr;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
@@ -25,6 +23,7 @@ use attributes::specialized::NamedInteger;
 use attributes::specialized::NamedMemoryLayout;
 use attributes::specialized::NamedMemorySpace;
 use attributes::specialized::NamedString;
+use attributes::specialized::SpecializedAttribute;
 use attributes::strided_layout::StridedLayout;
 use dialects::affine::Map as AffineMap;
 use exit_code::ExitCode;
@@ -244,29 +243,7 @@ impl Default for DefaultMemorySpace {
     }
 }
 
-impl From<MlirAttribute> for DefaultMemorySpace {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for DefaultMemorySpace {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for DefaultMemorySpace {
-    fn get_name() -> &'static str {
-        "memorySpace"
-    }
-}
-
-impl NamedMemorySpace for DefaultMemorySpace {
+SpecializedAttribute!("memorySpace" = impl NamedMemorySpace for DefaultMemorySpace {
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
         if !attr_.is_none() {
@@ -275,7 +252,7 @@ impl NamedMemorySpace for DefaultMemorySpace {
         }
         attr_
     }
-}
+});
 
 impl cmp::PartialEq for DefaultMemorySpace {
     fn eq(&self, rhs: &Self) -> bool {
@@ -283,29 +260,7 @@ impl cmp::PartialEq for DefaultMemorySpace {
     }
 }
 
-impl From<MlirAttribute> for IntegerMemorySpace {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for IntegerMemorySpace {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IntegerMemorySpace {
-    fn get_name() -> &'static str {
-        "memorySpace"
-    }
-}
-
-impl NamedMemorySpace for IntegerMemorySpace {
+SpecializedAttribute!("memorySpace" = impl NamedMemorySpace for IntegerMemorySpace {
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
         if !attr_.is_integer() {
@@ -314,7 +269,7 @@ impl NamedMemorySpace for IntegerMemorySpace {
         }
         attr_
     }
-}
+});
 
 impl cmp::PartialEq for IntegerMemorySpace {
     fn eq(&self, rhs: &Self) -> bool {
@@ -322,35 +277,7 @@ impl cmp::PartialEq for IntegerMemorySpace {
     }
 }
 
-impl From<MlirAttribute> for Dimension {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Dimension {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Dimension {
-    fn get_name() -> &'static str {
-        "dim"
-    }
-}
-
-impl NamedInteger for Dimension {}
-
-impl From<MlirAttribute> for MemoryLayout {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("dim" = impl NamedInteger for Dimension {});
 
 impl From<AffineMap> for MemoryLayout {
     fn from(map: AffineMap) -> Self {
@@ -376,197 +303,21 @@ impl From<&StridedLayout> for MemoryLayout {
     }
 }
 
-impl IAttribute for MemoryLayout {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
+SpecializedAttribute!("layout" = impl NamedMemoryLayout for MemoryLayout {});
 
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
+SpecializedAttribute!("nontemporal" = impl NamedBool for NonTemporal {});
 
-impl IAttributeNamed for MemoryLayout {
-    fn get_name() -> &'static str {
-        "layout"
-    }
-}
+SpecializedAttribute!("operandSegmentSizes" = impl NamedI32DenseArray for OperandSegmentSizes {});
 
-impl NamedMemoryLayout for MemoryLayout {}
+SpecializedAttribute!("resultSegmentSizes" = impl NamedI32DenseArray for ResultSegmentSizes {});
 
-impl From<MlirAttribute> for NonTemporal {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("static_offsets" = impl NamedI64DenseArray for StaticOffsets {});
 
-impl IAttribute for NonTemporal {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
+SpecializedAttribute!("static_sizes" = impl NamedI64DenseArray for StaticSizes {});
 
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
+SpecializedAttribute!("static_strides" = impl NamedI64DenseArray for StaticStrides {});
 
-impl IAttributeNamed for NonTemporal {
-    fn get_name() -> &'static str {
-        "nontemporal"
-    }
-}
-
-impl NamedBool for NonTemporal {}
-
-impl From<MlirAttribute> for OperandSegmentSizes {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for OperandSegmentSizes {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for OperandSegmentSizes {
-    fn get_name() -> &'static str {
-        "operandSegmentSizes"
-    }
-}
-
-impl NamedI32DenseArray for OperandSegmentSizes {}
-
-impl From<MlirAttribute> for ResultSegmentSizes {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for ResultSegmentSizes {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for ResultSegmentSizes {
-    fn get_name() -> &'static str {
-        "resultSegmentSizes"
-    }
-}
-
-impl NamedI32DenseArray for ResultSegmentSizes {}
-
-impl From<MlirAttribute> for StaticOffsets {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for StaticOffsets {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticOffsets {
-    fn get_name() -> &'static str {
-        "static_offsets"
-    }
-}
-
-impl NamedI64DenseArray for StaticOffsets {}
-
-impl From<MlirAttribute> for StaticSizes {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for StaticSizes {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticSizes {
-    fn get_name() -> &'static str {
-        "static_sizes"
-    }
-}
-
-impl NamedI64DenseArray for StaticSizes {}
-
-impl From<MlirAttribute> for StaticStrides {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for StaticStrides {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for StaticStrides {
-    fn get_name() -> &'static str {
-        "static_strides"
-    }
-}
-
-impl NamedI64DenseArray for StaticStrides {}
-
-impl From<MlirAttribute> for SymbolName {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for SymbolName {
-    fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl IAttributeNamed for SymbolName {
-    fn get_name() -> &'static str {
-        "sym_name"
-    }
-}
-
-impl NamedString for SymbolName {}
-
-impl From<MlirAttribute> for SymbolVisibility {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
+SpecializedAttribute!("sym_name" = impl NamedString for SymbolName {});
 
 impl FromStr for SymbolVisibilityKind {
     type Err = String;
@@ -580,23 +331,7 @@ impl FromStr for SymbolVisibilityKind {
     }
 }
 
-impl IAttribute for SymbolVisibility {
-    fn get(&self) -> &MlirAttribute {
-        &self.0
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        &mut self.0
-    }
-}
-
-impl IAttributeNamed for SymbolVisibility {
-    fn get_name() -> &'static str {
-        "sym_visibility"
-    }
-}
-
-impl NamedString for SymbolVisibility {}
+SpecializedAttribute!("sym_visibility" = impl NamedString for SymbolVisibility {});
 
 ///////////////////////////////
 //  Display

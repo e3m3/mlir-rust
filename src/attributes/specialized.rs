@@ -58,6 +58,36 @@ pub struct CustomAttributeData {
     data: Vec<String>,
 }
 
+#[macro_export]
+macro_rules! SpecializedAttribute {
+    ($AttrName:literal = impl $TraitName:ident for $ClassName:ident { $($TraitImplBody:tt)* }) => {
+        impl From<mlir_sys::MlirAttribute> for $ClassName {
+            fn from(attr: mlir_sys::MlirAttribute) -> Self {
+                Self(attr)
+            }
+        }
+
+        impl attributes::IAttribute for $ClassName {
+            fn get(&self) -> &mlir_sys::MlirAttribute {
+                self.get()
+            }
+
+            fn get_mut(&mut self) -> &mut mlir_sys::MlirAttribute {
+                self.get_mut()
+            }
+        }
+
+        impl attributes::IAttributeNamed for $ClassName {
+            fn get_name() -> &'static str {
+                $AttrName
+            }
+        }
+
+        impl $TraitName for $ClassName { $($TraitImplBody)* }
+    };
+}
+pub use SpecializedAttribute;
+
 ///////////////////////////////
 //  Specialized Traits
 ///////////////////////////////

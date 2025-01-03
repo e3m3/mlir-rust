@@ -101,12 +101,12 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IAttribute;
 use attributes::IAttributeNamed;
 use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedAffineSet;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedIndex;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::common::OperandSegmentSizes;
@@ -1604,29 +1604,7 @@ impl IExpr for Binary {
     }
 }
 
-impl From<MlirAttribute> for Condition {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Condition {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Condition {
-    fn get_name() -> &'static str {
-        "condition"
-    }
-}
-
-impl NamedAffineSet for Condition {}
+SpecializedAttribute!("condition" = impl NamedAffineSet for Condition {});
 
 impl From<MlirAffineExpr> for Constant {
     fn from(expr: MlirAffineExpr) -> Self {
@@ -1867,29 +1845,7 @@ impl IOperation for Load {
     }
 }
 
-impl From<MlirAttribute> for LowerBounds {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for LowerBounds {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for LowerBounds {
-    fn get_name() -> &'static str {
-        "lowerBoundMap"
-    }
-}
-
-impl NamedAffineMap for LowerBounds {}
+SpecializedAttribute!("lowerBoundMap" = impl NamedAffineMap for LowerBounds {});
 
 impl From<MlirAffineMap> for Map {
     fn from(attr: MlirAffineMap) -> Self {
@@ -1915,29 +1871,7 @@ impl From<MlirAttribute> for Map {
     }
 }
 
-impl From<MlirAttribute> for NamedMap {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for NamedMap {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for NamedMap {
-    fn get_name() -> &'static str {
-        "map"
-    }
-}
-
-impl NamedAffineMap for NamedMap {}
+SpecializedAttribute!("map" = impl NamedAffineMap for NamedMap {});
 
 impl cmp::PartialEq for Map {
     fn eq(&self, rhs: &Self) -> bool {
@@ -1963,29 +1897,7 @@ impl cmp::PartialEq for Set {
     }
 }
 
-impl From<MlirAttribute> for Step {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for Step {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for Step {
-    fn get_name() -> &'static str {
-        "step"
-    }
-}
-
-impl NamedIndex for Step {}
+SpecializedAttribute!("step" = impl NamedIndex for Step {});
 
 impl From<MlirOperation> for Store {
     fn from(op: MlirOperation) -> Self {
@@ -2046,29 +1958,7 @@ impl IExpr for Symbol {
     }
 }
 
-impl From<MlirAttribute> for UpperBounds {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for UpperBounds {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for UpperBounds {
-    fn get_name() -> &'static str {
-        "upperBoundMap"
-    }
-}
-
-impl NamedAffineMap for UpperBounds {}
+SpecializedAttribute!("upperBoundMap" = impl NamedAffineMap for UpperBounds {});
 
 impl From<MlirOperation> for VectorLoad {
     fn from(op: MlirOperation) -> Self {

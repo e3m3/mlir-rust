@@ -17,10 +17,10 @@ use crate::ir;
 use crate::traits;
 use crate::types;
 
-use attributes::IAttribute;
 use attributes::IAttributeNamed;
 use attributes::specialized::NamedBool;
 use attributes::specialized::NamedIndex;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use effects::MEFF_NO_MEMORY_EFFECT;
@@ -463,29 +463,7 @@ impl IOperation for BoolConstant {
     }
 }
 
-impl From<MlirAttribute> for BoolValue {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for BoolValue {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for BoolValue {
-    fn get_name() -> &'static str {
-        "value"
-    }
-}
-
-impl NamedBool for BoolValue {}
+SpecializedAttribute!("value" = impl NamedBool for BoolValue {});
 
 impl From<MlirOperation> for CastS {
     fn from(op: MlirOperation) -> Self {
@@ -623,29 +601,7 @@ impl IOperation for Constant {
     }
 }
 
-impl From<MlirAttribute> for IndexValue {
-    fn from(attr: MlirAttribute) -> Self {
-        Self(attr)
-    }
-}
-
-impl IAttribute for IndexValue {
-    fn get(&self) -> &MlirAttribute {
-        self.get()
-    }
-
-    fn get_mut(&mut self) -> &mut MlirAttribute {
-        self.get_mut()
-    }
-}
-
-impl IAttributeNamed for IndexValue {
-    fn get_name() -> &'static str {
-        "value"
-    }
-}
-
-impl NamedIndex for IndexValue {}
+SpecializedAttribute!("value" = impl NamedIndex for IndexValue {});
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
