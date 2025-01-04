@@ -64,7 +64,7 @@ pub fn test() -> TestResult {
         &t.as_type(),
         &block_for.get_arg(1),
         &op_cast.get_result(0),
-        IntegerOverflowFlags::None,
+        IntegerOverflowFlags::None.into(),
         &loc,
     )
     .as_operation();

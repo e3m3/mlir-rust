@@ -55,7 +55,7 @@ pub fn test() -> TestResult {
         &t.as_type(),
         &op_cast1.get_result(0),
         &op_const.get_result(0),
-        FastMathFlags::None,
+        FastMathFlags::None.into(),
         &loc,
     )
     .as_operation();

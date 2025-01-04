@@ -31,7 +31,7 @@ pub fn test() -> TestResult {
     let mut op_trunc = TruncF::new(
         &t_dst,
         &f_block.get_arg(0),
-        Some(FastMathFlags::Fast),
+        Some(FastMathFlags::Fast.into()),
         Some(RoundingModeKind::Downward),
         &loc,
     )

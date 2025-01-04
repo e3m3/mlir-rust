@@ -56,7 +56,7 @@ pub fn test() -> TestResult {
         &t.clone(),
         &block_for.get_arg(1),
         &f_block.get_arg(0),
-        IntegerOverflowFlags::None,
+        IntegerOverflowFlags::None.into(),
         &loc,
     )
     .as_operation();
@@ -64,7 +64,7 @@ pub fn test() -> TestResult {
         &t.clone(),
         &block_for.get_arg(2),
         &f_block.get_arg(1),
-        IntegerOverflowFlags::None,
+        IntegerOverflowFlags::None.into(),
         &loc,
     )
     .as_operation();

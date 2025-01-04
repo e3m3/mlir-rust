@@ -28,7 +28,7 @@ pub fn test() -> TestResult {
         &t,
         &f_block.get_arg(0),
         &f_block.get_arg(1),
-        IntegerOverflowFlags::NSW,
+        IntegerOverflowFlags::NSW.into(),
         &loc,
     )
     .as_operation();

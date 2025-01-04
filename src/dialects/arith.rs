@@ -7,6 +7,7 @@ use mlir_sys::MlirAttribute;
 use mlir_sys::MlirOperation;
 
 use std::fmt;
+use std::ops;
 
 use crate::attributes;
 use crate::dialects;
@@ -145,11 +146,19 @@ pub enum FastMathFlags {
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]
+pub struct FastMathFlagsBitVector(i32);
+
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum IntegerOverflowFlags {
     None = 0,
     NSW = 1,
     NUW = 2,
 }
+
+#[repr(C)]
+#[derive(Clone, Copy, PartialEq)]
+pub struct IntegerOverflowFlagsBitVector(i32);
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]
@@ -552,11 +561,16 @@ impl ArithValue {
 }
 
 impl FastMath {
-    pub fn new(context: &Context, flags: FastMathFlags) -> Self {
+    pub fn new(context: &Context, flags: FastMathFlagsBitVector) -> Self {
+        Self::new_vec(context, &flags.to_vec())
+    }
+
+    pub fn new_vec(context: &Context, flags: &[FastMathFlags]) -> Self {
+        let flags_: Vec<String> = flags.iter().map(|f| f.get_name().to_string()).collect();
         let cad = CustomAttributeData::new(
             Self::get_name().to_string(),
             context.get_dialect_arith().get_namespace().to_string(),
-            vec![flags.get_name().to_string()],
+            flags_,
         );
         <Self as NamedParsed>::new_custom(context, &cad)
     }
@@ -571,11 +585,16 @@ impl FastMath {
 }
 
 impl IntegerOverflow {
-    pub fn new(context: &Context, flags: IntegerOverflowFlags) -> Self {
+    pub fn new(context: &Context, flags: IntegerOverflowFlagsBitVector) -> Self {
+        Self::new_vec(context, &flags.to_vec())
+    }
+
+    pub fn new_vec(context: &Context, flags: &[IntegerOverflowFlags]) -> Self {
+        let flags_: Vec<String> = flags.iter().map(|f| f.get_name().to_string()).collect();
         let cad = CustomAttributeData::new(
             "overflow".to_string(),
             context.get_dialect_arith().get_namespace().to_string(),
-            vec![flags.get_name().to_string()],
+            flags_,
         );
         <Self as NamedParsed>::new_custom(context, &cad)
     }
@@ -731,6 +750,49 @@ impl FastMathFlags {
     }
 }
 
+impl FastMathFlagsBitVector {
+    pub fn get(&self) -> i32 {
+        self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut i32 {
+        &mut self.0
+    }
+
+    pub fn to_vec(&self) -> Vec<FastMathFlags> {
+        if self.get() & FastMathFlags::Fast as i32 > 0 {
+            return vec![FastMathFlags::Fast];
+        }
+        let mut result: Vec<FastMathFlags> = vec![];
+        if self.get() & FastMathFlags::ReAssoc as i32 > 0 {
+            result.push(FastMathFlags::ReAssoc);
+        }
+        if self.get() & FastMathFlags::NNaN as i32 > 0 {
+            result.push(FastMathFlags::NNaN);
+        }
+        if self.get() & FastMathFlags::NInf as i32 > 0 {
+            result.push(FastMathFlags::NInf);
+        }
+        if self.get() & FastMathFlags::NSz as i32 > 0 {
+            result.push(FastMathFlags::NSz);
+        }
+        if self.get() & FastMathFlags::ARcp as i32 > 0 {
+            result.push(FastMathFlags::ARcp);
+        }
+        if self.get() & FastMathFlags::Contract as i32 > 0 {
+            result.push(FastMathFlags::Contract);
+        }
+        if self.get() & FastMathFlags::AFn as i32 > 0 {
+            result.push(FastMathFlags::AFn);
+        }
+        if result.is_empty() {
+            vec![FastMathFlags::None]
+        } else {
+            result
+        }
+    }
+}
+
 impl IntegerOverflowFlags {
     pub fn from_i32(k: i32) -> Self {
         match k {
@@ -749,6 +811,31 @@ impl IntegerOverflowFlags {
             IntegerOverflowFlags::None => "none",
             IntegerOverflowFlags::NSW => "nsw",
             IntegerOverflowFlags::NUW => "nuw",
+        }
+    }
+}
+
+impl IntegerOverflowFlagsBitVector {
+    pub fn get(&self) -> i32 {
+        self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut i32 {
+        &mut self.0
+    }
+
+    pub fn to_vec(&self) -> Vec<IntegerOverflowFlags> {
+        let mut result: Vec<IntegerOverflowFlags> = vec![];
+        if self.get() & IntegerOverflowFlags::NSW as i32 > 0 {
+            result.push(IntegerOverflowFlags::NSW);
+        }
+        if self.get() & IntegerOverflowFlags::NUW as i32 > 0 {
+            result.push(IntegerOverflowFlags::NUW);
+        }
+        if result.is_empty() {
+            vec![IntegerOverflowFlags::None]
+        } else {
+            result
         }
     }
 }
@@ -830,7 +917,13 @@ impl RoundingModeKind {
 ///////////////////////////////
 
 impl AddF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::AddF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -877,7 +970,7 @@ impl AddI {
         t: &Type,
         lhs: &Value,
         rhs: &Value,
-        flags: IntegerOverflowFlags,
+        flags: IntegerOverflowFlagsBitVector,
         loc: &Location,
     ) -> Self {
         check_binary_operation_integer_types(Op::AddI, t, lhs, rhs);
@@ -1161,7 +1254,13 @@ impl Constant {
 }
 
 impl DivF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::DivF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1270,7 +1369,12 @@ impl DivUI {
 }
 
 impl ExtF {
-    pub fn new(t: &Type, input: &Value, flags: Option<FastMathFlags>, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        input: &Value,
+        flags: Option<FastMathFlagsBitVector>,
+        loc: &Location,
+    ) -> Self {
         let t_input = input.get_type();
         check_element_type_float(Op::ExtF, t, true);
         check_element_type_float(Op::ExtF, &t_input, true);
@@ -1494,7 +1598,13 @@ impl IndexCastUI {
 }
 
 impl MaximumF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::MaximumF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1537,7 +1647,13 @@ impl MaximumF {
 }
 
 impl MaxNumF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::MaxNumF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1646,7 +1762,13 @@ impl MaxUI {
 }
 
 impl MinimumF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::MinimumF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1689,7 +1811,13 @@ impl MinimumF {
 }
 
 impl MinNumF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::MinNumF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1798,7 +1926,13 @@ impl MinUI {
 }
 
 impl MulF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::MulF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -1845,7 +1979,7 @@ impl MulI {
         t: &Type,
         lhs: &Value,
         rhs: &Value,
-        flags: IntegerOverflowFlags,
+        flags: IntegerOverflowFlagsBitVector,
         loc: &Location,
     ) -> Self {
         check_binary_operation_integer_types(Op::MulI, t, lhs, rhs);
@@ -1964,7 +2098,7 @@ impl MulUIExtended {
 }
 
 impl NegF {
-    pub fn new(t: &Type, input: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(t: &Type, input: &Value, flags: FastMathFlagsBitVector, loc: &Location) -> Self {
         check_unary_operation_float_types(Op::NegF, t, input);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -2032,7 +2166,13 @@ impl OrI {
 }
 
 impl RemF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::RemF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -2145,7 +2285,7 @@ impl ShLI {
         t: &Type,
         lhs: &Value,
         rhs: &Value,
-        flags: IntegerOverflowFlags,
+        flags: IntegerOverflowFlagsBitVector,
         loc: &Location,
     ) -> Self {
         check_binary_operation_integer_types(Op::ShLI, t, lhs, rhs);
@@ -2281,7 +2421,13 @@ impl SIToFP {
 }
 
 impl SubF {
-    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        loc: &Location,
+    ) -> Self {
         check_binary_operation_float_types(Op::SubF, t, lhs, rhs);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
@@ -2328,7 +2474,7 @@ impl SubI {
         t: &Type,
         lhs: &Value,
         rhs: &Value,
-        flags: IntegerOverflowFlags,
+        flags: IntegerOverflowFlagsBitVector,
         loc: &Location,
     ) -> Self {
         check_binary_operation_integer_types(Op::SubI, t, lhs, rhs);
@@ -2376,7 +2522,7 @@ impl TruncF {
     pub fn new(
         t: &Type,
         input: &Value,
-        flags: Option<FastMathFlags>,
+        flags: Option<FastMathFlagsBitVector>,
         mode: Option<RoundingModeKind>,
         loc: &Location,
     ) -> Self {
@@ -3289,6 +3435,22 @@ impl IOperation for ExtUI {
 
 SpecializedAttribute!("fastmath" = impl NamedParsed for FastMath {});
 
+impl ops::BitAnd for FastMathFlags {
+    type Output = FastMathFlagsBitVector;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::Output::from(self as i32 & rhs as i32)
+    }
+}
+
+impl ops::BitOr for FastMathFlags {
+    type Output = FastMathFlagsBitVector;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self::Output::from(self as i32 | rhs as i32)
+    }
+}
+
 impl From<i32> for FastMathFlags {
     fn from(n: i32) -> Self {
         Self::from_i32(n)
@@ -3296,6 +3458,24 @@ impl From<i32> for FastMathFlags {
 }
 
 impl From<i64> for FastMathFlags {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
+impl From<FastMathFlags> for FastMathFlagsBitVector {
+    fn from(flags: FastMathFlags) -> Self {
+        Self::from(flags as i32)
+    }
+}
+
+impl From<i32> for FastMathFlagsBitVector {
+    fn from(n: i32) -> Self {
+        Self(n)
+    }
+}
+
+impl From<i64> for FastMathFlagsBitVector {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
     }
@@ -3566,6 +3746,22 @@ impl IOperation for IndexCastUI {
 
 SpecializedAttribute!("overflowFlags" = impl NamedParsed for IntegerOverflow {});
 
+impl ops::BitAnd for IntegerOverflowFlags {
+    type Output = IntegerOverflowFlagsBitVector;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self::Output::from(self as i32 & rhs as i32)
+    }
+}
+
+impl ops::BitOr for IntegerOverflowFlags {
+    type Output = IntegerOverflowFlagsBitVector;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self::Output::from(self as i32 | rhs as i32)
+    }
+}
+
 impl From<i32> for IntegerOverflowFlags {
     fn from(n: i32) -> Self {
         Self::from_i32(n)
@@ -3573,6 +3769,24 @@ impl From<i32> for IntegerOverflowFlags {
 }
 
 impl From<i64> for IntegerOverflowFlags {
+    fn from(n: i64) -> Self {
+        Self::from(n as i32)
+    }
+}
+
+impl From<IntegerOverflowFlags> for IntegerOverflowFlagsBitVector {
+    fn from(flags: IntegerOverflowFlags) -> Self {
+        Self::from(flags as i32)
+    }
+}
+
+impl From<i32> for IntegerOverflowFlagsBitVector {
+    fn from(n: i32) -> Self {
+        Self(n)
+    }
+}
+
+impl From<i64> for IntegerOverflowFlagsBitVector {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
     }

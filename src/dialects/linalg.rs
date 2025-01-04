@@ -2743,10 +2743,11 @@ impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Add);
 impl ElementwiseBinaryOperationGetBody for Add {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op = arith::AddF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op = arith::AddF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::AddI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+            let op = arith::AddI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
                 .as_operation();
             vec![op]
         } else {
@@ -2946,7 +2947,8 @@ impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Div);
 impl ElementwiseBinaryOperationGetBody for Div {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op = arith::DivF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op = arith::DivF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             vec![op]
         } else if t.is_integer() {
             let op = arith::DivSI::new(t, lhs, rhs, loc).as_operation();
@@ -3547,25 +3549,26 @@ impl_ElementwiseBinaryOpMatmulTypeOperandsAndShapedResult!(Matmul);
 impl ElementwiseBinaryOperationGetBody for Matmul {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul =
-                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op_mul = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::FastMathFlags::None,
+                arith::FastMathFlags::None.into(),
                 loc,
             )
             .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
-                .as_operation();
+            let op_mul =
+                arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
+                    .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::IntegerOverflowFlags::None,
+                arith::IntegerOverflowFlags::None.into(),
                 loc,
             )
             .as_operation();
@@ -3634,25 +3637,26 @@ impl_ElementwiseBinaryOpMatmulTransposeATypeOperandsAndShapedResult!(MatmulTrans
 impl ElementwiseBinaryOperationGetBody for MatmulTransposeA {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul =
-                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op_mul = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::FastMathFlags::None,
+                arith::FastMathFlags::None.into(),
                 loc,
             )
             .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
-                .as_operation();
+            let op_mul =
+                arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
+                    .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::IntegerOverflowFlags::None,
+                arith::IntegerOverflowFlags::None.into(),
                 loc,
             )
             .as_operation();
@@ -3721,25 +3725,26 @@ impl_ElementwiseBinaryOpMatmulTransposeBTypeOperandsAndShapedResult!(MatmulTrans
 impl ElementwiseBinaryOperationGetBody for MatmulTransposeB {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul =
-                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op_mul = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::FastMathFlags::None,
+                arith::FastMathFlags::None.into(),
                 loc,
             )
             .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
-                .as_operation();
+            let op_mul =
+                arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
+                    .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::IntegerOverflowFlags::None,
+                arith::IntegerOverflowFlags::None.into(),
                 loc,
             )
             .as_operation();
@@ -3808,25 +3813,26 @@ impl_ElementwiseBinaryOpMatvecTypeOperandsAndShapedResult!(Matvec);
 impl ElementwiseBinaryOperationGetBody for Matvec {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul =
-                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op_mul = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::FastMathFlags::None,
+                arith::FastMathFlags::None.into(),
                 loc,
             )
             .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
-                .as_operation();
+            let op_mul =
+                arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
+                    .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::IntegerOverflowFlags::None,
+                arith::IntegerOverflowFlags::None.into(),
                 loc,
             )
             .as_operation();
@@ -4013,10 +4019,11 @@ impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Mul);
 impl ElementwiseBinaryOperationGetBody for Mul {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+            let op = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
                 .as_operation();
             vec![op]
         } else {
@@ -4482,10 +4489,11 @@ impl_ElementwiseBinaryOpMatchingTypeOperandsAndShapedResult!(Sub);
 impl ElementwiseBinaryOperationGetBody for Sub {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op = arith::SubF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op = arith::SubF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             vec![op]
         } else if t.is_integer() {
-            let op = arith::SubI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
+            let op = arith::SubI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
                 .as_operation();
             vec![op]
         } else {
@@ -4682,25 +4690,26 @@ impl_ElementwiseBinaryOpVecmatTypeOperandsAndShapedResult!(Vecmat);
 impl ElementwiseBinaryOperationGetBody for Vecmat {
     fn get_body(t: &Type, lhs: &Value, rhs: &Value, acc: &Value, loc: &Location) -> Vec<Operation> {
         if t.is_float() {
-            let op_mul =
-                arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None, loc).as_operation();
+            let op_mul = arith::MulF::new(t, lhs, rhs, arith::FastMathFlags::None.into(), loc)
+                .as_operation();
             let op_add = arith::AddF::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::FastMathFlags::None,
+                arith::FastMathFlags::None.into(),
                 loc,
             )
             .as_operation();
             vec![op_mul, op_add]
         } else if t.is_integer() {
-            let op_mul = arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None, loc)
-                .as_operation();
+            let op_mul =
+                arith::MulI::new(t, lhs, rhs, arith::IntegerOverflowFlags::None.into(), loc)
+                    .as_operation();
             let op_add = arith::AddI::new(
                 t,
                 acc,
                 &op_mul.get_result(0),
-                arith::IntegerOverflowFlags::None,
+                arith::IntegerOverflowFlags::None.into(),
                 loc,
             )
             .as_operation();
