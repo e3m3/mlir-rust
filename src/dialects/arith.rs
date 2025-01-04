@@ -276,6 +276,30 @@ pub struct IndexCast(MlirOperation);
 pub struct IndexCastUI(MlirOperation);
 
 #[derive(Clone)]
+pub struct MaximumF(MlirOperation);
+
+#[derive(Clone)]
+pub struct MaxNumF(MlirOperation);
+
+#[derive(Clone)]
+pub struct MaxSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct MaxUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct MinimumF(MlirOperation);
+
+#[derive(Clone)]
+pub struct MinNumF(MlirOperation);
+
+#[derive(Clone)]
+pub struct MinSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct MinUI(MlirOperation);
+
+#[derive(Clone)]
 pub struct MulF(MlirOperation);
 
 #[derive(Clone)]
@@ -1457,6 +1481,310 @@ impl IndexCastUI {
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+}
+
+impl MaximumF {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+        check_binary_operation_float_types(Op::MaximumF, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MaximumF);
+        let attr = FastMath::new(&context, flags);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MaxNumF {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+        check_binary_operation_float_types(Op::MaxNumF, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MaxNumF);
+        let attr = FastMath::new(&context, flags);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MaxSI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::MaxSI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MaxSI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MaxUI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::MaxUI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MaxUI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MinimumF {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+        check_binary_operation_float_types(Op::MinimumF, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MinimumF);
+        let attr = FastMath::new(&context, flags);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MinNumF {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, flags: FastMathFlags, loc: &Location) -> Self {
+        check_binary_operation_float_types(Op::MinNumF, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MinNumF);
+        let attr = FastMath::new(&context, flags);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MinSI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::MinSI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MinSI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl MinUI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::MinUI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::MinUI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
     }
 }
 
@@ -3129,6 +3457,438 @@ impl From<i64> for IntegerOverflowFlags {
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
         self.get_name()
+    }
+}
+
+impl From<MlirOperation> for MaximumF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MaximumF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MaximumF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MaximumF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MaxNumF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MaxNumF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MaxNumF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MaxNumF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MaxSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MaxSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MaxSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MaxSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MaxUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MaxUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MaxUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MaxUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MinimumF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MinimumF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MinimumF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MinimumF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MinNumF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MinNumF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MinNumF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MinNumF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MinSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MinSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MinSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MinSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for MinUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for MinUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::MinUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::MinUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
     }
 }
 
