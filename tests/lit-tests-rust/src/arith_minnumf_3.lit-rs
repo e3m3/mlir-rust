@@ -1,0 +1,44 @@
+// RUN: %O/run arith_minnumf_3 | @mlir-opt | @filecheck %M/arith_minnumf_3.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::arith::FastMathFlags;
+use mlir::dialects::arith::MinNumF;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::ranked_tensor::RankedTensor;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let s = ShapeImpl::from(vec![4]);
+    let t_elem = FloatType::new(&context, FloatLayout::F64).as_type();
+    let t = RankedTensor::new(&s, &t_elem).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_min = MinNumF::new(
+        &t,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        FastMathFlags::None,
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[op_min.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_min);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
