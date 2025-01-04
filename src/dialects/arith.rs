@@ -211,7 +211,7 @@ pub enum Op {
     TruncF,
     TruncI,
     UIToFP,
-    XorI,
+    XOrI,
 }
 
 ///////////////////////////////
@@ -226,6 +226,9 @@ pub struct AddI(MlirOperation);
 
 #[derive(Clone)]
 pub struct AddUIExtended(MlirOperation);
+
+#[derive(Clone)]
+pub struct AndI(MlirOperation);
 
 #[derive(Clone)]
 pub struct Bitcast(MlirOperation);
@@ -276,6 +279,9 @@ pub struct MulSIExtended(MlirOperation);
 pub struct MulUIExtended(MlirOperation);
 
 #[derive(Clone)]
+pub struct OrI(MlirOperation);
+
+#[derive(Clone)]
 pub struct SIToFP(MlirOperation);
 
 #[derive(Clone)]
@@ -292,6 +298,9 @@ pub struct TruncI(MlirOperation);
 
 #[derive(Clone)]
 pub struct UIToFP(MlirOperation);
+
+#[derive(Clone)]
+pub struct XOrI(MlirOperation);
 
 ///////////////////////////////
 //  Support
@@ -741,7 +750,7 @@ impl Op {
             Op::TruncF => "truncf",
             Op::TruncI => "trunci",
             Op::UIToFP => "uitofp",
-            Op::XorI => "xori",
+            Op::XOrI => "xori",
         }
     }
 }
@@ -897,6 +906,39 @@ impl AddUIExtended {
 
     pub fn get_overflow(&self) -> Value {
         self.as_operation().get_result(1)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl AndI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::AndI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::AndI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
     }
 
     pub fn get_result(&self) -> Value {
@@ -1464,6 +1506,39 @@ impl MulUIExtended {
     }
 }
 
+impl OrI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::OrI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::OrI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
 impl SIToFP {
     pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
         let t_input = input.get_type();
@@ -1688,6 +1763,39 @@ impl UIToFP {
     }
 }
 
+impl XOrI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::XOrI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::XOrI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
 ///////////////////////////////
 //  Trait Implementation
 ///////////////////////////////
@@ -1845,6 +1953,61 @@ impl IOperation for AddUIExtended {
             Trait::AlwaysSpeculatableImplTrait,
             Trait::Commutative,
             Trait::ElementWise,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for AndI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for AndI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::AndI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::AndI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::Idempotent,
+            Trait::SameOperandsAndResultType,
             Trait::Scalarizable,
             Trait::Tensorizable,
             Trait::Vectorizable,
@@ -2762,6 +2925,61 @@ impl IOperation for MulUIExtended {
     }
 }
 
+impl From<MlirOperation> for OrI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for OrI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::OrI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::OrI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::Idempotent,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 SpecializedAttribute!("roundingmode" = impl NamedInteger for RoundingMode {});
 
 impl From<i32> for RoundingModeKind {
@@ -3094,6 +3312,60 @@ impl IOperation for UIToFP {
     }
 }
 
+impl From<MlirOperation> for XOrI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for XOrI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::XOrI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::XOrI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::Commutative,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 ///////////////////////////////
 //  Display
 ///////////////////////////////
@@ -3223,7 +3495,7 @@ impl fmt::Display for Op {
             Op::TruncF => "TruncFOp",
             Op::TruncI => "TruncIOp",
             Op::UIToFP => "UIToFPOp",
-            Op::XorI => "XorIOp",
+            Op::XOrI => "XOrIOp",
         })
     }
 }
