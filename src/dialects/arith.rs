@@ -202,9 +202,9 @@ pub enum Op {
     RemSI,
     RemUI,
     Select,
-    ShlI,
-    ShrSI,
-    ShrUI,
+    ShLI,
+    ShRSI,
+    ShRUI,
     SIToFP,
     SubF,
     SubI,
@@ -325,6 +325,15 @@ pub struct RemSI(MlirOperation);
 
 #[derive(Clone)]
 pub struct RemUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct ShLI(MlirOperation);
+
+#[derive(Clone)]
+pub struct ShRSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct ShRUI(MlirOperation);
 
 #[derive(Clone)]
 pub struct SIToFP(MlirOperation);
@@ -786,9 +795,9 @@ impl Op {
             Op::RemSI => "remsi",
             Op::RemUI => "remui",
             Op::Select => "select",
-            Op::ShlI => "shli",
-            Op::ShrSI => "shrsi",
-            Op::ShrUI => "shrui",
+            Op::ShLI => "shli",
+            Op::ShRSI => "shrsi",
+            Op::ShRUI => "shrui",
             Op::SIToFP => "sitofp",
             Op::SubF => "subf",
             Op::SubI => "subi",
@@ -2104,6 +2113,121 @@ impl RemUI {
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::RemUI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl ShLI {
+    pub fn new(
+        t: &Type,
+        lhs: &Value,
+        rhs: &Value,
+        flags: IntegerOverflowFlags,
+        loc: &Location,
+    ) -> Self {
+        check_binary_operation_integer_types(Op::ShLI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::ShLI);
+        let attr = IntegerOverflow::new(&context, flags);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> IntegerOverflow {
+        let attr_name = StringBacked::from(IntegerOverflow::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        IntegerOverflow::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl ShRSI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::ShRSI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::ShRSI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl ShRUI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::ShRUI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::ShRUI);
         let mut op_state = OperationState::new(&name.as_string_ref(), loc);
         op_state.add_operands(&[lhs.clone(), rhs.clone()]);
         op_state.add_results(&[t.clone()]);
@@ -4387,6 +4511,166 @@ impl From<i64> for RoundingModeKind {
     }
 }
 
+impl From<MlirOperation> for ShLI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ShLI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithIntegerOverflowFlagsInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ShLI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ShLI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for ShRSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ShRSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ShRSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ShRSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for ShRUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for ShRUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::ShRUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::ShRUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 impl From<MlirOperation> for SIToFP {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -4879,9 +5163,9 @@ impl fmt::Display for Op {
             Op::RemSI => "RemSIOp",
             Op::RemUI => "RemUIOp",
             Op::Select => "SelectOp",
-            Op::ShlI => "ShlIOp",
-            Op::ShrSI => "ShrSIOp",
-            Op::ShrUI => "ShrUIOp",
+            Op::ShLI => "ShLIOp",
+            Op::ShRSI => "ShRSIOp",
+            Op::ShRUI => "ShRUIOp",
             Op::SIToFP => "SIToFPOp",
             Op::SubF => "SubFOp",
             Op::SubI => "SubIOp",
