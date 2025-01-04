@@ -234,6 +234,12 @@ pub struct AndI(MlirOperation);
 pub struct Bitcast(MlirOperation);
 
 #[derive(Clone)]
+pub struct CeilDivSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct CeilDivUI(MlirOperation);
+
+#[derive(Clone)]
 pub struct Constant(MlirOperation);
 
 #[derive(Clone)]
@@ -253,6 +259,9 @@ pub struct ExtSI(MlirOperation);
 
 #[derive(Clone)]
 pub struct ExtUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct FloorDivSI(MlirOperation);
 
 #[derive(Clone)]
 pub struct FPToSI(MlirOperation);
@@ -283,6 +292,15 @@ pub struct NegF(MlirOperation);
 
 #[derive(Clone)]
 pub struct OrI(MlirOperation);
+
+#[derive(Clone)]
+pub struct RemF(MlirOperation);
+
+#[derive(Clone)]
+pub struct RemSI(MlirOperation);
+
+#[derive(Clone)]
+pub struct RemUI(MlirOperation);
 
 #[derive(Clone)]
 pub struct SIToFP(MlirOperation);
@@ -976,6 +994,72 @@ impl Bitcast {
     }
 }
 
+impl CeilDivSI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::CeilDivSI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::CeilDivSI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
+impl CeilDivUI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::CeilDivUI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::CeilDivUI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
+    }
+}
+
 impl Constant {
     fn new(t: &Type, attr: &ArithValue, loc: &Location) -> Self {
         if !t.is_float() && !t.is_index() && !t.is_integer() {
@@ -1236,6 +1320,39 @@ impl ExtUI {
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+}
+
+impl FloorDivSI {
+    pub fn new(t: &Type, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        check_binary_operation_integer_types(Op::FloorDivSI, t, lhs, rhs);
+        let context = t.get_context();
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::FloorDivSI);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_lhs(&self) -> Value {
+        self.as_operation().get_operand(0)
+    }
+
+    pub fn get_result(&self) -> Value {
+        self.as_operation().get_result(0)
+    }
+
+    pub fn get_rhs(&self) -> Value {
+        self.as_operation().get_operand(1)
     }
 }
 
@@ -2119,6 +2236,110 @@ impl IOperation for Bitcast {
     }
 }
 
+impl From<MlirOperation> for CeilDivSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for CeilDivSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::CeilDivSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::CeilDivSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<MlirOperation> for CeilDivUI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for CeilDivUI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::CeilDivUI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::CeilDivUI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
 impl From<i32> for CmpFPPredicate {
     fn from(n: i32) -> Self {
         Self::from_i32(n)
@@ -2516,6 +2737,59 @@ impl From<i32> for FastMathFlags {
 impl From<i64> for FastMathFlags {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
+    }
+}
+
+impl From<MlirOperation> for FloorDivSI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for FloorDivSI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::FloorDivSI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::FloorDivSI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameOperandsAndResultType,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
     }
 }
 
