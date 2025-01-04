@@ -32,6 +32,7 @@ use types::IsPromotableTo;
 pub struct Integer(MlirType);
 
 impl Integer {
+    /// Same as `Self::new_signless(...)`.
     pub fn new(context: &Context, width: usize) -> Self {
         Self::from(do_unsafe!(mlirIntegerTypeGet(
             *context.get(),
