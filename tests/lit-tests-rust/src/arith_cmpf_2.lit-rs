@@ -1,0 +1,49 @@
+// RUN: %O/run arith_cmpf_2 | @mlir-opt | @filecheck %M/arith_cmpf_2.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::arith::CmpF;
+use mlir::dialects::arith::CmpFPredicate;
+use mlir::dialects::arith::FastMathFlags;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::vector::Vector;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let s = ShapeImpl::from(vec![4]);
+    let t_elem_bool = IntegerType::new_bool(&context).as_type();
+    let t_elem = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_bool = Vector::new(&s, &t_elem_bool).as_type();
+    let t = Vector::new(&s, &t_elem).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t_bool.clone()]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_cmp = CmpF::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        FastMathFlags::None.into(),
+        CmpFPredicate::OEQ,
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[op_cmp.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_cmp);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
