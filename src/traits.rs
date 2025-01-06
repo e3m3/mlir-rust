@@ -48,6 +48,7 @@ pub enum Trait {
     SameOperandsAndResultType,
     SameOperandsElementType,
     SameOperandsShape,
+    SameTypeOperands,
     Scalarizable,
     SingleBlock,
     SingleBlockImplicitTerminator(StaticOpList),
@@ -166,6 +167,7 @@ impl fmt::Display for Trait {
             Trait::SameOperandsAndResultType => "same_operands_and_result_type".to_string(),
             Trait::SameOperandsElementType => "same_operands_element_type".to_string(),
             Trait::SameOperandsShape => "same_operands_shape".to_string(),
+            Trait::SameTypeOperands => "same_type_operands".to_string(),
             Trait::Scalarizable => "scalarizable".to_string(),
             Trait::SingleBlock => "single_block".to_string(),
             Trait::SingleBlockImplicitTerminator(ops) => {
