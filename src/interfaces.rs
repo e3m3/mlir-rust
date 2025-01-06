@@ -34,6 +34,7 @@ pub enum Interface {
     RegionBranchOpInterface,
     RegionBranchTerminatorOpInterface,
     ReifyRankedShapeTypeOpInterface,
+    SelectLikeOpInterface,
     ShapedDimOpInterface,
     Symbol,
     SymbolUserOpInterface,
@@ -94,6 +95,7 @@ impl fmt::Display for Interface {
             Interface::ReifyRankedShapeTypeOpInterface => {
                 "reify_ranked_shape_type_op_interface".to_string()
             }
+            Interface::SelectLikeOpInterface => "select_like_op_interface".to_string(),
             Interface::ShapedDimOpInterface => "shaped_dim_op_interface".to_string(),
             Interface::Symbol => "symbol".to_string(),
             Interface::SymbolUserOpInterface => "symbol_user_op_interface".to_string(),
