@@ -41,6 +41,10 @@ impl Integer {
     }
 
     pub fn new_bool(context: &Context) -> Self {
+        Self::from(do_unsafe!(mlirIntegerTypeGet(*context.get(), 1)))
+    }
+
+    pub fn new_bool_unsigned(context: &Context) -> Self {
         Self::from(do_unsafe!(mlirIntegerTypeUnsignedGet(*context.get(), 1)))
     }
 
