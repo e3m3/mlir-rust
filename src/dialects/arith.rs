@@ -68,6 +68,12 @@ pub struct FastMath(MlirAttribute);
 pub struct IntegerOverflow(MlirAttribute);
 
 #[derive(Clone)]
+pub struct PredicateF(MlirAttribute);
+
+#[derive(Clone)]
+pub struct PredicateI(MlirAttribute);
+
+#[derive(Clone)]
 pub struct RoundingMode(MlirAttribute);
 
 ///////////////////////////////
@@ -96,7 +102,7 @@ pub enum AtomicRMWKind {
 
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq)]
-pub enum CmpFPPredicate {
+pub enum CmpFPredicate {
     AlwaysFalse = 0,
     OEQ = 1,
     OGT = 2,
@@ -247,6 +253,12 @@ pub struct CeilDivSI(MlirOperation);
 
 #[derive(Clone)]
 pub struct CeilDivUI(MlirOperation);
+
+#[derive(Clone)]
+pub struct CmpF(MlirOperation);
+
+#[derive(Clone)]
+pub struct CmpI(MlirOperation);
 
 #[derive(Clone)]
 pub struct Constant(MlirOperation);
@@ -608,10 +620,40 @@ impl IntegerOverflow {
     }
 }
 
+impl PredicateF {
+    pub fn new(context: &Context, p: CmpFPredicate) -> Self {
+        const WIDTH: usize = 64;
+        <Self as NamedInteger>::new(context, p as i64, WIDTH)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl PredicateI {
+    pub fn new(context: &Context, p: CmpIPredicate) -> Self {
+        const WIDTH: usize = 64;
+        <Self as NamedInteger>::new(context, p as i64, WIDTH)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
 impl RoundingMode {
     pub fn new(context: &Context, k: RoundingModeKind) -> Self {
         const WIDTH: usize = 32;
-        Self::from(*<Self as NamedInteger>::new(context, k as i64, WIDTH).get_mut())
+        <Self as NamedInteger>::new(context, k as i64, WIDTH)
     }
 
     pub fn get(&self) -> &MlirAttribute {
@@ -657,27 +699,27 @@ impl AtomicRMWKind {
     }
 }
 
-impl CmpFPPredicate {
+impl CmpFPredicate {
     pub fn from_i32(k: i32) -> Self {
         match k {
-            0 => CmpFPPredicate::AlwaysFalse,
-            1 => CmpFPPredicate::OEQ,
-            2 => CmpFPPredicate::OGT,
-            3 => CmpFPPredicate::OGE,
-            4 => CmpFPPredicate::OLT,
-            5 => CmpFPPredicate::OLE,
-            6 => CmpFPPredicate::ONE,
-            7 => CmpFPPredicate::ORD,
-            8 => CmpFPPredicate::UEQ,
-            9 => CmpFPPredicate::UGT,
-            10 => CmpFPPredicate::UGE,
-            11 => CmpFPPredicate::ULT,
-            12 => CmpFPPredicate::ULE,
-            13 => CmpFPPredicate::UNE,
-            14 => CmpFPPredicate::UNO,
-            15 => CmpFPPredicate::AlwaysTrue,
+            0 => CmpFPredicate::AlwaysFalse,
+            1 => CmpFPredicate::OEQ,
+            2 => CmpFPredicate::OGT,
+            3 => CmpFPredicate::OGE,
+            4 => CmpFPredicate::OLT,
+            5 => CmpFPredicate::OLE,
+            6 => CmpFPredicate::ONE,
+            7 => CmpFPredicate::ORD,
+            8 => CmpFPredicate::UEQ,
+            9 => CmpFPredicate::UGT,
+            10 => CmpFPredicate::UGE,
+            11 => CmpFPredicate::ULT,
+            12 => CmpFPredicate::ULE,
+            13 => CmpFPredicate::UNE,
+            14 => CmpFPredicate::UNO,
+            15 => CmpFPredicate::AlwaysTrue,
             _ => {
-                eprintln!("Invalid value for CmpFPPredicate: {}", k);
+                eprintln!("Invalid value for CmpFPredicate: {}", k);
                 exit(ExitCode::DialectError);
             }
         }
@@ -1183,6 +1225,118 @@ impl CeilDivUI {
 
     pub fn get_rhs(&self) -> Value {
         self.as_operation().get_operand(1)
+    }
+}
+
+impl CmpF {
+    pub fn new(
+        context: &Context,
+        lhs: &Value,
+        rhs: &Value,
+        flags: FastMathFlagsBitVector,
+        pred: CmpFPredicate,
+        loc: &Location,
+    ) -> Self {
+        let t_lhs = lhs.get_type();
+        let t_rhs = rhs.get_type();
+        check_type_shape(Op::CmpF, &t_lhs, &t_rhs);
+        check_element_type_float(Op::CmpF, &t_lhs, true);
+        check_element_type_float(Op::CmpF, &t_rhs, true);
+        check_type_width(Op::CmpF, CmpIPredicate::Eq, &t_lhs, &t_rhs);
+        let t_bool = IntegerType::new_bool(context).as_type();
+        let t = if t_lhs.is_tensor() && t_rhs.is_tensor() {
+            let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
+            RankedTensor::new(&s, &t_bool).as_type()
+        } else if t_lhs.is_vector() && t_rhs.is_vector() {
+            let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
+            Vector::new(&s, &t_bool).as_type()
+        } else {
+            t_bool
+        };
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::CmpF);
+        let attr_flags = FastMath::new(context, flags).as_named_attribute();
+        let attr_pred = PredicateF::new(context, pred).as_named_attribute();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr_flags, attr_pred]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_flags(&self) -> FastMath {
+        let attr_name = StringBacked::from(FastMath::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        FastMath::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_predicate(&self) -> PredicateF {
+        let attr_name = StringBacked::from(PredicateF::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        PredicateF::from(*attr.get())
+    }
+}
+
+impl CmpI {
+    pub fn new(
+        context: &Context,
+        lhs: &Value,
+        rhs: &Value,
+        pred: CmpIPredicate,
+        loc: &Location,
+    ) -> Self {
+        let t_lhs = lhs.get_type();
+        let t_rhs = rhs.get_type();
+        check_type_shape(Op::CmpI, &t_lhs, &t_rhs);
+        check_element_type_integer_like(Op::CmpI, &t_lhs, true);
+        check_element_type_integer_like(Op::CmpI, &t_rhs, true);
+        check_type_width(Op::CmpI, CmpIPredicate::Eq, &t_lhs, &t_rhs);
+        let t_bool = IntegerType::new_bool(context).as_type();
+        let t = if t_lhs.is_tensor() && t_rhs.is_tensor() {
+            let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
+            RankedTensor::new(&s, &t_bool).as_type()
+        } else if t_lhs.is_vector() && t_rhs.is_vector() {
+            let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
+            Vector::new(&s, &t_bool).as_type()
+        } else {
+            t_bool
+        };
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::CmpI);
+        let attr = PredicateI::new(context, pred).as_named_attribute();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr]);
+        op_state.add_operands(&[lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_predicate(&self) -> PredicateI {
+        let attr_name = StringBacked::from(PredicateI::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        PredicateI::from(*attr.get())
     }
 }
 
@@ -3047,15 +3201,121 @@ impl IOperation for CeilDivUI {
     }
 }
 
-impl From<i32> for CmpFPPredicate {
+impl From<MlirOperation> for CmpF {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for CmpF {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ArithFastMathInterface,
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::CmpF.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::CmpF
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameTypeOperands,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
+    }
+}
+
+impl From<i32> for CmpFPredicate {
     fn from(n: i32) -> Self {
         Self::from_i32(n)
     }
 }
 
-impl From<i64> for CmpFPPredicate {
+impl From<i64> for CmpFPredicate {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
+    }
+}
+
+impl From<MlirOperation> for CmpI {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for CmpI {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::CmpI.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::CmpI
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::SameTypeOperands,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
     }
 }
 
@@ -4444,6 +4704,10 @@ impl IOperation for MulUIExtended {
     }
 }
 
+SpecializedAttribute!("predicate" = impl NamedInteger for PredicateF {});
+
+SpecializedAttribute!("predicate" = impl NamedInteger for PredicateI {});
+
 impl From<MlirOperation> for NegF {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -5283,25 +5547,25 @@ impl fmt::Display for AtomicRMWKind {
     }
 }
 
-impl fmt::Display for CmpFPPredicate {
+impl fmt::Display for CmpFPredicate {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", match self {
-            CmpFPPredicate::AlwaysFalse => "false",
-            CmpFPPredicate::OEQ => "oeq",
-            CmpFPPredicate::OGT => "ogt",
-            CmpFPPredicate::OGE => "oge",
-            CmpFPPredicate::OLT => "olt",
-            CmpFPPredicate::OLE => "ole",
-            CmpFPPredicate::ONE => "one",
-            CmpFPPredicate::ORD => "ord",
-            CmpFPPredicate::UEQ => "ueq",
-            CmpFPPredicate::UGT => "ugt",
-            CmpFPPredicate::UGE => "uge",
-            CmpFPPredicate::ULT => "ult",
-            CmpFPPredicate::ULE => "ule",
-            CmpFPPredicate::UNE => "une",
-            CmpFPPredicate::UNO => "uno",
-            CmpFPPredicate::AlwaysTrue => "true",
+            CmpFPredicate::AlwaysFalse => "false",
+            CmpFPredicate::OEQ => "oeq",
+            CmpFPredicate::OGT => "ogt",
+            CmpFPredicate::OGE => "oge",
+            CmpFPredicate::OLT => "olt",
+            CmpFPredicate::OLE => "ole",
+            CmpFPredicate::ONE => "one",
+            CmpFPredicate::ORD => "ord",
+            CmpFPredicate::UEQ => "ueq",
+            CmpFPredicate::UGT => "ugt",
+            CmpFPredicate::UGE => "uge",
+            CmpFPredicate::ULT => "ult",
+            CmpFPredicate::ULE => "ule",
+            CmpFPredicate::UNE => "une",
+            CmpFPredicate::UNO => "uno",
+            CmpFPredicate::AlwaysTrue => "true",
         })
     }
 }
