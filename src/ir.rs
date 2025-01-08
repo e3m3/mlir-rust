@@ -1821,6 +1821,10 @@ impl Type {
         &mut self.0
     }
 
+    pub fn is_bool(&self) -> bool {
+        self.is_integer() && self.get_width().unwrap_or(0) == 1
+    }
+
     pub fn is_complex(&self) -> bool {
         do_unsafe!(mlirTypeIsAComplex(self.0))
     }
