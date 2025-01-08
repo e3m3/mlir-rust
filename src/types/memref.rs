@@ -34,6 +34,7 @@ use ir::Shape;
 use ir::Type;
 use ir::TypeID;
 use types::IType;
+use types::shaped::NewElementType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -125,7 +126,11 @@ impl MemRef {
     }
 
     pub fn get_layout<T: From<MlirAttribute>>(&self) -> T {
-        T::from(do_unsafe!(mlirMemRefTypeGetLayout(*self.get())))
+        T::from(self.get_layout_attribute())
+    }
+
+    pub fn get_layout_attribute(&self) -> MlirAttribute {
+        do_unsafe!(mlirMemRefTypeGetLayout(*self.get()))
     }
 
     pub fn get_matching_suffix<L: NamedMemoryLayout, S: NamedMemorySpace>(
@@ -143,7 +148,11 @@ impl MemRef {
     }
 
     pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
-        T::from_checked(do_unsafe!(mlirMemRefTypeGetMemorySpace(*self.get())))
+        T::from_checked(self.get_memory_space_attribute())
+    }
+
+    pub fn get_memory_space_attribute(&self) -> MlirAttribute {
+        do_unsafe!(mlirMemRefTypeGetMemorySpace(*self.get()))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -202,5 +211,20 @@ impl IType for MemRef {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl NewElementType for MemRef {
+    fn new_element_type(other: &Self, t: &Type) -> Self {
+        let layout = other.get_layout_attribute();
+        let memory_space = other.get_memory_space_attribute();
+        let (r, s) = other.as_shaped().unpack();
+        Self::from(do_unsafe!(mlirMemRefTypeGet(
+            *t.get(),
+            r,
+            s.as_ptr(),
+            layout,
+            memory_space,
+        )))
     }
 }

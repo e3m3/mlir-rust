@@ -19,9 +19,11 @@ use exit_code::exit;
 use ir::Attribute;
 use ir::Location;
 use ir::Shape;
+use ir::ShapeImpl;
 use ir::Type;
 use ir::TypeID;
 use types::IType;
+use types::shaped::NewElementType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -149,5 +151,12 @@ impl IType for RankedTensor {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl NewElementType for RankedTensor {
+    fn new_element_type(other: &Self, t: &Type) -> Self {
+        let s = ShapeImpl::from(other.as_shaped().to_vec());
+        Self::new(&s, t)
     }
 }

@@ -3,6 +3,7 @@
 
 #![allow(dead_code)]
 
+use mlir_sys::MlirAttribute;
 use mlir_sys::MlirType;
 use mlir_sys::mlirUnrankedMemRefTypeGet;
 use mlir_sys::mlirUnrankedMemRefTypeGetChecked;
@@ -22,6 +23,7 @@ use ir::Location;
 use ir::Type;
 use ir::TypeID;
 use types::IType;
+use types::shaped::NewElementType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -61,7 +63,12 @@ impl UnrankedMemRef {
 
     pub fn get_memory_space<T: NamedMemorySpace>(&self) -> T {
         // Why is this capitalized differently?
-        T::from_checked(do_unsafe!(mlirUnrankedMemrefGetMemorySpace(*self.get())))
+        T::from_checked(self.get_memory_space_attribute())
+    }
+
+    pub fn get_memory_space_attribute(&self) -> MlirAttribute {
+        // Why is this capitalized differently?
+        do_unsafe!(mlirUnrankedMemrefGetMemorySpace(*self.get()))
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -98,5 +105,15 @@ impl IType for UnrankedMemRef {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl NewElementType for UnrankedMemRef {
+    fn new_element_type(other: &Self, t: &Type) -> Self {
+        let memory_space = other.get_memory_space_attribute();
+        Self::from(do_unsafe!(mlirUnrankedMemRefTypeGet(
+            *t.get(),
+            memory_space
+        )))
     }
 }

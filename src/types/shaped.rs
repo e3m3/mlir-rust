@@ -27,6 +27,28 @@ use ir::ShapeImpl;
 use ir::Type;
 use types::GetWidth;
 use types::IType;
+use types::memref::MemRef;
+use types::ranked_tensor::RankedTensor;
+use types::unranked_memref::UnrankedMemRef;
+use types::unranked_tensor::UnrankedTensor;
+use types::vector::Vector;
+
+/// Copies the shape of the given Shaped type, returning a new Shaped type with
+/// the element type given.
+/// The resulting multi-dimensional Shaped type will be of the same type as the Shaped
+/// type given (e.g., fn(tensor<10xi32>, f32) -> tensor<10xf32>).
+pub trait NewElementType {
+    fn new_element_type(other: &Self, t: &Type) -> Self;
+}
+
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub enum ShapedKind {
+    RankedMemRef,
+    RankedTensor,
+    UnrankedMemRef,
+    UnrankedTensor,
+    Vector,
+}
 
 #[derive(Clone)]
 pub struct Shaped(MlirType);
@@ -58,6 +80,24 @@ impl Shaped {
 
     pub fn get_element_type(&self) -> Type {
         Type::from(do_unsafe!(mlirShapedTypeGetElementType(*self.get())))
+    }
+
+    pub fn get_kind(&self) -> ShapedKind {
+        let t = self.as_type();
+        if t.is_vector() {
+            ShapedKind::Vector
+        } else if t.is_unranked_memref() {
+            ShapedKind::UnrankedMemRef
+        } else if t.is_unranked_tensor() {
+            ShapedKind::UnrankedTensor
+        } else if t.is_ranked_tensor() {
+            ShapedKind::RankedTensor
+        } else if t.is_memref() {
+            ShapedKind::RankedMemRef
+        } else {
+            eprintln!("Unexpected shaped type: {}", t);
+            exit(ExitCode::DialectError);
+        }
     }
 
     pub fn get_mut(&mut self) -> &mut MlirType {
@@ -191,6 +231,33 @@ impl IType for Shaped {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl NewElementType for Shaped {
+    fn new_element_type(other: &Self, t: &Type) -> Self {
+        match other.get_kind() {
+            ShapedKind::RankedMemRef => {
+                let other_ = MemRef::from(*other.get());
+                MemRef::new_element_type(&other_, t).as_shaped()
+            }
+            ShapedKind::RankedTensor => {
+                let other_ = RankedTensor::from(*other.get());
+                RankedTensor::new_element_type(&other_, t).as_shaped()
+            }
+            ShapedKind::UnrankedMemRef => {
+                let other_ = UnrankedMemRef::from(*other.get());
+                UnrankedMemRef::new_element_type(&other_, t).as_shaped()
+            }
+            ShapedKind::UnrankedTensor => {
+                let other_ = UnrankedTensor::from(*other.get());
+                UnrankedTensor::new_element_type(&other_, t).as_shaped()
+            }
+            ShapedKind::Vector => {
+                let other_ = Vector::from(*other.get());
+                Vector::new_element_type(&other_, t).as_shaped()
+            }
+        }
     }
 }
 

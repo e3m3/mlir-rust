@@ -19,6 +19,7 @@ use ir::Location;
 use ir::Type;
 use ir::TypeID;
 use types::IType;
+use types::shaped::NewElementType;
 use types::shaped::Shaped;
 
 #[derive(Clone)]
@@ -86,5 +87,11 @@ impl IType for UnrankedTensor {
 
     fn get_mut(&mut self) -> &mut MlirType {
         self.get_mut()
+    }
+}
+
+impl NewElementType for UnrankedTensor {
+    fn new_element_type(_other: &Self, t: &Type) -> Self {
+        Self::new(t)
     }
 }
