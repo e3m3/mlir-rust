@@ -408,8 +408,8 @@ impl Bitcast {
 }
 
 impl Cast {
-    /// TODO:? "The operation is invalid if converting to a mismatching constant dimension." [1]
-    /// [1]: https://mlir.llvm.org/docs/Dialects/TensorOps/#tensorcast-tensorcastop
+    /// TODO:? "The operation is invalid if converting to a mismatching constant dimension." \[1\]
+    /// \[1\]: <https://mlir.llvm.org/docs/Dialects/TensorOps/#tensorcast-tensorcastop>
     pub fn new(s: &Shaped, s_value: &Shaped, value: &Value, loc: &Location) -> Self {
         if s.get_element_type() != s_value.get_element_type() {
             eprintln!(

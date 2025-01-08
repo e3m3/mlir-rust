@@ -477,12 +477,12 @@ impl Cast {
         Self::from(*op_state.create_operation().get())
     }
 
-    /// TODO: The following properties (1 and 2) are not checked by this constructor [1]:
+    /// TODO: The following properties (1 and 2) are not checked by this constructor \[1\]:
     /// a.  Both are ranked memref types with the same element type, address space, and rank and:
     ///     1.  Both have the same layout or both have compatible strided layouts.
     ///     2.  The individual sizes (resp. offset and strides in the case of strided memrefs)
     ///         may convert constant dimensions to dynamic dimensions and vice-versa.
-    /// [1]: https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop
+    /// \[1\]: <https://mlir.llvm.org/docs/Dialects/MemRef/#memrefcast-memrefcastop>
     pub fn new_ranked<T: NamedMemorySpace>(t: &MemRef, source: &Value, loc: &Location) -> Self {
         let t_source = source.get_type();
         let is_ranked = t_source.is_memref();
