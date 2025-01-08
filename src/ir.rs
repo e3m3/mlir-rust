@@ -1651,6 +1651,7 @@ impl StringCallback {
         self.get().is_none()
     }
 
+    #[allow(clippy::unnecessary_cast)]
     unsafe extern "C" fn print_string(s: MlirStringRef, data: *mut c_void) -> () {
         let Some(state) = do_unsafe!(StringCallbackState::from_ptr(data).as_mut()) else {
             eprintln!("Failed to convert pointer to string callback state");
