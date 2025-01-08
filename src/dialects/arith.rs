@@ -348,6 +348,9 @@ pub struct RemSI(MlirOperation);
 pub struct RemUI(MlirOperation);
 
 #[derive(Clone)]
+pub struct Select(MlirOperation);
+
+#[derive(Clone)]
 pub struct ShLI(MlirOperation);
 
 #[derive(Clone)]
@@ -457,6 +460,10 @@ fn check_element_type(is_type: fn(&Type) -> bool, op: Op, t: &Type, do_exit: boo
     }
 }
 
+fn check_element_type_bool(op: Op, t: &Type, do_exit: bool) -> bool {
+    check_element_type(Type::is_bool, op, t, do_exit)
+}
+
 fn check_element_type_float(op: Op, t: &Type, do_exit: bool) -> bool {
     check_element_type(Type::is_float, op, t, do_exit)
 }
@@ -474,28 +481,50 @@ fn check_element_type_integer_like(op: Op, t: &Type, do_exit: bool) -> bool {
     check_element_type(is_type, op, t, do_exit)
 }
 
-fn check_type_shape(op: Op, t_src: &Type, t_dst: &Type) -> () {
+fn check_type_shape(op: Op, t_src: &Type, t_dst: &Type, msg: Option<&str>) -> () {
     let is_match_memref = t_src.is_memref() && t_dst.is_memref();
     let is_match_tensor = t_src.is_tensor() && t_dst.is_tensor();
+    let is_match_unranked_memref = t_src.is_unranked_memref() && t_dst.is_unranked_memref();
     let is_match_vector = t_src.is_vector() && t_dst.is_vector();
     let is_match_non_shaped = !t_src.is_shaped() && !t_dst.is_shaped();
-    if !(is_match_memref || is_match_tensor || is_match_vector || is_match_non_shaped) {
+    if !(is_match_memref
+        || is_match_unranked_memref
+        || is_match_tensor
+        || is_match_vector
+        || is_match_non_shaped)
+    {
         eprintln!(
-            "Expected matching shape for source and result type of {} operation",
+            "Expected matching shape for {} type of {} operation",
+            msg.unwrap_or("source and result"),
             op.get_name()
         );
         exit(ExitCode::DialectError);
     }
 }
 
-fn check_type_width(op: Op, pred: CmpIPredicate, t_src: &Type, t_dst: &Type) -> () {
+fn check_type_width(
+    op: Op,
+    pred: CmpIPredicate,
+    t_src: &Type,
+    t_dst: &Type,
+    msg: Option<(&str, &str)>,
+) -> () {
+    const MSG: (&str, &str) = ("source", "destination");
     let name = op.get_name();
     let Some(w_src) = t_src.get_width() else {
-        eprintln!("Expected width for source type of {} operation", name);
+        eprintln!(
+            "Expected width for {} type of {} operation",
+            msg.unwrap_or(MSG).0,
+            name
+        );
         exit(ExitCode::DialectError);
     };
     let Some(w_dst) = t_dst.get_width() else {
-        eprintln!("Expected width for destination type of {} operation", name);
+        eprintln!(
+            "Expected width for {} type of {} operation",
+            msg.unwrap_or(MSG).1,
+            name
+        );
         exit(ExitCode::DialectError);
     };
     if !match pred {
@@ -507,9 +536,11 @@ fn check_type_width(op: Op, pred: CmpIPredicate, t_src: &Type, t_dst: &Type) -> 
         CmpIPredicate::Sge | CmpIPredicate::Uge => w_src >= w_dst,
     } {
         eprintln!(
-            "Expected source type width ({}) {} destination type width ({}) for {} operation",
+            "Expected {} type width ({}) {} {} type width ({}) for {} operation",
+            msg.unwrap_or(MSG).0,
             w_src,
             pred.get_operator_symbol(),
+            msg.unwrap_or(MSG).1,
             w_dst,
             name,
         );
@@ -1142,8 +1173,8 @@ impl AndI {
 impl Bitcast {
     pub fn new(t: &Type, input: &Value, loc: &Location) -> Self {
         let t_input = input.get_type();
-        check_type_shape(Op::Bitcast, &t_input, t);
-        check_type_width(Op::Bitcast, CmpIPredicate::Eq, &t_input, t);
+        check_type_shape(Op::Bitcast, &t_input, t, None);
+        check_type_width(Op::Bitcast, CmpIPredicate::Eq, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::Bitcast);
@@ -1239,10 +1270,16 @@ impl CmpF {
     ) -> Self {
         let t_lhs = lhs.get_type();
         let t_rhs = rhs.get_type();
-        check_type_shape(Op::CmpF, &t_lhs, &t_rhs);
+        check_type_shape(Op::CmpF, &t_lhs, &t_rhs, Some("lhs and rhs"));
         check_element_type_float(Op::CmpF, &t_lhs, true);
         check_element_type_float(Op::CmpF, &t_rhs, true);
-        check_type_width(Op::CmpF, CmpIPredicate::Eq, &t_lhs, &t_rhs);
+        check_type_width(
+            Op::CmpF,
+            CmpIPredicate::Eq,
+            &t_lhs,
+            &t_rhs,
+            Some(("lhs", "rhs")),
+        );
         let t_bool = IntegerType::new_bool(context).as_type();
         let t = if t_lhs.is_tensor() && t_rhs.is_tensor() {
             let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
@@ -1299,10 +1336,16 @@ impl CmpI {
     ) -> Self {
         let t_lhs = lhs.get_type();
         let t_rhs = rhs.get_type();
-        check_type_shape(Op::CmpI, &t_lhs, &t_rhs);
+        check_type_shape(Op::CmpI, &t_lhs, &t_rhs, Some("lhs and rhs"));
         check_element_type_integer_like(Op::CmpI, &t_lhs, true);
         check_element_type_integer_like(Op::CmpI, &t_rhs, true);
-        check_type_width(Op::CmpI, CmpIPredicate::Eq, &t_lhs, &t_rhs);
+        check_type_width(
+            Op::CmpI,
+            CmpIPredicate::Eq,
+            &t_lhs,
+            &t_rhs,
+            Some(("lhs", "rhs")),
+        );
         let t_bool = IntegerType::new_bool(context).as_type();
         let t = if t_lhs.is_tensor() && t_rhs.is_tensor() {
             let s = ShapeImpl::from(Shaped::from(&t_lhs).to_vec());
@@ -1532,8 +1575,8 @@ impl ExtF {
         let t_input = input.get_type();
         check_element_type_float(Op::ExtF, t, true);
         check_element_type_float(Op::ExtF, &t_input, true);
-        check_type_shape(Op::ExtF, &t_input, t);
-        check_type_width(Op::ExtF, CmpIPredicate::Slt, &t_input, t);
+        check_type_shape(Op::ExtF, &t_input, t, None);
+        check_type_width(Op::ExtF, CmpIPredicate::Slt, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::ExtF);
@@ -1569,8 +1612,8 @@ impl ExtSI {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::ExtSI, t, true);
         check_element_type_integer_like(Op::ExtSI, &t_input, true);
-        check_type_shape(Op::ExtSI, &t_input, t);
-        check_type_width(Op::ExtSI, CmpIPredicate::Slt, &t_input, t);
+        check_type_shape(Op::ExtSI, &t_input, t, None);
+        check_type_width(Op::ExtSI, CmpIPredicate::Slt, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::ExtSI);
@@ -1594,8 +1637,8 @@ impl ExtUI {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::ExtUI, t, true);
         check_element_type_integer_like(Op::ExtUI, &t_input, true);
-        check_type_shape(Op::ExtUI, &t_input, t);
-        check_type_width(Op::ExtUI, CmpIPredicate::Slt, &t_input, t);
+        check_type_shape(Op::ExtUI, &t_input, t, None);
+        check_type_width(Op::ExtUI, CmpIPredicate::Slt, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::ExtUI);
@@ -1652,8 +1695,8 @@ impl FPToSI {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::FPToSI, t, true);
         check_element_type_float(Op::FPToSI, &t_input, true);
-        check_type_shape(Op::FPToSI, &t_input, t);
-        check_type_width(Op::FPToSI, CmpIPredicate::Eq, &t_input, t);
+        check_type_shape(Op::FPToSI, &t_input, t, None);
+        check_type_width(Op::FPToSI, CmpIPredicate::Eq, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::FPToSI);
@@ -1677,8 +1720,8 @@ impl FPToUI {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::FPToUI, t, true);
         check_element_type_float(Op::FPToUI, &t_input, true);
-        check_type_shape(Op::FPToUI, &t_input, t);
-        check_type_width(Op::FPToUI, CmpIPredicate::Eq, &t_input, t);
+        check_type_shape(Op::FPToUI, &t_input, t, None);
+        check_type_width(Op::FPToUI, CmpIPredicate::Eq, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::FPToUI);
@@ -1705,7 +1748,7 @@ impl IndexCast {
         } else {
             check_element_type_index(Op::IndexCast, &t_input, true);
         }
-        check_type_shape(Op::IndexCast, &t_input, t);
+        check_type_shape(Op::IndexCast, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::IndexCast);
@@ -1732,7 +1775,7 @@ impl IndexCastUI {
         } else {
             check_element_type_index(Op::IndexCast, &t_input, true);
         }
-        check_type_shape(Op::IndexCastUI, &t_input, t);
+        check_type_shape(Op::IndexCastUI, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::IndexCastUI);
@@ -2434,6 +2477,84 @@ impl RemUI {
     }
 }
 
+impl Select {
+    pub fn new(context: &Context, cond: &Value, lhs: &Value, rhs: &Value, loc: &Location) -> Self {
+        let t_cond = cond.get_type();
+        let t_lhs = lhs.get_type();
+        let t_rhs = rhs.get_type();
+        if !t_cond.is_bool() {
+            eprintln!("Expected bool type for condition operand of select operation");
+            exit(ExitCode::DialectError);
+        }
+        check_type_shape(Op::Select, &t_lhs, &t_rhs, Some("lhs and rhs"));
+        check_type_width(
+            Op::Select,
+            CmpIPredicate::Eq,
+            &t_lhs,
+            &t_rhs,
+            Some(("lhs", "rhs")),
+        );
+        if t_lhs != t_rhs {
+            eprintln!("Expected matching types for operands of select operation");
+            exit(ExitCode::DialectError);
+        }
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::Select);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[cond.clone(), lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t_lhs.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new_elementwise(
+        context: &Context,
+        cond: &Value,
+        lhs: &Value,
+        rhs: &Value,
+        loc: &Location,
+    ) -> Self {
+        let t_cond = cond.get_type();
+        let t_lhs = lhs.get_type();
+        let t_rhs = rhs.get_type();
+        if !t_cond.is_shaped() || !check_element_type_bool(Op::Select, &t_cond, false) {
+            eprintln!(
+                "Expected shaped bool type for condition operand of elementwise select operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if t_cond.is_memref() {
+            eprintln!(
+                "Memory reference types for condition operand of elementwise select operation \
+                is not supported"
+            );
+            exit(ExitCode::DialectError);
+        }
+        check_type_shape(Op::Select, &t_lhs, &t_rhs, Some("lhs and rhs"));
+        check_type_shape(Op::Select, &t_cond, &t_lhs, Some("condition and lhs/rhs"));
+        check_type_width(
+            Op::Select,
+            CmpIPredicate::Eq,
+            &t_lhs,
+            &t_rhs,
+            Some(("lhs", "rhs")),
+        );
+        let dialect = context.get_dialect_arith();
+        let name = dialect.get_op_name(&Op::Select);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[cond.clone(), lhs.clone(), rhs.clone()]);
+        op_state.add_results(&[t_lhs.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl ShLI {
     pub fn new(
         t: &Type,
@@ -2554,8 +2675,8 @@ impl SIToFP {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::SIToFP, &t_input, true);
         check_element_type_float(Op::SIToFP, t, true);
-        check_type_shape(Op::SIToFP, &t_input, t);
-        check_type_width(Op::SIToFP, CmpIPredicate::Eq, &t_input, t);
+        check_type_shape(Op::SIToFP, &t_input, t, None);
+        check_type_width(Op::SIToFP, CmpIPredicate::Eq, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::SIToFP);
@@ -2683,8 +2804,8 @@ impl TruncF {
         let t_input = input.get_type();
         check_element_type_float(Op::TruncF, t, true);
         check_element_type_float(Op::TruncF, &t_input, true);
-        check_type_shape(Op::TruncF, &t_input, t);
-        check_type_width(Op::TruncF, CmpIPredicate::Sgt, &t_input, t);
+        check_type_shape(Op::TruncF, &t_input, t, None);
+        check_type_width(Op::TruncF, CmpIPredicate::Sgt, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::TruncF);
@@ -2734,8 +2855,8 @@ impl TruncI {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::TruncI, t, true);
         check_element_type_integer_like(Op::TruncI, &t_input, true);
-        check_type_shape(Op::TruncI, &t_input, t);
-        check_type_width(Op::TruncI, CmpIPredicate::Sgt, &t_input, t);
+        check_type_shape(Op::TruncI, &t_input, t, None);
+        check_type_width(Op::TruncI, CmpIPredicate::Sgt, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::TruncI);
@@ -2759,8 +2880,8 @@ impl UIToFP {
         let t_input = input.get_type();
         check_element_type_integer_like(Op::UIToFP, &t_input, true);
         check_element_type_float(Op::UIToFP, t, true);
-        check_type_shape(Op::UIToFP, &t_input, t);
-        check_type_width(Op::UIToFP, CmpIPredicate::Eq, &t_input, t);
+        check_type_shape(Op::UIToFP, &t_input, t, None);
+        check_type_width(Op::UIToFP, CmpIPredicate::Eq, &t_input, t, None);
         let context = t.get_context();
         let dialect = context.get_dialect_arith();
         let name = dialect.get_op_name(&Op::UIToFP);
@@ -4986,6 +5107,59 @@ impl From<i32> for RoundingModeKind {
 impl From<i64> for RoundingModeKind {
     fn from(n: i64) -> Self {
         Self::from(n as i32)
+    }
+}
+
+impl From<MlirOperation> for Select {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Select {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        self.as_operation().get_context().get_dialect_arith()
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferIntRangeInterface,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+            Interface::SelectLikeOpInterface,
+            Interface::VectorUnrollOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Select.get_name()
+    }
+
+    fn get_op(&self) -> &'static dyn IOp {
+        &Op::Select
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AlwaysSpeculatableImplTrait,
+            Trait::ElementWise,
+            Trait::Scalarizable,
+            Trait::Tensorizable,
+            Trait::Vectorizable,
+        ]
     }
 }
 
