@@ -16,6 +16,11 @@ Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindin
 `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 
 
+##   Documentation
+
+Read the API at [https://e3m3.github.io/mlir-rust/mlir/](https://e3m3.github.io/mlir-rust/mlir/index.html).
+
+
 ##  Prerequisites
 
 *   rust-2024

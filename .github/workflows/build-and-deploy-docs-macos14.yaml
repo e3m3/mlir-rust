@@ -1,0 +1,61 @@
+# Copyright 2024-2025, Giordano Salvador
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: Build-and-deploy-docs
+
+on:
+
+  workflow_call:
+
+permissions:
+
+  id-token: write
+  pages: write
+
+jobs:
+
+  build-docs:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ${{ github.workspace }}
+    steps:
+
+    - name: Checkout homebrew
+      uses: Homebrew/actions/setup-homebrew@master
+
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Build source and docs
+      run: |
+        export BUILD_MODE=release
+        export HOMEBREW_HOME="$(brew --prefix)"
+        bash -x "./scripts/build-docs-macos.sh"
+
+    - name: List doc artifacts
+      run: |
+        find "./target/doc/mlir"
+
+    - name: Archive artifacts
+      run: |
+        mkdir -p "./target/doc/_site"
+        tar zcf "./target/doc/_site/github-pages" ./target/doc/mlir/*
+
+    - name: Upload docs artifacts
+      id: deployment-docs
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ github.workspace }}/target/doc/
+
+  deploy-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: macos-14
+    needs: build-docs
+    steps:
+
+    - name: Deploy to GitHub-Pages
+      id: deployment-docs
+      uses: actions/deploy-pages@v4

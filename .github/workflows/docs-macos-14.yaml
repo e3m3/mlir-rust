@@ -1,0 +1,19 @@
+# Copyright 2024-2025, Giordano Salvador
+# SPDX-License-Identifier: BSD-3-Clause
+
+name: Build Docs (MacOS 14)
+
+on:
+
+  workflow_dispatch:
+    branches: [ "main" ]
+
+permissions:
+
+  id-token: write
+  pages: write
+
+jobs:
+
+  run:
+    uses: e3m3/mlir-rust/.github/workflows/build-and-deploy-docs-macos14.yaml@main
