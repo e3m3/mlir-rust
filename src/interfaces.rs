@@ -1,4 +1,4 @@
-// Copyright 2024, Giordano Salvador
+// Copyright 2024-2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
