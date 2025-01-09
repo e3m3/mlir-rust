@@ -33,6 +33,7 @@ use attributes::specialized::SpecializedAttribute;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::SymbolName;
@@ -1228,7 +1229,7 @@ impl IOperation for Alloc {
         Op::Alloc.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Alloc
     }
 
@@ -1266,7 +1267,7 @@ impl IOperation for Alloca {
         Op::Alloca.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Alloca
     }
 
@@ -1306,7 +1307,7 @@ impl IOperation for Cast {
         Op::Cast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Cast
     }
 
@@ -1344,7 +1345,7 @@ impl IOperation for Copy {
         Op::Copy.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Copy
     }
 
@@ -1378,7 +1379,7 @@ impl IOperation for Dealloc {
         Op::Dealloc.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Dealloc
     }
 
@@ -1418,7 +1419,7 @@ impl IOperation for Dim {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Dim
     }
 
@@ -1456,7 +1457,7 @@ impl IOperation for GetGlobal {
         Op::GetGlobal.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::GetGlobal
     }
 
@@ -1490,7 +1491,7 @@ impl IOperation for Global {
         Op::Global.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Global
     }
 
@@ -1532,7 +1533,7 @@ impl IOperation for Load {
         Op::Load.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Load
     }
 
@@ -1578,7 +1579,7 @@ impl IOperation for Rank {
         Op::Rank.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Rank
     }
 
@@ -1615,7 +1616,7 @@ impl IOperation for Store {
         Op::Store.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Store
     }
 
@@ -1653,7 +1654,7 @@ impl IOperation for Transpose {
         Op::Transpose.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Transpose
     }
 
@@ -1696,7 +1697,7 @@ impl IOperation for View {
         Op::View.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::View
     }
 

@@ -23,6 +23,7 @@ use attributes::specialized::NamedIndex;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -408,7 +409,7 @@ impl IOperation for Add {
         Op::Add.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Add
     }
 
@@ -454,7 +455,7 @@ impl IOperation for BoolConstant {
         Op::BoolConstant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::BoolConstant
     }
 
@@ -501,7 +502,7 @@ impl IOperation for CastS {
         Op::CastS.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CastS
     }
 
@@ -546,7 +547,7 @@ impl IOperation for CastU {
         Op::CastU.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CastU
     }
 
@@ -592,7 +593,7 @@ impl IOperation for Constant {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Constant
     }
 
@@ -645,7 +646,7 @@ impl IOperation for SizeOf {
         Op::SizeOf.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::SizeOf
     }
 

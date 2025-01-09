@@ -31,6 +31,7 @@ use attributes::specialized::NamedParsed;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -2974,7 +2975,7 @@ impl IOperation for AddF {
         Op::AddF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::AddF
     }
 
@@ -3029,7 +3030,7 @@ impl IOperation for AddI {
         Op::AddI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::AddI
     }
 
@@ -3081,7 +3082,7 @@ impl IOperation for AddUIExtended {
         Op::AddUIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::AddUIExtended
     }
 
@@ -3134,7 +3135,7 @@ impl IOperation for AndI {
         Op::AndI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::AndI
     }
 
@@ -3202,7 +3203,7 @@ impl IOperation for Bitcast {
         Op::Bitcast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Bitcast
     }
 
@@ -3255,7 +3256,7 @@ impl IOperation for CeilDivSI {
         Op::CeilDivSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CeilDivSI
     }
 
@@ -3307,7 +3308,7 @@ impl IOperation for CeilDivUI {
         Op::CeilDivUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CeilDivUI
     }
 
@@ -3359,7 +3360,7 @@ impl IOperation for CmpF {
         Op::CmpF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CmpF
     }
 
@@ -3424,7 +3425,7 @@ impl IOperation for CmpI {
         Op::CmpI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CmpI
     }
 
@@ -3489,7 +3490,7 @@ impl IOperation for Constant {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Constant
     }
 
@@ -3535,7 +3536,7 @@ impl IOperation for DivF {
         Op::DivF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::DivF
     }
 
@@ -3588,7 +3589,7 @@ impl IOperation for DivSI {
         Op::DivSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::DivSI
     }
 
@@ -3640,7 +3641,7 @@ impl IOperation for DivUI {
         Op::DivUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::DivUI
     }
 
@@ -3692,7 +3693,7 @@ impl IOperation for ExtF {
         Op::ExtF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ExtF
     }
 
@@ -3745,7 +3746,7 @@ impl IOperation for ExtSI {
         Op::ExtSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ExtSI
     }
 
@@ -3798,7 +3799,7 @@ impl IOperation for ExtUI {
         Op::ExtUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ExtUI
     }
 
@@ -3899,7 +3900,7 @@ impl IOperation for FloorDivSI {
         Op::FloorDivSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::FloorDivSI
     }
 
@@ -3951,7 +3952,7 @@ impl IOperation for FPToSI {
         Op::FPToSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::FPToSI
     }
 
@@ -4003,7 +4004,7 @@ impl IOperation for FPToUI {
         Op::FPToUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::FPToUI
     }
 
@@ -4056,7 +4057,7 @@ impl IOperation for IndexCast {
         Op::IndexCast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::IndexCast
     }
 
@@ -4109,7 +4110,7 @@ impl IOperation for IndexCastUI {
         Op::IndexCastUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::IndexCastUI
     }
 
@@ -4216,7 +4217,7 @@ impl IOperation for MaximumF {
         Op::MaximumF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MaximumF
     }
 
@@ -4270,7 +4271,7 @@ impl IOperation for MaxNumF {
         Op::MaxNumF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MaxNumF
     }
 
@@ -4324,7 +4325,7 @@ impl IOperation for MaxSI {
         Op::MaxSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MaxSI
     }
 
@@ -4378,7 +4379,7 @@ impl IOperation for MaxUI {
         Op::MaxUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MaxUI
     }
 
@@ -4432,7 +4433,7 @@ impl IOperation for MinimumF {
         Op::MinimumF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MinimumF
     }
 
@@ -4486,7 +4487,7 @@ impl IOperation for MinNumF {
         Op::MinNumF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MinNumF
     }
 
@@ -4540,7 +4541,7 @@ impl IOperation for MinSI {
         Op::MinSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MinSI
     }
 
@@ -4594,7 +4595,7 @@ impl IOperation for MinUI {
         Op::MinUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MinUI
     }
 
@@ -4648,7 +4649,7 @@ impl IOperation for MulF {
         Op::MulF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MulF
     }
 
@@ -4704,7 +4705,7 @@ impl IOperation for MulI {
         Op::MulI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MulI
     }
 
@@ -4757,7 +4758,7 @@ impl IOperation for MulSIExtended {
         Op::MulSIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MulSIExtended
     }
 
@@ -4809,7 +4810,7 @@ impl IOperation for MulUIExtended {
         Op::MulUIExtended.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MulUIExtended
     }
 
@@ -4866,7 +4867,7 @@ impl IOperation for NegF {
         Op::NegF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::NegF
     }
 
@@ -4919,7 +4920,7 @@ impl IOperation for OrI {
         Op::OrI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::OrI
     }
 
@@ -4974,7 +4975,7 @@ impl IOperation for RemF {
         Op::RemF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::RemF
     }
 
@@ -5027,7 +5028,7 @@ impl IOperation for RemSI {
         Op::RemSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::RemSI
     }
 
@@ -5080,7 +5081,7 @@ impl IOperation for RemUI {
         Op::RemUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::RemUI
     }
 
@@ -5148,7 +5149,7 @@ impl IOperation for Select {
         Op::Select.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Select
     }
 
@@ -5201,7 +5202,7 @@ impl IOperation for ShLI {
         Op::ShLI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ShLI
     }
 
@@ -5254,7 +5255,7 @@ impl IOperation for ShRSI {
         Op::ShRSI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ShRSI
     }
 
@@ -5307,7 +5308,7 @@ impl IOperation for ShRUI {
         Op::ShRUI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ShRUI
     }
 
@@ -5359,7 +5360,7 @@ impl IOperation for SIToFP {
         Op::SIToFP.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::SIToFP
     }
 
@@ -5412,7 +5413,7 @@ impl IOperation for SubF {
         Op::SubF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::SubF
     }
 
@@ -5466,7 +5467,7 @@ impl IOperation for SubI {
         Op::SubI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::SubI
     }
 
@@ -5520,7 +5521,7 @@ impl IOperation for TruncF {
         Op::TruncF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::TruncF
     }
 
@@ -5573,7 +5574,7 @@ impl IOperation for TruncI {
         Op::TruncI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::TruncI
     }
 
@@ -5625,7 +5626,7 @@ impl IOperation for UIToFP {
         Op::UIToFP.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::UIToFP
     }
 
@@ -5678,7 +5679,7 @@ impl IOperation for XOrI {
         Op::XOrI.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::XOrI
     }
 

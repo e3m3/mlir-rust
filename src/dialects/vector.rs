@@ -31,6 +31,7 @@ use attributes::specialized::NamedString;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::common::NonTemporal;
 use dialects::common::OperandSegmentSizes;
 use effects::MEFF_DEFAULT_WRITE;
@@ -1255,7 +1256,7 @@ impl IOperation for Extract {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Extract
     }
 
@@ -1297,7 +1298,7 @@ impl IOperation for ExtractElement {
         Op::ExtractElement.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ExtractElement
     }
 
@@ -1334,7 +1335,7 @@ impl IOperation for FromElements {
         Op::FromElements.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::FromElements
     }
 
@@ -1368,7 +1369,7 @@ impl IOperation for Load {
         Op::Load.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Load
     }
 
@@ -1414,7 +1415,7 @@ impl IOperation for Print {
         Op::Print.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Print
     }
 
@@ -1493,7 +1494,7 @@ impl IOperation for Store {
         Op::Store.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Store
     }
 
@@ -1540,7 +1541,7 @@ impl IOperation for TransferRead {
         Op::TransferRead.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::TransferRead
     }
 
@@ -1581,7 +1582,7 @@ impl IOperation for TransferWrite {
         Op::TransferWrite.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::TransferWrite
     }
 
@@ -1615,7 +1616,7 @@ impl IOperation for VectorMask {
         self.as_from_elements().get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         self.as_from_elements().get_op()
     }
 

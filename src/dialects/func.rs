@@ -29,6 +29,7 @@ use attributes::specialized::SpecializedAttribute;
 use attributes::symbol_ref::SymbolRef;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::common::SymbolName;
 use dialects::common::SymbolVisibility;
 use dialects::common::SymbolVisibilityKind;
@@ -505,7 +506,7 @@ impl IOperation for Call {
         Op::Call.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Call
     }
 
@@ -541,7 +542,7 @@ impl IOperation for CallIndirect {
         Op::CallIndirect.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CallIndirect
     }
 
@@ -580,7 +581,7 @@ impl IOperation for Constant {
         Op::Constant.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Constant
     }
 
@@ -619,7 +620,7 @@ impl IOperation for Func {
         Op::Func.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Func
     }
 
@@ -673,7 +674,7 @@ impl IOperation for Return {
         Op::Return.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Return
     }
 

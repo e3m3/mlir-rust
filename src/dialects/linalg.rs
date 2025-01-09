@@ -29,6 +29,7 @@ use attributes::specialized::NamedParsed;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::affine::Dim as AffineDim;
 use dialects::affine::IExpr;
 use dialects::affine::Map as AffineMap;
@@ -2724,7 +2725,7 @@ impl IOperation for Abs {
         Op::Abs.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Abs
     }
 
@@ -2794,7 +2795,7 @@ impl IOperation for Add {
         Op::Add.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Add
     }
 
@@ -2869,7 +2870,7 @@ impl IOperation for Ceil {
         Op::Ceil.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Ceil
     }
 
@@ -2928,7 +2929,7 @@ impl IOperation for Copy {
         Op::Copy.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Copy
     }
 
@@ -2997,7 +2998,7 @@ impl IOperation for Div {
         Op::Div.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Div
     }
 
@@ -3062,7 +3063,7 @@ impl IOperation for DivUnsigned {
         Op::DivUnsigned.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::DivUnsigned
     }
 
@@ -3122,7 +3123,7 @@ impl IOperation for Dot {
         Op::Dot.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Dot
     }
 
@@ -3181,7 +3182,7 @@ impl IOperation for ElementwiseBinary {
         Op::ElementwiseBinary.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ElementwiseBinary
     }
 
@@ -3240,7 +3241,7 @@ impl IOperation for ElementwiseUnary {
         Op::ElementwiseUnary.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ElementwiseUnary
     }
 
@@ -3299,7 +3300,7 @@ impl IOperation for Erf {
         Op::Erf.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Erf
     }
 
@@ -3358,7 +3359,7 @@ impl IOperation for Exp {
         Op::Exp.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Exp
     }
 
@@ -3417,7 +3418,7 @@ impl IOperation for Floor {
         Op::Floor.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Floor
     }
 
@@ -3466,7 +3467,7 @@ impl IOperation for Index {
         Op::Index.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Index
     }
 
@@ -3530,7 +3531,7 @@ impl IOperation for Log {
         Op::Log.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Log
     }
 
@@ -3618,7 +3619,7 @@ impl IOperation for Matmul {
         Op::Matmul.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Matmul
     }
 
@@ -3706,7 +3707,7 @@ impl IOperation for MatmulTransposeA {
         Op::MatmulTransposeA.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MatmulTransposeA
     }
 
@@ -3794,7 +3795,7 @@ impl IOperation for MatmulTransposeB {
         Op::MatmulTransposeB.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::MatmulTransposeB
     }
 
@@ -3882,7 +3883,7 @@ impl IOperation for Matvec {
         Op::Matvec.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Matvec
     }
 
@@ -3941,7 +3942,7 @@ impl IOperation for Max {
         Op::Max.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Max
     }
 
@@ -4000,7 +4001,7 @@ impl IOperation for Min {
         Op::Min.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Min
     }
 
@@ -4070,7 +4071,7 @@ impl IOperation for Mul {
         Op::Mul.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Mul
     }
 
@@ -4129,7 +4130,7 @@ impl IOperation for NegF {
         Op::NegF.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::NegF
     }
 
@@ -4234,7 +4235,7 @@ impl IOperation for Reciprocal {
         Op::Reciprocal.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Reciprocal
     }
 
@@ -4293,7 +4294,7 @@ impl IOperation for Round {
         Op::Round.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Round
     }
 
@@ -4352,7 +4353,7 @@ impl IOperation for Rsqrt {
         Op::Rsqrt.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Rsqrt
     }
 
@@ -4411,7 +4412,7 @@ impl IOperation for Sqrt {
         Op::Sqrt.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Sqrt
     }
 
@@ -4470,7 +4471,7 @@ impl IOperation for Square {
         Op::Square.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Square
     }
 
@@ -4540,7 +4541,7 @@ impl IOperation for Sub {
         Op::Sub.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Sub
     }
 
@@ -4599,7 +4600,7 @@ impl IOperation for Tanh {
         Op::Tanh.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Tanh
     }
 
@@ -4664,7 +4665,7 @@ impl IOperation for Transpose {
         Op::Transpose.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Transpose
     }
 
@@ -4759,7 +4760,7 @@ impl IOperation for Vecmat {
         Op::Vecmat.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Vecmat
     }
 
@@ -4808,7 +4809,7 @@ impl IOperation for Yield {
         Op::Yield.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Yield
     }
 

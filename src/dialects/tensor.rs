@@ -28,6 +28,7 @@ use attributes::specialized::NamedUnit;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::common::Dimension;
 use dialects::common::OperandSegmentSizes;
 use dialects::common::StaticOffsets;
@@ -1467,7 +1468,7 @@ impl IOperation for Bitcast {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Dim
     }
 
@@ -1506,7 +1507,7 @@ impl IOperation for Cast {
         Op::Cast.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Cast
     }
 
@@ -1545,7 +1546,7 @@ impl IOperation for Concat {
         Op::Concat.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Concat
     }
 
@@ -1583,7 +1584,7 @@ impl IOperation for CollapseShape {
         Op::CollapseShape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::CollapseShape
     }
 
@@ -1623,7 +1624,7 @@ impl IOperation for Dim {
         Op::Dim.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Dim
     }
 
@@ -1661,7 +1662,7 @@ impl IOperation for Empty {
         Op::Empty.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Empty
     }
 
@@ -1699,7 +1700,7 @@ impl IOperation for ExpandShape {
         Op::ExpandShape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::ExpandShape
     }
 
@@ -1738,7 +1739,7 @@ impl IOperation for Extract {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Extract
     }
 
@@ -1778,7 +1779,7 @@ impl IOperation for ExtractSlice {
         Op::Extract.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Extract
     }
 
@@ -1819,7 +1820,7 @@ impl IOperation for FromElements {
         Op::FromElements.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::FromElements
     }
 
@@ -1858,7 +1859,7 @@ impl IOperation for Generate {
         Op::Generate.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Generate
     }
 
@@ -1912,7 +1913,7 @@ impl IOperation for Pad {
         Op::Pad.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Pad
     }
 
@@ -1956,7 +1957,7 @@ impl IOperation for Rank {
         Op::Rank.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Rank
     }
 
@@ -1996,7 +1997,7 @@ impl IOperation for Reshape {
         Op::Reshape.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Reshape
     }
 
@@ -2046,7 +2047,7 @@ impl IOperation for Yield {
         Op::Yield.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Yield
     }
 

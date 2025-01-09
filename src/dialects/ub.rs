@@ -21,6 +21,7 @@ use attributes::specialized::NamedOpaque;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -173,7 +174,7 @@ impl IOperation for Poison {
         Op::Poison.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Poison
     }
 

@@ -109,6 +109,7 @@ use attributes::specialized::NamedIndex;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
+use dialects::OpRef;
 use dialects::common::OperandSegmentSizes;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
@@ -1585,7 +1586,7 @@ impl IOperation for Apply {
         Op::Apply.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Apply
     }
 
@@ -1656,7 +1657,7 @@ impl IOperation for DelinearizeIndex {
         Op::DelinearizeIndex.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::DelinearizeIndex
     }
 
@@ -1732,7 +1733,7 @@ impl IOperation for For {
         Op::For.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::For
     }
 
@@ -1781,7 +1782,7 @@ impl IOperation for If {
         Op::If.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::If
     }
 
@@ -1836,7 +1837,7 @@ impl IOperation for Load {
         Op::Load.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Load
     }
 
@@ -1933,7 +1934,7 @@ impl IOperation for Store {
         Op::Store.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Store
     }
 
@@ -1994,7 +1995,7 @@ impl IOperation for VectorLoad {
         Op::VectorLoad.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::VectorLoad
     }
 
@@ -2037,7 +2038,7 @@ impl IOperation for VectorStore {
         Op::VectorStore.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::VectorStore
     }
 
@@ -2075,7 +2076,7 @@ impl IOperation for Yield {
         Op::Yield.get_name()
     }
 
-    fn get_op(&self) -> &'static dyn IOp {
+    fn get_op(&self) -> OpRef {
         &Op::Yield
     }
 
