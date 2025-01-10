@@ -1279,6 +1279,74 @@ impl Load {
     }
 }
 
+impl Max {
+    pub fn new(context: &Context, map: Map, indices: &[Value], loc: &Location) -> Self {
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for indices of max operation");
+            exit(ExitCode::DialectError);
+        }
+        let t = Index::new(context).as_type();
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::Max);
+        let attr = NamedMap::from(*map.as_attribute().get_mut());
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(indices);
+        op_state.add_results(&[t]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_map(&self) -> NamedMap {
+        let attr_name = StringBacked::from(NamedMap::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMap::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl Min {
+    pub fn new(context: &Context, map: Map, indices: &[Value], loc: &Location) -> Self {
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for indices of min operation");
+            exit(ExitCode::DialectError);
+        }
+        let t = Index::new(context).as_type();
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::Min);
+        let attr = NamedMap::from(*map.as_attribute().get_mut());
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr.as_named_attribute()]);
+        op_state.add_operands(indices);
+        op_state.add_results(&[t]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_map(&self) -> NamedMap {
+        let attr_name = StringBacked::from(NamedMap::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMap::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl Store {
     pub fn new(
         context: &Context,
@@ -1883,6 +1951,94 @@ SpecializedAttribute!("map" = impl NamedAffineMap for NamedMap {});
 impl cmp::PartialEq for Map {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirAffineMapEqual(*self.get(), *rhs.get()))
+    }
+}
+
+impl From<MlirOperation> for Max {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Max {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Max.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::Max
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[Trait::AlwaysSpeculatableImplTrait]
+    }
+}
+
+impl From<MlirOperation> for Min {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Min {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[MEFF_NO_MEMORY_EFFECT]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::InferTypeOpInterface,
+            Interface::MemoryEffect(MemoryEffectOpInterface::NoMemoryEffect),
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Min.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::Min
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
 
