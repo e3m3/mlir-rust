@@ -364,51 +364,51 @@ impl Op {
 
 impl Binary {
     pub fn new_add(lhs: Expr, rhs: Expr) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineAddExprGet(*lhs.get(), *rhs.get())),
             BinOp::Add,
-        )
+        ))
     }
 
     pub fn new_mod(lhs: Expr, rhs: Expr) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineModExprGet(*lhs.get(), *rhs.get())),
             BinOp::Mod,
-        )
+        ))
     }
 
     pub fn new_mul(lhs: Expr, rhs: Expr) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineMulExprGet(*lhs.get(), *rhs.get())),
             BinOp::Mul,
-        )
+        ))
     }
 
     pub fn new_ceil_div(lhs: Expr, rhs: Expr) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineCeilDivExprGet(*lhs.get(), *rhs.get())),
             BinOp::CeilDiv,
-        )
+        ))
     }
 
     pub fn new_floor_div(lhs: Expr, rhs: Expr) -> Self {
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineFloorDivExprGet(*lhs.get(), *rhs.get())),
             BinOp::FloorDiv,
-        )
+        ))
     }
 
     pub fn new_sub(lhs: Expr, rhs_: Expr) -> Self {
         let context = lhs.get_context();
         let cn1 = Constant::new(&context, -1).as_expr();
         let rhs = Self::new_mul(rhs_, cn1).as_expr();
-        Self::from(
+        Self::from((
             do_unsafe!(mlirAffineAddExprGet(*lhs.get(), *rhs.get())),
             BinOp::Add,
-        )
+        ))
     }
 
-    pub fn from(expr: MlirAffineExpr, op: BinOp) -> Self {
+    pub fn from_checked(expr: MlirAffineExpr, op: BinOp) -> Self {
         let expr_ = Expr::from(expr);
         // NOTE: Incoming expression may have been internally simplified to a constant (e.g., const * -1).
         if !expr_.is_binary() && !expr_.is_constant() {
@@ -417,7 +417,7 @@ impl Binary {
             eprintln!();
             exit(ExitCode::DialectError);
         }
-        Self(expr, op)
+        Self::from((expr, op))
     }
 
     pub fn get(&self) -> &MlirAffineExpr {
@@ -518,7 +518,7 @@ impl Expr {
             } else {
                 return None;
             };
-            Some(Binary::from(*self.get(), op))
+            Some(Binary::from((*self.get(), op)))
         } else {
             None
         }
@@ -1592,6 +1592,12 @@ impl IOperation for Apply {
 
     fn get_traits(&self) -> &'static [Trait] {
         &[Trait::AlwaysSpeculatableImplTrait]
+    }
+}
+
+impl From<(MlirAffineExpr, BinOp)> for Binary {
+    fn from((expr, op): (MlirAffineExpr, BinOp)) -> Self {
+        Self(expr, op)
     }
 }
 
