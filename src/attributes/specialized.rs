@@ -720,7 +720,7 @@ pub trait NamedOpaque: From<MlirAttribute> + IAttributeNamed + Sized {
     fn from_checked(attr: MlirAttribute) -> Self {
         let attr_ = Self::from(attr);
         if !attr_.as_attribute().is_opaque() {
-            eprintln!("Expected opqaue attribute");
+            eprintln!("Expected opaque attribute");
             exit(ExitCode::IRError);
         }
         attr_
