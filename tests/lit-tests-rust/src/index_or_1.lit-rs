@@ -1,4 +1,4 @@
-// RUN: %O/run index_add_1 | @mlir-opt | @filecheck %M/index_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run index_or_1 | @mlir-opt | @filecheck %M/index_or_1.mlir --check-prefix=CHECK_CAN
 // COM: No dialect handle for index is exposed, so make sure to load all available dialects before
 // COM: constructing operations from the index dialect namespace.
 
@@ -8,7 +8,7 @@ use crate::common::*;
 
 use mlir::dialects::IOperation;
 use mlir::dialects::func::Return;
-use mlir::dialects::index::Add;
+use mlir::dialects::index::Or;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
@@ -23,10 +23,10 @@ pub fn test() -> TestResult {
     let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_add =
-        Add::new(&context, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
-    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
-    f_block.append_operation(&mut op_add);
+    let mut op_or =
+        Or::new(&context, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[op_or.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_or);
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());

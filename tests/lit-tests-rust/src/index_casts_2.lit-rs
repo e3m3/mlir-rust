@@ -18,6 +18,7 @@ pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
     let mut context = module.get_context();
     context.load_all_available_dialects();
+    context.set_allow_unregistered_dialects(true);
     let loc = context.get_unknown_location();
     let t_index = Index::new(&context).as_type();
     let t_int = IntegerType::new(&context, 64).as_type();

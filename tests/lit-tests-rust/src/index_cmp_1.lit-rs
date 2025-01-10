@@ -1,4 +1,4 @@
-// RUN: %O/run index_add_1 | @mlir-opt | @filecheck %M/index_add_1.mlir --check-prefix=CHECK_CAN
+// RUN: %O/run index_cmp_1 | @mlir-opt | @filecheck %M/index_cmp_1.mlir --check-prefix=CHECK_CAN
 // COM: No dialect handle for index is exposed, so make sure to load all available dialects before
 // COM: constructing operations from the index dialect namespace.
 
@@ -8,10 +8,12 @@ use crate::common::*;
 
 use mlir::dialects::IOperation;
 use mlir::dialects::func::Return;
-use mlir::dialects::index::Add;
+use mlir::dialects::index::Cmp;
+use mlir::dialects::index::CmpPredicate;
 use mlir::ir::Block;
 use mlir::types::IType;
 use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
 
 pub fn test() -> TestResult {
     let mut module = get_module(&get_registry());
@@ -20,13 +22,20 @@ pub fn test() -> TestResult {
     context.set_allow_unregistered_dialects(true);
     let loc = context.get_unknown_location();
     let t = Index::new(&context).as_type();
-    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t.clone()]);
+    let t_bool = IntegerType::new_bool(&context).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone(), t.clone()], &[t_bool.clone()]);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
-    let mut op_add =
-        Add::new(&context, &f_block.get_arg(0), &f_block.get_arg(1), &loc).as_operation();
-    let mut op_ret = Return::new(&f, &[op_add.get_result(0)], &loc).as_operation();
-    f_block.append_operation(&mut op_add);
+    let mut op_cmp = Cmp::new(
+        &context,
+        CmpPredicate::SLT,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[op_cmp.get_result(0)], &loc).as_operation();
+    f_block.append_operation(&mut op_cmp);
     f_block.append_operation(&mut op_ret);
     let mut block = Block::new_empty();
     block.append_operation(&mut f.as_operation());
