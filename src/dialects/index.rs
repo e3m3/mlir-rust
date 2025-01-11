@@ -469,7 +469,7 @@ impl Cmp {
             exit(ExitCode::DialectError);
         }
         if !rhs.get_type().is_index() {
-            eprintln!("Expected index type for rhs operand of cpm operation");
+            eprintln!("Expected index type for rhs operand of cmp operation");
             exit(ExitCode::DialectError);
         }
         let t = IntegerType::new_bool(context).as_type();
