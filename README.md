@@ -6,14 +6,14 @@ SPDX-License-Identifier: BSD-3-Clause
 Author/Maintainer:  Giordano Salvador <73959795+e3m3@users.noreply.github.com>
 
 
-#  Description (MLIR Rust Bindings)
+#  Description
 
 [![Fedora 41](https://github.com/e3m3/mlir-rust/actions/workflows/fedora-41.yaml/badge.svg?event=workflow_dispatch)](https://github.com/e3m3/mlir-rust/actions/workflows/fedora-40.yaml)
 
 [![MacOS 14](https://github.com/e3m3/mlir-rust/actions/workflows/macos-14.yaml/badge.svg?event=workflow_dispatch)](https://github.com/e3m3/mlir-rust/actions/workflows/macos-14.yaml)
 
-Rust bindings wrapper over the [MLIR][1] [[1]] ([license][2] [[2]]) C API bindings from the 
-`mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
+Rust library and bindings implementing the [MLIR][1] [[1]] ([license][2] [[2]]) compiler framework.
+Uses the C API bindings from the `mlir_sys` crate ([site][3] [[3]] and [license][4] [[4]]).
 
 
 ##   Documentation
