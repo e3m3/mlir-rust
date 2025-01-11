@@ -161,6 +161,15 @@ pub struct LowerBounds(MlirAttribute);
 pub struct NamedMap(MlirAttribute);
 
 #[derive(Clone)]
+pub struct NamedMapSource(MlirAttribute);
+
+#[derive(Clone)]
+pub struct NamedMapTag(MlirAttribute);
+
+#[derive(Clone)]
+pub struct NamedMapTarget(MlirAttribute);
+
+#[derive(Clone)]
 pub struct Step(MlirAttribute);
 
 #[derive(Clone)]
@@ -302,6 +311,36 @@ impl LowerBounds {
 }
 
 impl NamedMap {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl NamedMapSource {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl NamedMapTag {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl NamedMapTarget {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -1067,6 +1106,312 @@ impl DelinearizeIndex {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+impl DmaStart {
+    fn __new(
+        context: &Context,
+        map_source: Map,
+        map_target: Map,
+        num_elems: &Value,
+        source: &Value,
+        target: &Value,
+        tagbuf: &Value,
+        indices_source: &[Value],
+        indices_target: &[Value],
+        tag: &Value,
+        stride: Option<&Value>,
+        num_elems_stride: Option<&Value>,
+        loc: &Location,
+    ) -> Self {
+        Self::check_operands(
+            map_source,
+            map_target,
+            num_elems,
+            source,
+            target,
+            tagbuf,
+            indices_source,
+            indices_target,
+            tag,
+            stride,
+            num_elems_stride,
+        );
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::DmaStart);
+        let map_tag = Map::new_identity(context, 1);
+        let attr_source =
+            NamedMapSource::from(*map_source.as_attribute().get_mut()).as_named_attribute();
+        let attr_tag = NamedMapTag::from(*map_tag.as_attribute().get_mut()).as_named_attribute();
+        let attr_target =
+            NamedMapTarget::from(*map_target.as_attribute().get_mut()).as_named_attribute();
+        let mut operands = vec![source.clone()];
+        operands.append(&mut indices_source.to_vec());
+        operands.push(target.clone());
+        operands.append(&mut indices_target.to_vec());
+        operands.push(tagbuf.clone());
+        operands.push(tag.clone());
+        operands.push(num_elems.clone());
+        if let Some(n) = stride {
+            operands.push(n.clone());
+        }
+        if let Some(n) = num_elems_stride {
+            operands.push(n.clone());
+        }
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr_source, attr_tag, attr_target]);
+        op_state.add_operands(&operands);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn new(
+        context: &Context,
+        map_source: Map,
+        map_target: Map,
+        num_elems: &Value,
+        source: &Value,
+        target: &Value,
+        tagbuf: &Value,
+        indices_source: &[Value],
+        indices_target: &[Value],
+        tag: &Value,
+        loc: &Location,
+    ) -> Self {
+        Self::__new(
+            context,
+            map_source,
+            map_target,
+            num_elems,
+            source,
+            target,
+            tagbuf,
+            indices_source,
+            indices_target,
+            tag,
+            None,
+            None,
+            loc,
+        )
+    }
+
+    pub fn new_strided(
+        context: &Context,
+        map_source: Map,
+        map_target: Map,
+        num_elems: &Value,
+        source: &Value,
+        target: &Value,
+        tagbuf: &Value,
+        indices_source: &[Value],
+        indices_target: &[Value],
+        tag: &Value,
+        stride: &Value,
+        num_elems_stride: &Value,
+        loc: &Location,
+    ) -> Self {
+        Self::__new(
+            context,
+            map_source,
+            map_target,
+            num_elems,
+            source,
+            target,
+            tagbuf,
+            indices_source,
+            indices_target,
+            tag,
+            Some(stride),
+            Some(num_elems_stride),
+            loc,
+        )
+    }
+
+    fn check_operands(
+        map_source: Map,
+        map_target: Map,
+        num_elems: &Value,
+        source: &Value,
+        target: &Value,
+        tagbuf: &Value,
+        indices_source: &[Value],
+        indices_target: &[Value],
+        tag: &Value,
+        stride: Option<&Value>,
+        num_elems_stride: Option<&Value>,
+    ) -> () {
+        let t_source = source.get_type();
+        let t_tagbuf = tagbuf.get_type();
+        let t_target = target.get_type();
+        if !num_elems.get_type().is_index() {
+            eprintln!("Expected index type for number of elements operand of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        if !tag.get_type().is_index() {
+            eprintln!("Expected index type for tag operand of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_source.is_memref() {
+            eprintln!("Expected memory reference type for source operand of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_target.is_memref() {
+            eprintln!("Expected memory reference type for target operand of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        if !t_tagbuf.is_memref() {
+            eprintln!(
+                "Expected memory reference type for tag buffer operand of dma start operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if indices_source.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for source indices of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        if indices_target.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for target indices of dma start operation");
+            exit(ExitCode::DialectError);
+        }
+        let s_source = Shaped::from_type(&t_source);
+        let s_tagbuf = Shaped::from_type(&t_tagbuf);
+        let s_target = Shaped::from_type(&t_target);
+        if s_source.get_element_type() != s_target.get_element_type() {
+            eprintln!(
+                "Expected matching element type for source and target operands of dma start operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if !s_tagbuf.get_element_type().is_integer() {
+            eprintln!(
+                "Expected integer element type for tag buffer operand of dma start operations"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let n_source_inputs = map_source.num_inputs();
+        let n_source_indices = indices_source.len() as isize;
+        if n_source_inputs != n_source_indices {
+            eprintln!(
+                "Expected number of source indices ({}) to match inputs to source map ({}) of \
+                dma start operations",
+                n_source_indices, n_source_inputs,
+            );
+            exit(ExitCode::DialectError);
+        }
+        let n_target_inputs = map_target.num_inputs();
+        let n_target_indices = indices_target.len() as isize;
+        if n_target_inputs != n_target_indices {
+            eprintln!(
+                "Expected number of target indices ({}) to match inputs to target map ({}) of \
+                dma start operations",
+                n_target_indices, n_target_inputs,
+            );
+            exit(ExitCode::DialectError);
+        }
+        if let Some(n) = stride {
+            if !n.get_type().is_index() {
+                eprintln!("Expected index type for stride of dma start opertation");
+                exit(ExitCode::DialectError);
+            }
+        }
+        if let Some(n) = num_elems_stride {
+            if !n.get_type().is_index() {
+                eprintln!(
+                    "Expected index type for number of stride elements of dma start opertation"
+                );
+                exit(ExitCode::DialectError);
+            }
+        }
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_map_source(&self) -> NamedMapSource {
+        let attr_name = StringBacked::from(NamedMapSource::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMapSource::from(*attr.get())
+    }
+
+    pub fn get_map_tag(&self) -> NamedMapTag {
+        let attr_name = StringBacked::from(NamedMapTag::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMapTag::from(*attr.get())
+    }
+
+    pub fn get_map_target(&self) -> NamedMapTarget {
+        let attr_name = StringBacked::from(NamedMapTarget::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMapTarget::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
+impl DmaWait {
+    pub fn new(
+        context: &Context,
+        num_elems: &Value,
+        tagbuf: &Value,
+        tag: &Value,
+        loc: &Location,
+    ) -> Self {
+        if !num_elems.get_type().is_index() {
+            eprintln!("Expected index type for number of elements operand of dma wait operation");
+            exit(ExitCode::DialectError);
+        }
+        if !tag.get_type().is_index() {
+            eprintln!("Expected index type for tag operand of dma wait operation");
+            exit(ExitCode::DialectError);
+        }
+        let t_tagbuf = tagbuf.get_type();
+        if !t_tagbuf.is_memref() {
+            eprintln!(
+                "Expected memory reference type for tag buffer operand of dma wait operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let s_tagbuf = Shaped::from_type(&t_tagbuf);
+        if !s_tagbuf.get_element_type().is_integer() {
+            eprintln!(
+                "Expected integer element type for tag buffer operand of dma wait operations"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::DmaWait);
+        let map_tag = Map::new_identity(context, 1);
+        let attr_tag = NamedMapTag::from(*map_tag.as_attribute().get_mut()).as_named_attribute();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr_tag]);
+        op_state.add_operands(&[tagbuf.clone(), tag.clone(), num_elems.clone()]);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_map_tag(&self) -> NamedMapTag {
+        let attr_name = StringBacked::from(NamedMapTag::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMapTag::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl For {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
@@ -1756,6 +2101,86 @@ impl IExpr for Dim {
     }
 }
 
+impl From<MlirOperation> for DmaStart {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for DmaStart {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::DmaStart.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::DmaStart
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[]
+    }
+}
+
+impl From<MlirOperation> for DmaWait {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for DmaWait {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::DmaWait.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::DmaWait
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[]
+    }
+}
+
 impl From<MlirAffineExpr> for Expr {
     fn from(expr: MlirAffineExpr) -> Self {
         Self(expr)
@@ -1946,8 +2371,6 @@ impl From<MlirAttribute> for Map {
     }
 }
 
-SpecializedAttribute!("map" = impl NamedAffineMap for NamedMap {});
-
 impl cmp::PartialEq for Map {
     fn eq(&self, rhs: &Self) -> bool {
         do_unsafe!(mlirAffineMapEqual(*self.get(), *rhs.get()))
@@ -2041,6 +2464,14 @@ impl IOperation for Min {
         &[Trait::AlwaysSpeculatableImplTrait]
     }
 }
+
+SpecializedAttribute!("map" = impl NamedAffineMap for NamedMap {});
+
+SpecializedAttribute!("src_map" = impl NamedAffineMap for NamedMapSource {});
+
+SpecializedAttribute!("tag_map" = impl NamedAffineMap for NamedMapTag {});
+
+SpecializedAttribute!("dst_map" = impl NamedAffineMap for NamedMapTarget {});
 
 impl IOp for Op {
     fn get_name(&self) -> &'static str {
