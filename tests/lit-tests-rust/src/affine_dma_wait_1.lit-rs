@@ -1,0 +1,53 @@
+// RUN: %O/run affine_dma_wait_1 | @mlir-opt --canonicalize | @filecheck %M/affine_dma_wait_1.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing the apply operation from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::affine::DmaWait;
+use mlir::dialects::common::IntegerMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
+use mlir::types::memref::MemRef;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t_index = Index::new(&context).as_type();
+    let t_int = IntegerType::new(&context, 32).as_type();
+    let s_tagbuf = ShapeImpl::from(vec![1]);
+    let t_mr_tagbuf =
+        MemRef::new_contiguous(&s_tagbuf, &t_int, &IntegerMemorySpace::new(&context, 2)).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t_index.clone(), t_mr_tagbuf.clone(), t_index.clone()],
+        &[],
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let mut op_wait = DmaWait::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &f_block.get_arg(2),
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_wait);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
