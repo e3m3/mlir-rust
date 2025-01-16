@@ -6,14 +6,12 @@ extern crate mlir;
 
 use crate::common::*;
 
-use mlir::attributes::specialized::NamedIndex;
 use mlir::attributes::specialized::NamedSymbolRef;
 use mlir::dialects::IOperation;
 use mlir::dialects::affine::Constant as AffineConstant;
 use mlir::dialects::affine::For;
 use mlir::dialects::affine::IExpr;
 use mlir::dialects::affine::Map as AffineMap;
-use mlir::dialects::affine::Step;
 use mlir::dialects::affine::Symbol as AffineSymbol;
 use mlir::dialects::affine::Yield;
 use mlir::dialects::func::Call;
@@ -37,7 +35,6 @@ pub fn test() -> TestResult {
     let s1 = AffineSymbol::new(&context, 1).as_expr();
     let map0 = AffineMap::new_results(&context, 0, 2, &[s0, s1, c10]);
     let map1 = AffineMap::new_results(&context, 0, 2, &[s0, s1, c100]);
-    let step = Step::new(&context, 1);
     let f_region = f.as_operation().iter().next().unwrap_or_default();
     let mut f_block = f_region.iter().next().unwrap_or_default();
     let callee = Callee::from_symbol_ref(&f_bb.get_symbol_ref());
@@ -49,7 +46,7 @@ pub fn test() -> TestResult {
         &[],
         map0,
         map1,
-        &step,
+        1,
         &loc,
     );
     let region_for = op_for.as_operation().get_region(0);
