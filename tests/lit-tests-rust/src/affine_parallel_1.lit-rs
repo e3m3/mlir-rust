@@ -1,0 +1,147 @@
+// RUN: %O/run affine_parallel_1 | @mlir-opt --canonicalize | @filecheck %M/affine_parallel_1.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::affine::Binary as AffineBinop;
+use mlir::dialects::affine::Constant as AffineConstant;
+use mlir::dialects::affine::Dim as AffineDim;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::Load;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Parallel;
+use mlir::dialects::affine::ReductionOp;
+use mlir::dialects::affine::Store;
+use mlir::dialects::affine::Yield;
+use mlir::dialects::arith::FastMathFlags;
+use mlir::dialects::arith::MulF;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::memref::MemRef;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let t_f32 = FloatType::new(&context, FloatLayout::F32).as_type();
+    let s_out = ShapeImpl::from(vec![98, 98]);
+    let s_d = ShapeImpl::from(vec![100, 100]);
+    let s_k = ShapeImpl::from(vec![3, 3]);
+    let mem_space = DefaultMemorySpace::new();
+    let t_mr_out = MemRef::new_contiguous(&s_out, &t_f32, &mem_space).as_type();
+    let t_mr_d = MemRef::new_contiguous(&s_d, &t_f32, &mem_space).as_type();
+    let t_mr_k = MemRef::new_contiguous(&s_k, &t_f32, &mem_space).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t_mr_out.clone(), t_mr_d.clone(), t_mr_k.clone()],
+        &[],
+    );
+    let c0 = AffineConstant::new(&context, 0).as_expr();
+    let c2 = AffineConstant::new(&context, 2).as_expr();
+    let c98 = AffineConstant::new(&context, 98).as_expr();
+    let d0 = AffineDim::new(&context, 0).as_expr();
+    let d1 = AffineDim::new(&context, 1).as_expr();
+    let d2 = AffineDim::new(&context, 2).as_expr();
+    let d3 = AffineDim::new(&context, 3).as_expr();
+    let b0 = AffineBinop::new_add(d0, d1).as_expr();
+    let b1 = AffineBinop::new_add(d2, d3).as_expr();
+    let map0 = AffineMap::new_results(&context, 4, 0, &[b0, b1]);
+    let map1 = AffineMap::new_identity(&context, 2);
+    let map2 = AffineMap::new_results(&context, 0, 0, &[c0]);
+    let map3 = AffineMap::new_results(&context, 0, 0, &[c2]);
+    let map4 = AffineMap::new_results(&context, 0, 0, &[c98]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let op_par_0 = Parallel::new(
+        &context,
+        &[],
+        &[map2, map2],
+        &[map4, map4],
+        &[],
+        &[],
+        None,
+        &[],
+        &loc,
+    );
+    let op_par_1 = Parallel::new(
+        &context,
+        &[t_f32.clone()],
+        &[map2, map2],
+        &[map3, map3],
+        &[],
+        &[],
+        None,
+        &[ReductionOp::AddF],
+        &loc,
+    );
+    let region_par_0 = op_par_0.as_operation().get_region(0);
+    let mut block_par_0 = region_par_0.iter().next().unwrap_or_default();
+    let region_par_1 = op_par_1.as_operation().get_region(0);
+    let mut block_par_1 = region_par_1.iter().next().unwrap_or_default();
+    let mut op_load_0 = Load::new(
+        &t_f32,
+        map0,
+        &f_block.get_arg(1),
+        &[
+            block_par_0.get_arg(0),
+            block_par_1.get_arg(0),
+            block_par_0.get_arg(1),
+            block_par_1.get_arg(1),
+        ],
+        &loc,
+    )
+    .as_operation();
+    let mut op_load_1 = Load::new(
+        &t_f32,
+        map1,
+        &f_block.get_arg(2),
+        &[block_par_1.get_arg(0), block_par_1.get_arg(1)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_store = Store::new(
+        &context,
+        map1,
+        &op_par_1.as_operation().get_result(0),
+        &f_block.get_arg(0),
+        &[block_par_0.get_arg(0), block_par_0.get_arg(1)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_mul = MulF::new(
+        &t_f32,
+        &op_load_0.get_result(0),
+        &op_load_1.get_result(0),
+        FastMathFlags::None.into(),
+        &loc,
+    )
+    .as_operation();
+    let mut op_yield_1 =
+        Yield::new_parallel(&[op_mul.get_result(0)], &op_par_1, &loc).as_operation();
+    let mut op_yield_0 = Yield::new_parallel(&[], &op_par_0, &loc).as_operation();
+    block_par_1.append_operation(&mut op_load_0);
+    block_par_1.append_operation(&mut op_load_1);
+    block_par_1.append_operation(&mut op_mul);
+    block_par_1.append_operation(&mut op_yield_1);
+    block_par_0.append_operation(&mut op_par_1.as_operation());
+    block_par_0.append_operation(&mut op_store);
+    block_par_0.append_operation(&mut op_yield_0);
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_par_0.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}

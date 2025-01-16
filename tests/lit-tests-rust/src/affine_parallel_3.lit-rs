@@ -1,0 +1,87 @@
+// RUN: %O/run affine_parallel_3 | @mlir-opt --canonicalize | @filecheck %M/affine_parallel_3.mlir --check-prefix=CHECK_CAN
+// COM: No dialect handle for affine is exposed, so make sure to load all available dialects before
+// COM: constructing operations from the affine dialect namespace.
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::affine::Constant as AffineConstant;
+use mlir::dialects::affine::IExpr;
+use mlir::dialects::affine::Map as AffineMap;
+use mlir::dialects::affine::Parallel;
+use mlir::dialects::affine::Store;
+use mlir::dialects::affine::Symbol as AffineSymbol;
+use mlir::dialects::affine::Yield;
+use mlir::dialects::common::DefaultMemorySpace;
+use mlir::dialects::func::Return;
+use mlir::dialects::index::DivS;
+use mlir::ir::Block;
+use mlir::ir::ShapeImpl;
+use mlir::types::IType;
+use mlir::types::index::Index;
+use mlir::types::memref::MemRef;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let mut context = module.get_context();
+    context.load_all_available_dialects();
+    let loc = context.get_unknown_location();
+    let s = ShapeImpl::from(vec![98, 98, 3]);
+    let mem_space = DefaultMemorySpace::new();
+    let t = Index::new(&context).as_type();
+    let t_mr = MemRef::new_contiguous(&s, &t, &mem_space).as_type();
+    let f = get_empty_test_fn(&context, &[t_mr, t.clone(), t.clone(), t.clone()], &[]);
+    let c0 = AffineConstant::new(&context, 0).as_expr();
+    let c3 = AffineConstant::new(&context, 3).as_expr();
+    let c98 = AffineConstant::new(&context, 98).as_expr();
+    let s0 = AffineSymbol::new(&context, 0).as_expr();
+    let map0 = AffineMap::new_results(&context, 0, 1, &[c0]);
+    let map1 = AffineMap::new_results(&context, 0, 1, &[c98]);
+    let map2 = AffineMap::new_results(&context, 0, 1, &[c0, s0]);
+    let map3 = AffineMap::new_results(&context, 0, 1, &[c3, s0]);
+    let map4 = AffineMap::new_identity(&context, 3);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let op_par = Parallel::new(
+        &context,
+        &[],
+        &[map2, map0, map2],
+        &[map1, map1, map3],
+        &[f_block.get_arg(1)],
+        &[f_block.get_arg(2)],
+        None,
+        &[],
+        &loc,
+    );
+    let region_par = op_par.as_operation().get_region(0);
+    let mut block_par = region_par.iter().next().unwrap_or_default();
+    let mut op_div =
+        DivS::new(&context, &block_par.get_arg(2), &f_block.get_arg(3), &loc).as_operation();
+    let mut op_store = Store::new(
+        &context,
+        map4,
+        &op_div.get_result(0),
+        &f_block.get_arg(0),
+        &[
+            block_par.get_arg(0),
+            block_par.get_arg(1),
+            block_par.get_arg(2),
+        ],
+        &loc,
+    )
+    .as_operation();
+    let mut op_yield = Yield::new_parallel(&[], &op_par, &loc).as_operation();
+    block_par.append_operation(&mut op_div);
+    block_par.append_operation(&mut op_store);
+    block_par.append_operation(&mut op_yield);
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_par.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
