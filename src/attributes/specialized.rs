@@ -22,6 +22,7 @@ use attributes::array::Array;
 use attributes::bool::Bool as BoolAttr;
 use attributes::dense_array::DenseArray;
 use attributes::dense_array::Layout as DenseArrayLayout;
+use attributes::dense_elements::DenseElements;
 use attributes::dictionary::Dictionary;
 use attributes::elements::Elements;
 use attributes::float::Float as FloatAttr;
@@ -47,6 +48,7 @@ use types::IType;
 use types::function::Function;
 use types::integer::Integer as IntegerType;
 use types::memref::MemRef;
+use types::shaped::Shaped;
 
 ///////////////////////////////
 //  Support
@@ -140,7 +142,7 @@ pub trait NamedArrayOfAffineMaps: From<MlirAttribute> + IAttributeNamed + Sized 
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_affine_map()) {
+        if (0..args_array.num_elements()).any(|i| !args_array.get_element(i).is_affine_map()) {
             eprintln!("Expected array of affine map attributes");
             exit(ExitCode::IRError);
         }
@@ -177,7 +179,7 @@ pub trait NamedArrayOfBools: From<MlirAttribute> + IAttributeNamed + Sized {
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_bool()) {
+        if (0..args_array.num_elements()).any(|i| !args_array.get_element(i).is_bool()) {
             eprintln!("Expected array of bool attributes");
             exit(ExitCode::IRError);
         }
@@ -214,7 +216,7 @@ pub trait NamedArrayOfDictionaries: From<MlirAttribute> + IAttributeNamed + Size
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_dictionary()) {
+        if (0..args_array.num_elements()).any(|i| !args_array.get_element(i).is_dictionary()) {
             eprintln!("Expected array of dictionary attributes");
             exit(ExitCode::IRError);
         }
@@ -244,6 +246,21 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IAttributeNamed + Sized {
         Self::from(*attr.get())
     }
 
+    fn new_i32(context: &Context, elements: &[i32]) -> Self {
+        let t = IntegerType::new(context, 32);
+        let elems: Vec<IntegerAttr> = elements
+            .iter()
+            .map(|&i| IntegerAttr::new(&t, i as i64))
+            .collect();
+        Self::new(context, &elems)
+    }
+
+    fn new_i64(context: &Context, elements: &[i64]) -> Self {
+        let t = IntegerType::new(context, 64);
+        let elems: Vec<IntegerAttr> = elements.iter().map(|&i| IntegerAttr::new(&t, i)).collect();
+        Self::new(context, &elems)
+    }
+
     fn from_checked(attr: MlirAttribute) -> Self {
         let args = Self::from(attr);
         if !args.as_attribute().is_array() {
@@ -251,7 +268,7 @@ pub trait NamedArrayOfIntegers: From<MlirAttribute> + IAttributeNamed + Sized {
             exit(ExitCode::IRError);
         }
         let args_array = args.as_array();
-        if (0..args_array.num_elements()).any(|i| args_array.get_element(i).is_integer()) {
+        if (0..args_array.num_elements()).any(|i| !args_array.get_element(i).is_integer()) {
             eprintln!("Expected array of integer attributes");
             exit(ExitCode::IRError);
         }
@@ -327,6 +344,43 @@ pub trait NamedArrayOfIntegerArrays: From<MlirAttribute> + IAttributeNamed + Siz
     fn num_elements_flattened(&self) -> isize {
         let v = self.as_integer_arrays();
         v.iter().fold(0, |acc, a| acc + a.num_elements())
+    }
+}
+
+pub trait NamedArrayOfStrings: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(context: &Context, elements: &[StringAttr]) -> Self {
+        let e: Vec<Attribute> = elements.iter().map(|e| e.as_attribute()).collect();
+        let attr = Array::new(context, &e);
+        Self::from(*attr.get())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let args = Self::from(attr);
+        if !args.as_attribute().is_array() {
+            eprintln!("Expected array of string attributes");
+            exit(ExitCode::IRError);
+        }
+        let args_array = args.as_array();
+        if (0..args_array.num_elements()).any(|i| !args_array.get_element(i).is_string()) {
+            eprintln!("Expected array of string attributes");
+            exit(ExitCode::IRError);
+        }
+        args
+    }
+
+    fn as_array(&self) -> Array {
+        Array::from(*self.get())
+    }
+
+    fn as_strings(&self) -> Vec<StringAttr> {
+        let args = self.as_array();
+        (0..args.num_elements())
+            .map(|i| StringAttr::from(*args.get_element(i).get()))
+            .collect()
+    }
+
+    fn num_elements(&self) -> isize {
+        self.as_array().num_elements()
     }
 }
 
@@ -460,6 +514,25 @@ pub trait NamedI32DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 }
 
+pub trait NamedI32DenseElements: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(t: &Shaped, elements: &[i32]) -> Self {
+        Self::from(*DenseElements::new_i32(t, elements).get_mut())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_dense_elements_int() {
+            eprintln!("Expected dense elements integer attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_dense_elements(&self) -> DenseElements {
+        DenseElements::from(*self.get())
+    }
+}
+
 pub trait NamedI64DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new(context: &Context, values: &[i64]) -> Self {
         Self::from(*DenseArray::new_i64(context, values).get_mut())
@@ -480,6 +553,25 @@ pub trait NamedI64DenseArray: From<MlirAttribute> + IAttributeNamed + Sized {
 
     fn num_elements(&self) -> isize {
         self.as_dense_array().num_elements()
+    }
+}
+
+pub trait NamedIndex: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(context: &Context, n: i64) -> Self {
+        Self::from(*IndexAttr::new(context, n).get_mut())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_index() {
+            eprintln!("Expected index attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_index(&self) -> IndexAttr {
+        IndexAttr::from(*self.get())
     }
 }
 
@@ -515,25 +607,6 @@ pub trait NamedInitialization: From<MlirAttribute> + IAttributeNamed + Sized {
 
     fn is_initialized(&self) -> bool {
         !self.as_attribute().is_unit()
-    }
-}
-
-pub trait NamedIndex: From<MlirAttribute> + IAttributeNamed + Sized {
-    fn new(context: &Context, n: i64) -> Self {
-        Self::from(*IndexAttr::new(context, n).get_mut())
-    }
-
-    fn from_checked(attr: MlirAttribute) -> Self {
-        let attr_ = Self::from(attr);
-        if !attr_.as_attribute().is_index() {
-            eprintln!("Expected index attribute");
-            exit(ExitCode::IRError);
-        }
-        attr_
-    }
-
-    fn as_index(&self) -> IndexAttr {
-        IndexAttr::from(*self.get())
     }
 }
 
