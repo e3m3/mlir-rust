@@ -495,6 +495,12 @@ impl DenseElements {
     }
 }
 
+impl From<MlirAttribute> for DenseElements {
+    fn from(attr: MlirAttribute) -> Self {
+        Self(attr, Layout::Inferred)
+    }
+}
+
 impl From<(MlirAttribute, Layout)> for DenseElements {
     fn from((attr, layout): (MlirAttribute, Layout)) -> Self {
         Self(attr, layout)
