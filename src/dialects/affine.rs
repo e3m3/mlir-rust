@@ -104,12 +104,15 @@ use crate::types;
 use attributes::IAttributeNamed;
 use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedAffineSet;
+use attributes::specialized::NamedArrayOfIntegers;
 use attributes::specialized::NamedI32DenseArray;
+use attributes::specialized::NamedI32DenseElements;
 use attributes::specialized::NamedIndex;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::OpRef;
+use dialects::arith::AtomicRMWKind;
 use dialects::common::OperandSegmentSizes;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
@@ -125,6 +128,7 @@ use ir::Location;
 use ir::Operation;
 use ir::OperationState;
 use ir::Region;
+use ir::ShapeImpl;
 use ir::StringBacked;
 use ir::StringCallback;
 use ir::StringCallbackState;
@@ -135,6 +139,8 @@ use ir::print_method;
 use traits::Trait;
 use types::IType;
 use types::index::Index;
+use types::integer::Integer as IntegerType;
+use types::ranked_tensor::RankedTensor;
 use types::shaped::Shaped;
 use types::vector::Vector;
 
@@ -155,7 +161,13 @@ pub trait IExpr {
 pub struct Condition(MlirAttribute);
 
 #[derive(Clone)]
-pub struct LowerBounds(MlirAttribute);
+pub struct LowerBoundsFor(MlirAttribute);
+
+#[derive(Clone)]
+pub struct LowerBoundGroups(MlirAttribute);
+
+#[derive(Clone)]
+pub struct LowerBoundsParallel(MlirAttribute);
 
 #[derive(Clone)]
 pub struct NamedMap(MlirAttribute);
@@ -170,10 +182,22 @@ pub struct NamedMapTag(MlirAttribute);
 pub struct NamedMapTarget(MlirAttribute);
 
 #[derive(Clone)]
-pub struct Step(MlirAttribute);
+pub struct Reductions(MlirAttribute);
 
 #[derive(Clone)]
-pub struct UpperBounds(MlirAttribute);
+pub struct StepFor(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StepsParallel(MlirAttribute);
+
+#[derive(Clone)]
+pub struct UpperBoundsFor(MlirAttribute);
+
+#[derive(Clone)]
+pub struct UpperBoundGroups(MlirAttribute);
+
+#[derive(Clone)]
+pub struct UpperBoundsParallel(MlirAttribute);
 
 ///////////////////////////////
 //  Enums
@@ -208,6 +232,8 @@ pub enum Op {
     VectorStore,
     Yield,
 }
+
+pub type ReductionOp = AtomicRMWKind;
 
 ///////////////////////////////
 //  Exprs
@@ -300,7 +326,27 @@ impl Condition {
     }
 }
 
-impl LowerBounds {
+impl LowerBoundsFor {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl LowerBoundGroups {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl LowerBoundsParallel {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -350,7 +396,12 @@ impl NamedMapTarget {
     }
 }
 
-impl Step {
+impl Reductions {
+    pub fn new(context: &Context, ops: &[ReductionOp]) -> Self {
+        let r: Vec<i64> = ops.iter().map(|&op| op as i64).collect();
+        <Self as NamedArrayOfIntegers>::new_i64(context, &r)
+    }
+
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -360,7 +411,51 @@ impl Step {
     }
 }
 
-impl UpperBounds {
+impl StepFor {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StepsParallel {
+    pub fn new(context: &Context, ops: &[i64]) -> Self {
+        <Self as NamedArrayOfIntegers>::new_i64(context, ops)
+    }
+
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl UpperBoundsFor {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl UpperBoundGroups {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl UpperBoundsParallel {
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -1422,9 +1517,66 @@ impl For {
         inits: &[Value],
         map_lower: Map,
         map_upper: Map,
-        step: &Step,
+        step: usize,
         loc: &Location,
     ) -> Self {
+        Self::check_operands(
+            results,
+            ops_lower_bounds,
+            ops_upper_bounds,
+            inits,
+            map_lower,
+            map_upper,
+            step,
+        );
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::For);
+        let mut operands: Vec<Value> = vec![];
+        operands.append(&mut ops_lower_bounds.to_vec());
+        operands.append(&mut ops_upper_bounds.to_vec());
+        operands.append(&mut inits.to_vec());
+        let attr_opseg = OperandSegmentSizes::new(context, &[
+            ops_lower_bounds.len() as i32,
+            ops_upper_bounds.len() as i32,
+            inits.len() as i32,
+        ]);
+        let n_block_args = 1 + inits.len() as isize;
+        let t_index = Index::new(context).as_type();
+        let mut t_block = vec![t_index];
+        inits.iter().for_each(|v| {
+            t_block.push(v.get_type());
+        });
+        let loc_block: Vec<Location> = (0..n_block_args).map(|_| loc.clone()).collect();
+        let mut region = Region::new();
+        let mut block = Block::new(n_block_args, &t_block, &loc_block);
+        region.append_block(&mut block); // Add empty starter block
+        let lower_bounds = LowerBoundsFor::new(map_lower);
+        let upper_bounds = UpperBoundsFor::new(map_upper);
+        let attr_step = StepFor::new(context, step as i64);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[
+            attr_opseg.as_named_attribute(),
+            lower_bounds.as_named_attribute(),
+            upper_bounds.as_named_attribute(),
+            attr_step.as_named_attribute(),
+        ]);
+        op_state.add_operands(&operands);
+        op_state.add_regions(&[region]);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        Self::from(*op_state.create_operation().get())
+    }
+
+    fn check_operands(
+        _results: &[Type],
+        ops_lower_bounds: &[Value],
+        ops_upper_bounds: &[Value],
+        _inits: &[Value],
+        map_lower: Map,
+        map_upper: Map,
+        _step: usize,
+    ) -> () {
         if ops_lower_bounds.iter().any(|v| !v.get_type().is_index()) {
             eprintln!("Expected index type for lower bounds operands of for operation");
             exit(ExitCode::DialectError);
@@ -1453,50 +1605,38 @@ impl For {
             );
             exit(ExitCode::DialectError);
         }
-        let dialect = get_dialect(context);
-        let name = dialect.get_op_name(&Op::For);
-        let mut operands: Vec<Value> = vec![];
-        operands.append(&mut ops_lower_bounds.to_vec());
-        operands.append(&mut ops_upper_bounds.to_vec());
-        operands.append(&mut inits.to_vec());
-        let attr_opseg = OperandSegmentSizes::new(context, &[
-            ops_lower_bounds.len() as i32,
-            ops_upper_bounds.len() as i32,
-            inits.len() as i32,
-        ]);
-        let n_block_args = 1 + inits.len() as isize;
-        let t_index = Index::new(context).as_type();
-        let mut t_block = vec![t_index];
-        inits.iter().for_each(|v| {
-            t_block.push(v.get_type());
-        });
-        let loc_block: Vec<Location> = (0..n_block_args).map(|_| loc.clone()).collect();
-        let mut region = Region::new();
-        let mut block = Block::new(n_block_args, &t_block, &loc_block);
-        region.append_block(&mut block); // Add empty starter block
-        let lower_bounds = LowerBounds::new(map_lower);
-        let upper_bounds = UpperBounds::new(map_upper);
-        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
-        op_state.add_attributes(&[
-            attr_opseg.as_named_attribute(),
-            lower_bounds.as_named_attribute(),
-            upper_bounds.as_named_attribute(),
-            step.as_named_attribute(),
-        ]);
-        op_state.add_operands(&operands);
-        op_state.add_regions(&[region]);
-        if !results.is_empty() {
-            op_state.add_results(results);
-        }
-        Self::from(*op_state.create_operation().get())
     }
 
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
+    pub fn get_lower_bounds(&self) -> LowerBoundsFor {
+        let attr_name = StringBacked::from(LowerBoundsFor::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        LowerBoundsFor::from(*attr.get())
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_step(&self) -> StepFor {
+        let attr_name = StringBacked::from(StepFor::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        StepFor::from(*attr.get())
+    }
+
+    pub fn get_upper_bounds(&self) -> UpperBoundsFor {
+        let attr_name = StringBacked::from(UpperBoundsFor::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        UpperBoundsFor::from(*attr.get())
     }
 }
 
@@ -1689,6 +1829,263 @@ impl Min {
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+}
+
+impl Parallel {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        context: &Context,
+        results: &[Type],
+        maps_lower: &[Map],
+        maps_upper: &[Map],
+        ops_lower_bounds: &[Value],
+        ops_upper_bounds: &[Value],
+        steps: Option<&[i64]>,
+        ops_reductions: &[ReductionOp],
+        loc: &Location,
+    ) -> Self {
+        Self::check_operands(
+            results,
+            ops_lower_bounds,
+            ops_upper_bounds,
+            ops_reductions,
+            maps_lower,
+            maps_upper,
+        );
+        let (map_lower, map_upper, groups_lower, groups_upper) =
+            Self::check_maps(context, maps_lower, maps_upper);
+        let steps_ = Self::check_steps(&groups_lower, &groups_upper, steps);
+        let t_i32 = IntegerType::new(context, 32).as_type();
+        let t_index = Index::new(context).as_type();
+        let s_lower = ShapeImpl::from(vec![groups_lower.len() as i64]);
+        let s_upper = ShapeImpl::from(vec![groups_upper.len() as i64]);
+        let t_tnsr_lower = RankedTensor::new(&s_lower, &t_i32).as_shaped();
+        let t_tnsr_upper = RankedTensor::new(&s_upper, &t_i32).as_shaped();
+        let attr_lower = LowerBoundsParallel::new(map_lower).as_named_attribute();
+        let attr_upper = UpperBoundsParallel::new(map_upper).as_named_attribute();
+        let attr_lower_groups =
+            LowerBoundGroups::new(&t_tnsr_lower, &groups_lower).as_named_attribute();
+        let attr_upper_groups =
+            UpperBoundGroups::new(&t_tnsr_upper, &groups_upper).as_named_attribute();
+        let attr_reductions = Reductions::new(context, ops_reductions).as_named_attribute();
+        let attr_steps = StepsParallel::new(context, &steps_).as_named_attribute();
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::Parallel);
+        let mut operands: Vec<Value> = vec![];
+        operands.append(&mut ops_lower_bounds.to_vec());
+        operands.append(&mut ops_upper_bounds.to_vec());
+        let mut region = Region::new();
+        let n_block = steps_.len();
+        let t_block: Vec<Type> = (0..n_block).map(|_| t_index.clone()).collect();
+        let loc_block: Vec<Location> = (0..n_block).map(|_| loc.clone()).collect();
+        let mut block = Block::new(n_block as isize, &t_block, &loc_block);
+        region.append_block(&mut block);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr_lower, attr_upper, attr_lower_groups, attr_upper_groups]);
+        op_state.add_operands(&operands);
+        op_state.add_regions(&[region]);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        let mut op = op_state.create_operation();
+        op.set_named_attribute_discardable(&attr_reductions);
+        op.set_named_attribute_discardable(&attr_steps);
+        Self::from(*op.get_mut())
+    }
+
+    /// Check map parameters and return the map groups and combined lower and upper maps across groups.
+    fn check_maps(
+        context: &Context,
+        maps_lower: &[Map],
+        maps_upper: &[Map],
+    ) -> (Map, Map, Vec<i32>, Vec<i32>) {
+        let Some(map_lower_0) = maps_lower.first() else {
+            eprintln!("Expected at least one map for lower bounds of parallel operation");
+            exit(ExitCode::DialectError);
+        };
+        let Some(map_upper_0) = maps_upper.first() else {
+            eprintln!("Expected at least one map for upper bounds of parallel operation");
+            exit(ExitCode::DialectError);
+        };
+        let n_dims_lower = map_lower_0.num_dims();
+        let n_dims_upper = map_upper_0.num_dims();
+        let n_syms_lower = map_lower_0.num_symbols();
+        let n_syms_upper = map_upper_0.num_symbols();
+        if maps_lower.iter().any(|map| map.num_dims() != n_dims_lower) {
+            eprintln!(
+                "Expected matching number of dimensions lower bounds maps of parallel operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if maps_upper.iter().any(|map| map.num_dims() != n_dims_upper) {
+            eprintln!(
+                "Expected matching number of dimensions upper bounds maps of parallel operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if maps_lower
+            .iter()
+            .any(|map| map.num_symbols() != n_syms_lower)
+        {
+            eprintln!(
+                "Expected matching number of symbols lower bounds maps of parallel operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if maps_upper
+            .iter()
+            .any(|map| map.num_symbols() != n_syms_upper)
+        {
+            eprintln!(
+                "Expected matching number of symbols upper bounds maps of parallel operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        let mut groups_lower: Vec<i32> = vec![];
+        let mut groups_upper: Vec<i32> = vec![];
+        let mut results_lower: Vec<Expr> = vec![];
+        let mut results_upper: Vec<Expr> = vec![];
+        for map in maps_lower.iter() {
+            let n_results = map.num_results();
+            (0..n_results).for_each(|i| results_lower.push(map.get_result(i)));
+            groups_lower.push(n_results as i32);
+        }
+        for map in maps_upper.iter() {
+            let n_results = map.num_results();
+            (0..n_results).for_each(|i| results_upper.push(map.get_result(i)));
+            groups_upper.push(n_results as i32);
+        }
+        let map_lower = Map::new_results(context, n_dims_lower, n_syms_lower, &results_lower);
+        let map_upper = Map::new_results(context, n_dims_upper, n_syms_upper, &results_upper);
+        (map_lower, map_upper, groups_lower, groups_upper)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn check_operands(
+        _results: &[Type],
+        ops_lower_bounds: &[Value],
+        ops_upper_bounds: &[Value],
+        _ops_reductions: &[ReductionOp], // TODO: Validate against arith binary ops?
+        map_lower: &[Map],
+        map_upper: &[Map],
+    ) -> () {
+        if ops_lower_bounds.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for lower bounds operands of parallel operation");
+            exit(ExitCode::DialectError);
+        }
+        if ops_upper_bounds.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for upper bounds operands of parallel operation");
+            exit(ExitCode::DialectError);
+        }
+        let n_lower_ops = ops_lower_bounds.len() as isize;
+        for map in map_lower.iter() {
+            let n_lower = map.num_inputs();
+            if n_lower != n_lower_ops {
+                eprintln!(
+                    "Expected matching number of lower bound operands ({}) and lower bounds map inputs \
+                    ({}) for parallel operation",
+                    n_lower_ops, n_lower,
+                );
+                exit(ExitCode::DialectError);
+            }
+        }
+        let n_upper_ops = ops_upper_bounds.len() as isize;
+        for map in map_upper.iter() {
+            let n_upper = map.num_inputs();
+            if n_upper != n_upper_ops {
+                eprintln!(
+                    "Expected matching number of upper bound operands ({}) and upper bounds map inputs \
+                    ({}) for parallel operation",
+                    n_upper_ops, n_upper,
+                );
+                exit(ExitCode::DialectError);
+            }
+        }
+    }
+
+    /// Check if the number of given steps are valid for the given upper and lower bounds.
+    /// If no steps were passed in by the user, return the default step(s) based on the bounds.
+    fn check_steps(groups_lower: &[i32], groups_upper: &[i32], steps: Option<&[i64]>) -> Vec<i64> {
+        let n_lower = groups_lower.len();
+        let n_upper = groups_upper.len();
+        if n_lower != n_upper {
+            eprintln!(
+                "Expected matching number of lower ({}) and upper ({}) groups of parallel operation",
+                n_lower, n_upper,
+            );
+            exit(ExitCode::DialectError);
+        }
+        match steps {
+            Some(slice) => {
+                let n_slice = slice.len();
+                if n_slice != n_lower {
+                    eprintln!(
+                        "Expected matching number of steps ({}) and lower/upper groups ({}) \
+                        of parallel operation",
+                        n_slice, n_lower,
+                    );
+                }
+                slice.to_vec()
+            }
+            None => (0..groups_lower.len()).map(|_| 1).collect::<Vec<i64>>(),
+        }
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_lower_bounds(&self) -> LowerBoundsParallel {
+        let attr_name = StringBacked::from(LowerBoundsParallel::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        LowerBoundsParallel::from(*attr.get())
+    }
+
+    pub fn get_lower_bounds_groups(&self) -> LowerBoundGroups {
+        let attr_name = StringBacked::from(LowerBoundGroups::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        LowerBoundGroups::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+
+    pub fn get_reductions(&self) -> Reductions {
+        let attr_name = StringBacked::from(Reductions::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_discardable(&attr_name.as_string_ref());
+        Reductions::from(*attr.get())
+    }
+
+    pub fn get_steps(&self) -> StepsParallel {
+        let attr_name = StringBacked::from(StepsParallel::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_discardable(&attr_name.as_string_ref());
+        StepsParallel::from(*attr.get())
+    }
+
+    pub fn get_upper_bounds(&self) -> UpperBoundsParallel {
+        let attr_name = StringBacked::from(UpperBoundsParallel::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        UpperBoundsParallel::from(*attr.get())
+    }
+
+    pub fn get_upper_bounds_groups(&self) -> UpperBoundGroups {
+        let attr_name = StringBacked::from(UpperBoundGroups::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        UpperBoundGroups::from(*attr.get())
     }
 }
 
@@ -1891,7 +2288,7 @@ impl Yield {
     fn new(values: &[Value], parent_: &dyn IOperation, loc: &Location) -> Self {
         let parent = parent_.as_operation();
         let context = parent.get_context();
-        let dialect = context.get_dialect_tensor();
+        let dialect = get_dialect(&context);
         if parent_.get_dialect() != dialect {
             eprintln!("Expected parent operation is from affine dialect");
             exit(ExitCode::DialectError);
@@ -1899,8 +2296,11 @@ impl Yield {
         let parent_op = match parent_.get_op().get_name() {
             "for" => Op::For,
             "if" => Op::If,
+            "parallel" => Op::Parallel,
             _ => {
-                eprintln!("Expected parent operation of yield is a affine for or if operation");
+                eprintln!(
+                    "Expected parent operation of yield is a affine for, if, or parallel operation"
+                );
                 exit(ExitCode::DialectError);
             }
         };
@@ -1928,15 +2328,19 @@ impl Yield {
     }
 
     pub fn new_for(values: &[Value], parent: &For, loc: &Location) -> Self {
-        Self::__new(values, parent.get(), &Op::For, &parent.get_dialect(), loc)
+        Self::new(values, parent, loc)
     }
 
     pub fn new_if(values: &[Value], parent: &If, loc: &Location) -> Self {
-        Self::__new(values, parent.get(), &Op::If, &parent.get_dialect(), loc)
+        Self::new(values, parent, loc)
+    }
+
+    pub fn new_parallel(values: &[Value], parent: &Parallel, loc: &Location) -> Self {
+        Self::new(values, parent, loc)
     }
 
     pub fn from(op: MlirOperation, parent: MlirOperation, parent_op: Op) -> Self {
-        Yield(op, parent, parent_op)
+        Self(op, parent, parent_op)
     }
 
     pub fn get(&self) -> &MlirOperation {
@@ -2345,7 +2749,11 @@ impl IOperation for Load {
     }
 }
 
-SpecializedAttribute!("lowerBoundMap" = impl NamedAffineMap for LowerBounds {});
+SpecializedAttribute!("lowerBoundMap" = impl NamedAffineMap for LowerBoundsFor {});
+
+SpecializedAttribute!("lowerBoundsMap" = impl NamedAffineMap for LowerBoundsParallel {});
+
+SpecializedAttribute!("lowerBoundsGroups" = impl NamedI32DenseElements for LowerBoundGroups {});
 
 impl From<MlirAffineMap> for Map {
     fn from(attr: MlirAffineMap) -> Self {
@@ -2479,6 +2887,58 @@ impl IOp for Op {
     }
 }
 
+impl From<MlirOperation> for Parallel {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Parallel {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[
+            Interface::ConditionallySpeculatable,
+            Interface::LoopLikeOpInterface,
+        ]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Parallel.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::Parallel
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[
+            Trait::AutomaticAllocationScope,
+            Trait::MemRefsNormalizable,
+            Trait::RecursiveMemoryEffects,
+            Trait::RecursivelySpeculatableImplTrait,
+            Trait::SingleBlockImplicitTerminator(&[&Op::Yield]),
+            Trait::SingleBlock,
+        ]
+    }
+}
+
+SpecializedAttribute!("reductions" = impl NamedArrayOfIntegers for Reductions {});
+
 impl From<MlirIntegerSet> for Set {
     fn from(set: MlirIntegerSet) -> Self {
         Self(set)
@@ -2491,7 +2951,9 @@ impl cmp::PartialEq for Set {
     }
 }
 
-SpecializedAttribute!("step" = impl NamedIndex for Step {});
+SpecializedAttribute!("step" = impl NamedIndex for StepFor {});
+
+SpecializedAttribute!("steps" = impl NamedArrayOfIntegers for StepsParallel {});
 
 impl From<MlirOperation> for Store {
     fn from(op: MlirOperation) -> Self {
@@ -2552,7 +3014,11 @@ impl IExpr for Symbol {
     }
 }
 
-SpecializedAttribute!("upperBoundMap" = impl NamedAffineMap for UpperBounds {});
+SpecializedAttribute!("upperBoundMap" = impl NamedAffineMap for UpperBoundsFor {});
+
+SpecializedAttribute!("upperBoundsMap" = impl NamedAffineMap for UpperBoundsParallel {});
+
+SpecializedAttribute!("upperBoundsGroups" = impl NamedI32DenseElements for UpperBoundGroups {});
 
 impl From<MlirOperation> for VectorLoad {
     fn from(op: MlirOperation) -> Self {
