@@ -105,9 +105,11 @@ use attributes::IAttributeNamed;
 use attributes::specialized::NamedAffineMap;
 use attributes::specialized::NamedAffineSet;
 use attributes::specialized::NamedArrayOfIntegers;
+use attributes::specialized::NamedBool;
 use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI32DenseElements;
 use attributes::specialized::NamedIndex;
+use attributes::specialized::NamedInteger;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
@@ -161,6 +163,15 @@ pub trait IExpr {
 pub struct Condition(MlirAttribute);
 
 #[derive(Clone)]
+pub struct IsDataCache(MlirAttribute);
+
+#[derive(Clone)]
+pub struct IsWrite(MlirAttribute);
+
+#[derive(Clone)]
+pub struct LocalityHint(MlirAttribute);
+
+#[derive(Clone)]
 pub struct LowerBoundsFor(MlirAttribute);
 
 #[derive(Clone)]
@@ -203,7 +214,7 @@ pub struct UpperBoundsParallel(MlirAttribute);
 //  Enums
 ///////////////////////////////
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub enum BinOp {
     Add,
     Mod,
@@ -213,7 +224,16 @@ pub enum BinOp {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
+pub enum LocalityHintLevel {
+    L0 = 0,
+    L1 = 1,
+    L2 = 2,
+    L3 = 3,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq)]
 pub enum Op {
     Apply,
     DelinearizeIndex,
@@ -317,6 +337,41 @@ pub struct Yield(MlirOperation, MlirOperation, Op);
 ///////////////////////////////
 
 impl Condition {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IsDataCache {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl IsWrite {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl LocalityHint {
+    pub fn new(context: &Context, level: LocalityHintLevel) -> Self {
+        const WIDTH: usize = 32;
+        <Self as NamedInteger>::new(context, level as i64, WIDTH)
+    }
+
     pub fn get(&self) -> &MlirAttribute {
         &self.0
     }
@@ -2089,6 +2144,95 @@ impl Parallel {
     }
 }
 
+impl Prefetch {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        context: &Context,
+        map: Map,
+        buffer: &Value,
+        indices: &[Value],
+        is_data_cache: bool,
+        is_write: bool,
+        locality_hint: LocalityHintLevel,
+        loc: &Location,
+    ) -> Self {
+        if !buffer.get_type().is_memref() {
+            eprintln!("Expected memory reference type for buffer operand of prefetch operation");
+            exit(ExitCode::DialectError);
+        }
+        if indices.iter().any(|v| !v.get_type().is_index()) {
+            eprintln!("Expected index type for indices of prefetch operation");
+            exit(ExitCode::DialectError);
+        }
+        let n_inputs = map.num_inputs();
+        let n_indices = indices.len() as isize;
+        if n_inputs != n_indices {
+            eprintln!(
+                "Expected matching number of map inputs ({}) and indices ({}) of prefetch operation",
+                n_inputs, n_indices,
+            );
+            exit(ExitCode::DialectError);
+        }
+        let dialect = get_dialect(context);
+        let name = dialect.get_op_name(&Op::Prefetch);
+        let attr_map = NamedMap::from(*map.as_attribute().get_mut());
+        let attr_data = IsDataCache::new(context, is_data_cache);
+        let attr_write = IsWrite::new(context, is_write);
+        let attr_locality = LocalityHint::new(context, locality_hint);
+        let mut operands = vec![buffer.clone()];
+        operands.append(&mut indices.to_vec());
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[
+            attr_map.as_named_attribute(),
+            attr_data.as_named_attribute(),
+            attr_write.as_named_attribute(),
+            attr_locality.as_named_attribute(),
+        ]);
+        op_state.add_operands(&operands);
+        Self::from(*op_state.create_operation().get())
+    }
+
+    pub fn get(&self) -> &MlirOperation {
+        &self.0
+    }
+
+    pub fn get_is_data_cache(&self) -> IsDataCache {
+        let attr_name = StringBacked::from(IsDataCache::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        IsDataCache::from(*attr.get())
+    }
+
+    pub fn get_is_write(&self) -> IsWrite {
+        let attr_name = StringBacked::from(IsWrite::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        IsWrite::from(*attr.get())
+    }
+
+    pub fn get_locality_hint(&self) -> LocalityHint {
+        let attr_name = StringBacked::from(LocalityHint::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        LocalityHint::from(*attr.get())
+    }
+
+    pub fn get_map(&self) -> NamedMap {
+        let attr_name = StringBacked::from(NamedMap::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        NamedMap::from(*attr.get())
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirOperation {
+        &mut self.0
+    }
+}
+
 impl Store {
     pub fn new(
         context: &Context,
@@ -2706,6 +2850,10 @@ impl cmp::PartialEq for dyn IExpr {
     }
 }
 
+SpecializedAttribute!("isDataCache" = impl NamedBool for IsDataCache {});
+
+SpecializedAttribute!("isWrite" = impl NamedBool for IsWrite {});
+
 impl From<MlirOperation> for Load {
     fn from(op: MlirOperation) -> Self {
         Self(op)
@@ -2748,6 +2896,8 @@ impl IOperation for Load {
         &[Trait::MemRefsNormalizable]
     }
 }
+
+SpecializedAttribute!("localityHint" = impl NamedInteger for LocalityHint {});
 
 SpecializedAttribute!("lowerBoundMap" = impl NamedAffineMap for LowerBoundsFor {});
 
@@ -2934,6 +3084,46 @@ impl IOperation for Parallel {
             Trait::SingleBlockImplicitTerminator(&[&Op::Yield]),
             Trait::SingleBlock,
         ]
+    }
+}
+
+impl From<MlirOperation> for Prefetch {
+    fn from(op: MlirOperation) -> Self {
+        Self(op)
+    }
+}
+
+impl IOperation for Prefetch {
+    fn get(&self) -> &MlirOperation {
+        self.get()
+    }
+
+    fn get_dialect(&self) -> Dialect {
+        get_dialect(&self.as_operation().get_context())
+    }
+
+    fn get_effects(&self) -> MemoryEffectList {
+        &[]
+    }
+
+    fn get_interfaces(&self) -> &'static [Interface] {
+        &[Interface::AffineMapAccessInterface]
+    }
+
+    fn get_mut(&mut self) -> &mut MlirOperation {
+        self.get_mut()
+    }
+
+    fn get_name(&self) -> &'static str {
+        Op::Prefetch.get_name()
+    }
+
+    fn get_op(&self) -> OpRef {
+        &Op::Prefetch
+    }
+
+    fn get_traits(&self) -> &'static [Trait] {
+        &[Trait::MemRefsNormalizable]
     }
 }
 
@@ -3178,6 +3368,17 @@ impl fmt::Display for Expr {
         let mut state = StringCallbackState::new();
         self.print(&mut state);
         write!(f, "{}", state)
+    }
+}
+
+impl fmt::Display for LocalityHintLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            LocalityHintLevel::L0 => "0",
+            LocalityHintLevel::L1 => "1",
+            LocalityHintLevel::L2 => "2",
+            LocalityHintLevel::L3 => "3",
+        })
     }
 }
 
