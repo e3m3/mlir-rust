@@ -1,0 +1,55 @@
+// RUN: %O/run scf_while_1 | @mlir-opt --canonicalize | @filecheck %M/scf_while_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
+use mlir::dialects::func::Call;
+use mlir::dialects::func::Callee;
+use mlir::dialects::func::Return;
+use mlir::dialects::scf::Condition;
+use mlir::dialects::scf::While;
+use mlir::dialects::scf::Yield;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::integer::Integer as IntegerType;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_bool = IntegerType::new_bool(&context).as_type();
+    let f = get_empty_test_fn(&context, &[], &[]);
+    let f_bb_0 = get_private_fn(&context, "black_box_0", &[], &[t_bool.clone()], None, None);
+    let f_bb_1 = get_private_fn(&context, "black_box_1", &[], &[], None, None);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let callee_0 = Callee::from_symbol_ref(&f_bb_0.get_symbol_ref());
+    let callee_1 = Callee::from_symbol_ref(&f_bb_1.get_symbol_ref());
+    let op_while = While::new(&context, &[], &[], &loc);
+    let region_before = op_while.get_region_before();
+    let region_after = op_while.get_region_after();
+    let mut block_before = region_before.iter().next().unwrap_or_default();
+    let mut block_after = region_after.iter().next().unwrap_or_default();
+    let mut op_call_0 = Call::new(&callee_0, &[t_bool.clone()], &[], &loc).as_operation();
+    let mut op_cond =
+        Condition::new(&context, &op_while, &op_call_0.get_result(0), &[], &loc).as_operation();
+    let mut op_call_1 = Call::new(&callee_1, &[], &[], &loc).as_operation();
+    let mut op_yield = Yield::new_while(&[], &op_while, &[], &loc).as_operation();
+    block_before.append_operation(&mut op_call_0);
+    block_before.append_operation(&mut op_cond);
+    block_after.append_operation(&mut op_call_1);
+    block_after.append_operation(&mut op_yield);
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_while.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_bb_0.as_operation());
+    block.append_operation(&mut f_bb_1.as_operation());
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
