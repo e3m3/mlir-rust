@@ -36,12 +36,15 @@ pub enum Trait {
     Commutative,
     ConstantLike,
     ElementWise,
+    HasOnlyGraphRegion,
+    HasParallelRegion,
     HasParent(StaticOpList),
     Idempotent,
     InferTypeOpAdaptor,
     IsolatedFromAbove,
     MemRefsNormalizable,
     NoRegionArguments,
+    NoTerminator,
     RecursiveMemoryEffects,
     RecursivelySpeculatableImplTrait,
     ReturnLike,
@@ -151,6 +154,8 @@ impl fmt::Display for Trait {
             Trait::Commutative => "commutative".to_string(),
             Trait::ConstantLike => "constant_like".to_string(),
             Trait::ElementWise => "element_wise".to_string(),
+            Trait::HasOnlyGraphRegion => "has_only_graph_region".to_string(),
+            Trait::HasParallelRegion => "has_parallel_region".to_string(),
             Trait::HasParent(ops) => {
                 let s = static_op_list_to_string(ops);
                 format!("has_parent<{}>", s)
@@ -160,6 +165,7 @@ impl fmt::Display for Trait {
             Trait::IsolatedFromAbove => "isolated_from_above".to_string(),
             Trait::MemRefsNormalizable => "memrefs_normalizable".to_string(),
             Trait::NoRegionArguments => "no_region_arguments".to_string(),
+            Trait::NoTerminator => "no_terminator".to_string(),
             Trait::RecursiveMemoryEffects => "recursive_memory_effects".to_string(),
             Trait::RecursivelySpeculatableImplTrait =>
                 "recursively_speculatable_impl_trait".to_string(),

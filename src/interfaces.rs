@@ -30,9 +30,11 @@ pub enum Interface {
     MemoryEffect(MemoryEffectOpInterface),
     OffsetSizeAndStrideOpInterface,
     OpAsmOpInterface,
+    ParallelCombiningOpInterface,
     PromotableAllocationOpInterface,
     RegionBranchOpInterface,
     RegionBranchTerminatorOpInterface,
+    RegionKindInterface,
     ReifyRankedShapeTypeOpInterface,
     SelectLikeOpInterface,
     ShapedDimOpInterface,
@@ -85,6 +87,9 @@ impl fmt::Display for Interface {
                 "offset_size_and_stride_op_interface".to_string()
             }
             Interface::OpAsmOpInterface => "op_asm_op_interface".to_string(),
+            Interface::ParallelCombiningOpInterface => {
+                "parallel_combining_op_interface".to_string()
+            }
             Interface::PromotableAllocationOpInterface => {
                 "promotable_allocation_op_interface".to_string()
             }
@@ -92,6 +97,7 @@ impl fmt::Display for Interface {
             Interface::RegionBranchTerminatorOpInterface => {
                 "region_branch_terminator_op_interface".to_string()
             }
+            Interface::RegionKindInterface => "region_kind_interface".to_string(),
             Interface::ReifyRankedShapeTypeOpInterface => {
                 "reify_ranked_shape_type_op_interface".to_string()
             }
