@@ -108,6 +108,7 @@ pub fn get_registry() -> Registry {
     registry.register_linalg();
     registry.register_llvm();
     registry.register_memref();
+    registry.register_scf();
     registry.register_shape();
     registry.register_spirv();
     registry.register_tensor();
