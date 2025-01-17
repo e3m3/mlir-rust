@@ -110,6 +110,7 @@ use mlir_sys::mlirGetDialectHandle__gpu__;
 use mlir_sys::mlirGetDialectHandle__linalg__;
 use mlir_sys::mlirGetDialectHandle__llvm__;
 use mlir_sys::mlirGetDialectHandle__memref__;
+use mlir_sys::mlirGetDialectHandle__scf__;
 use mlir_sys::mlirGetDialectHandle__shape__;
 use mlir_sys::mlirGetDialectHandle__spirv__;
 use mlir_sys::mlirGetDialectHandle__tensor__;
@@ -785,6 +786,13 @@ impl Context {
         )))
     }
 
+    pub fn get_dialect_scf(&self) -> Dialect {
+        Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
+            mlirGetDialectHandle__scf__(),
+            self.0
+        )))
+    }
+
     pub fn get_dialect_shape(&self) -> Dialect {
         Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
             mlirGetDialectHandle__shape__(),
@@ -1036,6 +1044,12 @@ impl Module {
 impl Operation {
     pub fn new(state: &mut OperationState) -> Self {
         Self::from(do_unsafe!(mlirOperationCreate(state.get_mut())))
+    }
+
+    pub fn new_null() -> Self {
+        Self::from(MlirOperation {
+            ptr: ptr::null_mut(),
+        })
     }
 
     pub fn from_parse(context: &Context, op: &StringRef, src_name: &StringRef) -> Self {
@@ -1536,6 +1550,13 @@ impl Registry {
     pub fn register_memref(&mut self) -> () {
         do_unsafe!(mlirDialectHandleInsertDialect(
             mlirGetDialectHandle__memref__(),
+            *self.get_mut()
+        ))
+    }
+
+    pub fn register_scf(&mut self) -> () {
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__scf__(),
             *self.get_mut()
         ))
     }
