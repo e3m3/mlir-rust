@@ -32,7 +32,7 @@ pub mod linalg;
 //pub mod llvm;
 //pub mod math;
 pub mod memref;
-//pub mod scf;
+pub mod scf;
 //pub mod spirv;
 pub mod tensor;
 pub mod ub;
