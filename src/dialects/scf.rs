@@ -17,6 +17,7 @@ use crate::interfaces;
 use crate::ir;
 use crate::traits;
 
+use attributes::IAttributeNamed;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
@@ -34,6 +35,7 @@ use ir::Dialect;
 use ir::Location;
 use ir::OperationState;
 use ir::Region;
+use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
@@ -41,6 +43,9 @@ use traits::Trait;
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
+
+#[derive(Clone)]
+pub struct Cases(MlirAttribute);
 
 #[derive(Clone)]
 pub struct Mapping(MlirAttribute);
@@ -118,6 +123,16 @@ pub struct Yield(MlirOperation, MlirOperation, Op);
 ///////////////////////////////
 //  Attribute Implementations
 ///////////////////////////////
+
+impl Cases {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
 
 impl Mapping {
     pub fn get(&self) -> &MlirAttribute {
@@ -401,12 +416,71 @@ impl If {
 }
 
 impl IndexSwitch {
+    pub fn new(
+        context: &Context,
+        results: &[Type],
+        value: &Value,
+        cases: &[i64],
+        loc: &Location,
+    ) -> Self {
+        if !value.get_type().is_index() {
+            eprintln!("Expected index type for value operand of index switch operation");
+            exit(ExitCode::DialectError);
+        }
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::IndexSwitch);
+        let attr = Cases::new(context, cases).as_named_attribute();
+        let mut region_default = Region::new();
+        let mut block_default = Block::new_empty();
+        region_default.append_block(&mut block_default);
+        let mut regions: Vec<Region> = vec![region_default];
+        for _ in cases.iter() {
+            let mut region = Region::new();
+            let mut block = Block::new_empty();
+            region.append_block(&mut block);
+            regions.push(region);
+        }
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_attributes(&[attr]);
+        op_state.add_operands(&[value.clone()]);
+        op_state.add_regions(&regions);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        Self::from(*op_state.create_operation().get_mut())
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
+    pub fn get_cases(&self) -> Cases {
+        let attr_name = StringBacked::from(Cases::get_name());
+        let attr = self
+            .as_operation()
+            .get_attribute_inherent(&attr_name.as_string_ref());
+        Cases::from(*attr.get())
+    }
+
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_region(&self, i: isize) -> Region {
+        self.as_operation().get_region(i)
+    }
+
+    pub fn get_region_default(&self) -> Region {
+        self.as_operation().get_region(0)
+    }
+
+    /// Number of cases in the IndexSwitch operation, excluding the default case.
+    pub fn num_cases(&self) -> isize {
+        self.as_operation().num_regions() - 1
+    }
+
+    pub fn num_regions(&self) -> isize {
+        self.as_operation().num_regions()
     }
 }
 
@@ -624,6 +698,8 @@ impl Yield {
 ///////////////////////////////
 //  Trait Implementations
 ///////////////////////////////
+
+SpecializedAttribute!("cases" = impl NamedI64DenseArray for Cases {});
 
 impl From<(MlirOperation, MlirOperation)> for Condition {
     fn from((op, parent): (MlirOperation, MlirOperation)) -> Self {
