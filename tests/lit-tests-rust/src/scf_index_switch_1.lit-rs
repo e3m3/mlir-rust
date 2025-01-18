@@ -1,0 +1,54 @@
+// RUN: %O/run scf_index_switch_1 | @mlir-opt --canonicalize | @filecheck %M/scf_index_switch_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
+use mlir::dialects::func::Call;
+use mlir::dialects::func::Callee;
+use mlir::dialects::func::Return;
+use mlir::dialects::scf::IndexSwitch;
+use mlir::dialects::scf::Yield;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::index::Index;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t = Index::new(&context).as_type();
+    let f = get_empty_test_fn(&context, &[t.clone()], &[]);
+    let f_bb = get_private_fn(&context, "black_box", &[t.clone()], &[], None, None);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let callee = Callee::from_symbol_ref(&f_bb.get_symbol_ref());
+    let op_switch = IndexSwitch::new(&context, &[], &f_block.get_arg(0), &[2, 5], &loc);
+    let region_2 = op_switch.get_region(1);
+    let region_5 = op_switch.get_region(2);
+    let region_default = op_switch.get_region_default();
+    let mut block_2 = region_2.iter().next().unwrap_or_default();
+    let mut block_5 = region_5.iter().next().unwrap_or_default();
+    let mut block_default = region_default.iter().next().unwrap_or_default();
+    let mut op_call_2 = Call::new(&callee, &[], &[f_block.get_arg(0)], &loc).as_operation();
+    let mut op_call_5 = Call::new(&callee, &[], &[f_block.get_arg(0)], &loc).as_operation();
+    let mut op_yield_2 = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
+    let mut op_yield_5 = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
+    let mut op_yield_default = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
+    block_2.append_operation(&mut op_call_2);
+    block_2.append_operation(&mut op_yield_2);
+    block_5.append_operation(&mut op_call_5);
+    block_5.append_operation(&mut op_yield_5);
+    block_default.append_operation(&mut op_yield_default);
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_switch.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_bb.as_operation());
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
