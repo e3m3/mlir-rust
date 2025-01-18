@@ -16,8 +16,9 @@ use crate::exit_code;
 use crate::interfaces;
 use crate::ir;
 use crate::traits;
-use crate::types;
 
+use attributes::specialized::NamedI64DenseArray;
+use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::OpRef;
@@ -31,18 +32,27 @@ use ir::Block;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
-use ir::Operation;
 use ir::OperationState;
 use ir::Region;
-use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
-use types::IType;
 
 ///////////////////////////////
 //  Attributes
 ///////////////////////////////
+
+#[derive(Clone)]
+pub struct Mapping(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticLowerBound(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticUpperBound(MlirAttribute);
+
+#[derive(Clone)]
+pub struct StaticStep(MlirAttribute);
 
 ///////////////////////////////
 //  Enums
@@ -108,6 +118,46 @@ pub struct Yield(MlirOperation, MlirOperation, Op);
 ///////////////////////////////
 //  Attribute Implementations
 ///////////////////////////////
+
+impl Mapping {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticLowerBound {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticUpperBound {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
+
+impl StaticStep {
+    pub fn get(&self) -> &MlirAttribute {
+        &self.0
+    }
+
+    pub fn get_mut(&mut self) -> &mut MlirAttribute {
+        &mut self.0
+    }
+}
 
 ///////////////////////////////
 //  Enum Implementations
@@ -198,12 +248,70 @@ impl ExecuteRegion {
 }
 
 impl For {
+    pub fn new(
+        context: &Context,
+        results: &[Type],
+        lower_bound: &Value,
+        upper_bound: &Value,
+        step: &Value,
+        inits: &[Value],
+        loc: &Location,
+    ) -> Self {
+        let t_lower = lower_bound.get_type();
+        let t_upper = upper_bound.get_type();
+        let t_step = step.get_type();
+        if !t_lower.is_index() && !t_lower.is_integer() {
+            eprintln!(
+                "Expected index or integer type for bounds and step operands of for operation"
+            );
+            exit(ExitCode::DialectError);
+        }
+        if t_lower != t_upper || t_lower != t_step {
+            eprintln!("Expected bounds and step types to all be the same type for for operation");
+            exit(ExitCode::DialectError);
+        }
+        let n_results = results.len();
+        let n_inits = inits.len();
+        if n_results != n_inits {
+            eprintln!(
+                "Expected matching number of results ({}) and init ({}) operands of for operation",
+                n_results, n_inits,
+            );
+            exit(ExitCode::DialectError);
+        } else if iter::zip(results.iter(), inits.iter()).any(|(r, v)| *r != v.get_type()) {
+            eprintln!("Expected matching type for results and init operands of for operation");
+            exit(ExitCode::DialectError);
+        }
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::For);
+        let mut t_block: Vec<Type> = vec![step.get_type()];
+        let mut locs: Vec<Location> = vec![loc.clone()];
+        inits.iter().for_each(|v| t_block.push(v.get_type()));
+        inits.iter().for_each(|_| locs.push(loc.clone()));
+        let mut region = Region::new();
+        let mut block = Block::new(t_block.len() as isize, &t_block, &locs);
+        region.append_block(&mut block);
+        let mut operands = vec![lower_bound.clone(), upper_bound.clone(), step.clone()];
+        operands.append(&mut inits.to_vec());
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&operands);
+        op_state.add_regions(&[region]);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        Self::from(*op_state.create_operation().get())
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_region(&self) -> Region {
+        self.as_operation().get_region(0)
     }
 }
 
@@ -228,12 +336,67 @@ impl ForallInParallel {
 }
 
 impl If {
+    fn new(
+        op_state: &mut OperationState,
+        region_then: Region,
+        region_else: Region,
+        results: &[Type],
+        cond: &Value,
+    ) -> Self {
+        Self::check_operands(results, cond);
+        op_state.add_operands(&[cond.clone()]);
+        op_state.add_regions(&[region_then, region_else]);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        Self::from(*op_state.create_operation().get_mut())
+    }
+
+    pub fn new_if(context: &Context, results: &[Type], cond: &Value, loc: &Location) -> Self {
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::If);
+        let mut region_then = Region::new();
+        let region_else = Region::new();
+        let mut block_then = Block::new_empty();
+        region_then.append_block(&mut block_then);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        Self::new(&mut op_state, region_then, region_else, results, cond)
+    }
+
+    pub fn new_if_else(context: &Context, results: &[Type], cond: &Value, loc: &Location) -> Self {
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::If);
+        let mut region_then = Region::new();
+        let mut region_else = Region::new();
+        let mut block_then = Block::new_empty();
+        let mut block_else = Block::new_empty();
+        region_then.append_block(&mut block_then);
+        region_else.append_block(&mut block_else);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        Self::new(&mut op_state, region_then, region_else, results, cond)
+    }
+
+    fn check_operands(_results: &[Type], cond: &Value) -> () {
+        if !cond.get_type().is_bool() {
+            eprintln!("Expected bool type for condition operand of if operation");
+            exit(ExitCode::DialectError);
+        }
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_region_else(&self) -> Region {
+        self.as_operation().get_region(1)
+    }
+
+    pub fn get_region_then(&self) -> Region {
+        self.as_operation().get_region(0)
     }
 }
 
@@ -287,8 +450,7 @@ impl While {
                 n_results, n_inits,
             );
             exit(ExitCode::DialectError);
-        }
-        if iter::zip(results.iter(), inits.iter()).any(|(r, v)| *r != v.get_type()) {
+        } else if iter::zip(results.iter(), inits.iter()).any(|(r, v)| *r != v.get_type()) {
             eprintln!("Expected matching result and init operand types for while operation");
             exit(ExitCode::DialectError);
         }
@@ -942,6 +1104,12 @@ impl IOperation for ReduceReturn {
         ]
     }
 }
+
+SpecializedAttribute!("staticLowerBound" = impl NamedI64DenseArray for StaticLowerBound {});
+
+SpecializedAttribute!("staticUpperBound" = impl NamedI64DenseArray for StaticUpperBound {});
+
+SpecializedAttribute!("staticStep" = impl NamedI64DenseArray for StaticStep {});
 
 impl From<MlirOperation> for While {
     fn from(op: MlirOperation) -> Self {
