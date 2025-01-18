@@ -1,0 +1,44 @@
+// RUN: @mlir-opt -h                            | @filecheck %s
+// RUN: @mlir-opt %s --canonicalize             | @filecheck %s --check-prefix=CHECK_CAN
+// RUN: @mlir-opt %s --mlir-print-op-generic    | @filecheck %s --check-prefix=CHECK_GEN
+
+// CHECK:       Available Dialects:
+// CHECK-SAME:  func
+// CHECK-SAME:  scf
+
+module {
+    func.func private @black_box(i16, f32) -> f32
+    func.func @test(%n: i16, %N: i16, %step: i16, %init: f32) -> f32
+    {
+        %out = scf.for %ind = %n to %N step %step iter_args(%acc = %init) -> f32 : i16 {
+            %next = func.call @black_box(%ind, %acc) : (i16, f32) -> f32
+            scf.yield %next : f32
+        }
+        func.return %out : f32
+    }
+}
+
+// CHECK_CAN:   module {
+// CHECK_CAN:       func.func private @black_box(i16, f32) -> f32
+// CHECK_CAN:       func.func @test(%arg0: i16, %arg1: i16, %arg2: i16, %arg3: f32) -> f32 {
+// CHECK_CAN:           %0 = scf.for %arg4 = %arg0 to %arg1 step %arg2 iter_args(%arg5 = %arg3) -> (f32)  : i16 {
+// CHECK_CAN:               %1 = func.call @black_box(%arg4, %arg5) : (i16, f32) -> f32
+// CHECK_CAN:               scf.yield %1 : f32
+// CHECK_CAN:           }
+// CHECK_CAN:           return %0 : f32
+// CHECK_CAN:       }
+// CHECK_CAN:   }
+
+// CHECK_GEN:   "builtin.module"() ({
+// CHECK_GEN:       "func.func"() <{function_type = (i16, f32) -> f32, sym_name = "black_box", sym_visibility = "private"}> ({
+// CHECK_GEN:       }) : () -> ()
+// CHECK_GEN:       "func.func"() <{function_type = (i16, i16, i16, f32) -> f32, sym_name = "test"}> ({
+// CHECK_GEN:       ^bb0(%arg0: i16, %arg1: i16, %arg2: i16, %arg3: f32):
+// CHECK_GEN:           %0 = "scf.for"(%arg0, %arg1, %arg2, %arg3) ({
+// CHECK_GEN:           ^bb0(%arg4: i16, %arg5: f32):
+// CHECK_GEN:               %1 = "func.call"(%arg4, %arg5) <{callee = @black_box}> : (i16, f32) -> f32
+// CHECK_GEN:               "scf.yield"(%1) : (f32) -> ()
+// CHECK_GEN:           }) : (i16, i16, i16, f32) -> f32
+// CHECK_GEN:           "func.return"(%0) : (f32) -> ()
+// CHECK_GEN:       }) : () -> ()
+// CHECK_GEN:   }) : () -> ()
