@@ -1,4 +1,4 @@
-// Copyright 2024-2025, Giordano Salvador
+// Copyright 2025, Giordano Salvador
 // SPDX-License-Identifier: BSD-3-Clause
 
 #![allow(dead_code)]
@@ -16,13 +16,16 @@ use crate::exit_code;
 use crate::interfaces;
 use crate::ir;
 use crate::traits;
+use crate::types;
 
 use attributes::IAttributeNamed;
+use attributes::specialized::NamedI32DenseArray;
 use attributes::specialized::NamedI64DenseArray;
 use attributes::specialized::SpecializedAttribute;
 use dialects::IOp;
 use dialects::IOperation;
 use dialects::OpRef;
+use dialects::common::OperandSegmentSizes;
 use effects::MEFF_NO_MEMORY_EFFECT;
 use effects::MemoryEffectList;
 use exit_code::ExitCode;
@@ -33,12 +36,15 @@ use ir::Block;
 use ir::Context;
 use ir::Dialect;
 use ir::Location;
+use ir::Operation;
 use ir::OperationState;
 use ir::Region;
 use ir::StringBacked;
 use ir::Type;
 use ir::Value;
 use traits::Trait;
+use types::IType;
+use types::index::Index;
 
 ///////////////////////////////
 //  Attributes
@@ -109,10 +115,10 @@ pub struct IndexSwitch(MlirOperation);
 pub struct Parallel(MlirOperation);
 
 #[derive(Clone)]
-pub struct Reduce(MlirOperation);
+pub struct Reduce(MlirOperation, MlirOperation);
 
 #[derive(Clone)]
-pub struct ReduceReturn(MlirOperation);
+pub struct ReduceReturn(MlirOperation, MlirOperation);
 
 #[derive(Clone)]
 pub struct While(MlirOperation);
@@ -485,32 +491,191 @@ impl IndexSwitch {
 }
 
 impl Parallel {
+    pub fn new(
+        context: &Context,
+        lower_bound: &Value,
+        upper_bound: &Value,
+        step: &Value,
+        inits: &[Value],
+        loc: &Location,
+    ) -> Self {
+        if !lower_bound.get_type().is_index() {
+            eprintln!("Expected index type for lower bound operand of parallel operation");
+            exit(ExitCode::DialectError);
+        }
+        if !upper_bound.get_type().is_index() {
+            eprintln!("Expected index type for upper bound operand of parallel operation");
+            exit(ExitCode::DialectError);
+        }
+        if !step.get_type().is_index() {
+            eprintln!("Expected index type for step operand of parallel operation");
+            exit(ExitCode::DialectError);
+        }
+        let t_index = Index::new(context).as_type();
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::Parallel);
+        let mut operands = vec![lower_bound.clone(), upper_bound.clone(), step.clone()];
+        let mut region = Region::new();
+        let mut block = Block::new(1, &[t_index], &[loc.clone()]);
+        region.append_block(&mut block);
+        let attr_opseg =
+            OperandSegmentSizes::new(context, &[1, 1, 1, inits.len() as i32]).as_named_attribute();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        if !inits.is_empty() {
+            let results: Vec<Type> = inits.iter().map(|v| v.get_type()).collect();
+            op_state.add_results(&results);
+            operands.append(&mut inits.to_vec());
+        }
+        op_state.add_attributes(&[attr_opseg]);
+        op_state.add_operands(&operands);
+        op_state.add_regions(&[region]);
+        Self::from(*op_state.create_operation().get_mut())
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_region(&self) -> Region {
+        self.as_operation().get_region(0)
     }
 }
 
 impl Reduce {
+    /// Number of reductions (`num_reductions`) determines how many regions are instantiated for
+    /// the operation.
+    pub fn new(
+        context: &Context,
+        parent: &Parallel,
+        args: &[Value],
+        num_reductions: usize,
+        loc: &Location,
+    ) -> Self {
+        if args.is_empty() && num_reductions > 0 {
+            eprintln!("Expected no reduction regions for empty reduce operation");
+            exit(ExitCode::DialectError);
+        }
+        let op_parent = parent.as_operation();
+        let n_results = op_parent.num_results();
+        let n_args = args.len() as isize;
+        if n_results != n_args {
+            eprintln!(
+                "Expected matching number of parent operation results ({}) and arguments ({}) \
+                of reduce operation",
+                n_results, n_args,
+            );
+            exit(ExitCode::DialectError);
+        } else if n_results > 0 {
+            for (i, arg) in args.iter().enumerate() {
+                let t = op_parent.get_result(i as isize).get_type();
+                if t != arg.get_type() {
+                    eprintln!(
+                        "Expected matching type of parent operation result and argument {} \
+                        of reduce operation",
+                        i
+                    );
+                    exit(ExitCode::DialectError);
+                }
+            }
+        }
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::Reduce);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        match args {
+            [] => (),
+            [arg, ..] => {
+                let t = arg.get_type();
+                let mut regions: Vec<Region> = vec![];
+                for _ in 0..num_reductions {
+                    let mut region = Region::new();
+                    let mut block =
+                        Block::new(2, &[t.clone(), t.clone()], &[loc.clone(), loc.clone()]);
+                    region.append_block(&mut block);
+                    regions.push(region);
+                }
+                op_state.add_operands(args);
+                op_state.add_regions(&regions);
+            }
+        }
+        Self::from((*op_state.create_operation().get_mut(), *parent.get()))
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_parent(&self) -> &MlirOperation {
+        &self.1
+    }
+
+    pub fn get_parent_mut(&mut self) -> &mut MlirOperation {
+        &mut self.1
+    }
+
+    pub fn get_region(&self, i: isize) -> Option<Region> {
+        let op = self.as_operation();
+        if op.num_regions() > 0 {
+            Some(op.get_region(i))
+        } else {
+            None
+        }
     }
 }
 
 impl ReduceReturn {
+    /// Uses the pos-th region in the parent to check for expected result types.
+    /// Each region in the parent is expected to have the same block argument signature.
+    pub fn new(
+        context: &Context,
+        parent: &Reduce,
+        value: &Value,
+        pos: usize,
+        loc: &Location,
+    ) -> Self {
+        let Some(parent_region) = parent.get_region(pos as isize) else {
+            eprintln!(
+                "Expected region {} in parent reduce operation of reduce return operation",
+                pos
+            );
+            exit(ExitCode::DialectError);
+        };
+        let parent_block = parent_region.iter().next().unwrap_or_default();
+        if parent_block.get_arg(0).get_type() != value.get_type() {
+            eprintln!(
+                "Expected matching type for reduce operation arguments and value operand \
+                of reduce return operation",
+            );
+            exit(ExitCode::DialectError);
+        }
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::ReduceReturn);
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_operands(&[value.clone()]);
+        Self::from((*op_state.create_operation().get_mut(), *parent.get()))
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_parent(&self) -> &MlirOperation {
+        &self.1
+    }
+
+    pub fn get_parent_mut(&mut self) -> &mut MlirOperation {
+        &mut self.1
     }
 }
 
@@ -1092,7 +1257,13 @@ impl IOperation for Parallel {
 
 impl From<MlirOperation> for Reduce {
     fn from(op: MlirOperation) -> Self {
-        Self(op)
+        Self(op, *Operation::new_null().get_mut())
+    }
+}
+
+impl From<(MlirOperation, MlirOperation)> for Reduce {
+    fn from((op, parent_op): (MlirOperation, MlirOperation)) -> Self {
+        Self(op, parent_op)
     }
 }
 
@@ -1136,7 +1307,13 @@ impl IOperation for Reduce {
 
 impl From<MlirOperation> for ReduceReturn {
     fn from(op: MlirOperation) -> Self {
-        Self(op)
+        Self(op, *Operation::new_null().get_mut())
+    }
+}
+
+impl From<(MlirOperation, MlirOperation)> for ReduceReturn {
+    fn from((op, parent_op): (MlirOperation, MlirOperation)) -> Self {
+        Self(op, parent_op)
     }
 }
 
