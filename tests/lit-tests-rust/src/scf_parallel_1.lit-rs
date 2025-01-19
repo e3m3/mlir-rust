@@ -1,0 +1,55 @@
+// RUN: %O/run scf_parallel_1 | @mlir-opt --canonicalize | @filecheck %M/scf_parallel_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
+use mlir::dialects::func::Call;
+use mlir::dialects::func::Callee;
+use mlir::dialects::func::Return;
+use mlir::dialects::scf::Parallel;
+use mlir::dialects::scf::Reduce;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::index::Index;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_index = Index::new(&context).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t_index.clone(), t_index.clone(), t_index.clone()],
+        &[],
+    );
+    let f_bb = get_private_fn(&context, "black_box", &[t_index.clone()], &[], None, None);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let callee = Callee::from_symbol_ref(&f_bb.get_symbol_ref());
+    let op_par = Parallel::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &f_block.get_arg(2),
+        &[],
+        &loc,
+    );
+    let region_par = op_par.get_region();
+    let mut block_par = region_par.iter().next().unwrap_or_default();
+    let mut op_call = Call::new(&callee, &[], &[block_par.get_arg(0)], &loc).as_operation();
+    let mut op_reduce = Reduce::new(&context, &op_par, &[], 0, &loc).as_operation();
+    block_par.append_operation(&mut op_call);
+    block_par.append_operation(&mut op_reduce);
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_par.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_bb.as_operation());
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}

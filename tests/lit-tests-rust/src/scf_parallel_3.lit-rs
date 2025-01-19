@@ -1,0 +1,142 @@
+// RUN: %O/run scf_parallel_3 | @mlir-opt --canonicalize | @filecheck %M/scf_parallel_3.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
+use mlir::dialects::func::Call;
+use mlir::dialects::func::Callee;
+use mlir::dialects::func::Return;
+use mlir::dialects::scf::Parallel;
+use mlir::dialects::scf::Reduce;
+use mlir::dialects::scf::ReduceReturn;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_index = Index::new(&context).as_type();
+    let t_f32 = FloatType::new(&context, FloatLayout::F32).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[
+            t_index.clone(),
+            t_index.clone(),
+            t_index.clone(),
+            t_f32.clone(),
+            t_f32.clone(),
+        ],
+        &[t_f32.clone(), t_f32.clone()],
+    );
+    let f_bb_0 = get_private_fn(
+        &context,
+        "black_box_0",
+        &[t_index.clone()],
+        &[t_f32.clone(), t_f32.clone()],
+        None,
+        None,
+    );
+    let f_bb_1 = get_private_fn(
+        &context,
+        "black_box_1",
+        &[t_f32.clone(), t_f32.clone()],
+        &[t_f32.clone()],
+        None,
+        None,
+    );
+    let f_bb_2 = get_private_fn(
+        &context,
+        "black_box_2",
+        &[t_f32.clone(), t_f32.clone()],
+        &[t_f32.clone()],
+        None,
+        None,
+    );
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let callee_0 = Callee::from_symbol_ref(&f_bb_0.get_symbol_ref());
+    let callee_1 = Callee::from_symbol_ref(&f_bb_1.get_symbol_ref());
+    let callee_2 = Callee::from_symbol_ref(&f_bb_2.get_symbol_ref());
+    let op_par = Parallel::new(
+        &context,
+        &f_block.get_arg(0),
+        &f_block.get_arg(1),
+        &f_block.get_arg(2),
+        &[f_block.get_arg(3), f_block.get_arg(4)],
+        &loc,
+    );
+    let region_par = op_par.get_region();
+    let mut block_par = region_par.iter().next().unwrap_or_default();
+    let mut op_call_0 = Call::new(
+        &callee_0,
+        &[t_f32.clone(), t_f32.clone()],
+        &[block_par.get_arg(0)],
+        &loc,
+    )
+    .as_operation();
+    let op_reduce = Reduce::new(
+        &context,
+        &op_par,
+        &[op_call_0.get_result(0), op_call_0.get_result(1)],
+        2,
+        &loc,
+    );
+    let Some(region_reduce_0) = op_reduce.get_region(0) else {
+        Err("Expected at least one block for reduce operation")?
+    };
+    let Some(region_reduce_1) = op_reduce.get_region(1) else {
+        Err("Expected at least one block for reduce operation")?
+    };
+    let mut block_reduce_0 = region_reduce_0.iter().next().unwrap_or_default();
+    let mut block_reduce_1 = region_reduce_1.iter().next().unwrap_or_default();
+    let mut op_call_1 = Call::new(
+        &callee_1,
+        &[t_f32.clone()],
+        &[block_reduce_0.get_arg(0), block_reduce_0.get_arg(1)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_call_2 = Call::new(
+        &callee_2,
+        &[t_f32.clone()],
+        &[block_reduce_1.get_arg(0), block_reduce_1.get_arg(1)],
+        &loc,
+    )
+    .as_operation();
+    let mut op_reduce_return_0 =
+        ReduceReturn::new(&context, &op_reduce, &op_call_1.get_result(0), 0, &loc).as_operation();
+    let mut op_reduce_return_1 =
+        ReduceReturn::new(&context, &op_reduce, &op_call_2.get_result(0), 1, &loc).as_operation();
+    block_reduce_0.append_operation(&mut op_call_1);
+    block_reduce_0.append_operation(&mut op_reduce_return_0);
+    block_reduce_1.append_operation(&mut op_call_2);
+    block_reduce_1.append_operation(&mut op_reduce_return_1);
+    block_par.append_operation(&mut op_call_0);
+    block_par.append_operation(&mut op_reduce.as_operation());
+    let mut op_ret = Return::new(
+        &f,
+        &[
+            op_par.as_operation().get_result(0),
+            op_par.as_operation().get_result(1),
+        ],
+        &loc,
+    )
+    .as_operation();
+    f_block.append_operation(&mut op_par.as_operation());
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_bb_0.as_operation());
+    block.append_operation(&mut f_bb_1.as_operation());
+    block.append_operation(&mut f_bb_2.as_operation());
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
