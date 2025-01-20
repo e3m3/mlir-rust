@@ -65,7 +65,7 @@ pub fn test() -> TestResult {
         &loc,
     )
     .as_operation();
-    let mut op_yield = Yield::new_for(&[op_add.get_result(0)], &op_for, &loc).as_operation();
+    let mut op_yield = Yield::new_for(&op_for, &[op_add.get_result(0)], &loc).as_operation();
     block_for.append_operation(&mut op_cast);
     block_for.append_operation(&mut op_add);
     block_for.append_operation(&mut op_yield);

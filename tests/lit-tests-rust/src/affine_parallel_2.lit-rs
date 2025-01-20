@@ -87,8 +87,8 @@ pub fn test() -> TestResult {
     );
     let region_par_1 = op_par_1.as_operation().get_region(0);
     let mut block_par_1 = region_par_1.iter().next().unwrap_or_default();
-    let mut op_yield_1 = Yield::new_parallel(&[], &op_par_1, &loc).as_operation();
-    let mut op_yield_0 = Yield::new_parallel(&[], &op_par_0, &loc).as_operation();
+    let mut op_yield_1 = Yield::new_parallel(&op_par_1, &[], &loc).as_operation();
+    let mut op_yield_0 = Yield::new_parallel(&op_par_0, &[], &loc).as_operation();
     let mut op_call = Call::new(
         &callee,
         &[],

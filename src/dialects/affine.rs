@@ -2417,10 +2417,10 @@ impl VectorStore {
 
 impl Yield {
     fn __new(
-        values: &[Value],
         parent: &MlirOperation,
         parent_op: &Op,
         dialect: &Dialect,
+        values: &[Value],
         loc: &Location,
     ) -> Self {
         let name = dialect.get_op_name(&Op::Yield);
@@ -2429,7 +2429,7 @@ impl Yield {
         Self::from(*op_state.create_operation().get(), *parent, *parent_op)
     }
 
-    fn new(values: &[Value], parent_: &dyn IOperation, loc: &Location) -> Self {
+    fn new(parent_: &dyn IOperation, values: &[Value], loc: &Location) -> Self {
         let parent = parent_.as_operation();
         let context = parent.get_context();
         let dialect = get_dialect(&context);
@@ -2468,19 +2468,19 @@ impl Yield {
             );
             exit(ExitCode::DialectError);
         }
-        Self::__new(values, parent.get(), &parent_op, &dialect, loc)
+        Self::__new(parent.get(), &parent_op, &dialect, values, loc)
     }
 
-    pub fn new_for(values: &[Value], parent: &For, loc: &Location) -> Self {
-        Self::new(values, parent, loc)
+    pub fn new_for(parent: &For, values: &[Value], loc: &Location) -> Self {
+        Self::new(parent, values, loc)
     }
 
-    pub fn new_if(values: &[Value], parent: &If, loc: &Location) -> Self {
-        Self::new(values, parent, loc)
+    pub fn new_if(parent: &If, values: &[Value], loc: &Location) -> Self {
+        Self::new(parent, values, loc)
     }
 
-    pub fn new_parallel(values: &[Value], parent: &Parallel, loc: &Location) -> Self {
-        Self::new(values, parent, loc)
+    pub fn new_parallel(parent: &Parallel, values: &[Value], loc: &Location) -> Self {
+        Self::new(parent, values, loc)
     }
 
     pub fn from(op: MlirOperation, parent: MlirOperation, parent_op: Op) -> Self {

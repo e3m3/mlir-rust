@@ -69,7 +69,7 @@ pub fn test() -> TestResult {
         set0,
         &loc,
     );
-    let mut op_yield = Yield::new_if(&[], &op_if, &loc).as_operation();
+    let mut op_yield = Yield::new_if(&op_if, &[], &loc).as_operation();
     let region_if = op_if.as_operation().get_region(0);
     let mut block_if = region_if.iter().next().unwrap_or_default();
     block_if.append_operation(&mut op_apply);

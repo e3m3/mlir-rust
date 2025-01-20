@@ -72,7 +72,7 @@ pub fn test() -> TestResult {
         &loc,
     )
     .as_operation();
-    let mut op_yield = Yield::new_parallel(&[], &op_par, &loc).as_operation();
+    let mut op_yield = Yield::new_parallel(&op_par, &[], &loc).as_operation();
     block_par.append_operation(&mut op_div);
     block_par.append_operation(&mut op_store);
     block_par.append_operation(&mut op_yield);

@@ -66,8 +66,8 @@ pub fn test() -> TestResult {
     )
     .as_operation();
     let mut op_yield = Yield::new_for(
-        &[op_add0.get_result(0), op_add1.get_result(0)],
         &op_for,
+        &[op_add0.get_result(0), op_add1.get_result(0)],
         &loc,
     )
     .as_operation();

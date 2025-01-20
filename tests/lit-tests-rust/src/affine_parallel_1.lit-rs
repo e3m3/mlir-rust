@@ -127,8 +127,8 @@ pub fn test() -> TestResult {
     )
     .as_operation();
     let mut op_yield_1 =
-        Yield::new_parallel(&[op_mul.get_result(0)], &op_par_1, &loc).as_operation();
-    let mut op_yield_0 = Yield::new_parallel(&[], &op_par_0, &loc).as_operation();
+        Yield::new_parallel(&op_par_1, &[op_mul.get_result(0)], &loc).as_operation();
+    let mut op_yield_0 = Yield::new_parallel(&op_par_0, &[], &loc).as_operation();
     block_par_1.append_operation(&mut op_load_0);
     block_par_1.append_operation(&mut op_load_1);
     block_par_1.append_operation(&mut op_mul);
