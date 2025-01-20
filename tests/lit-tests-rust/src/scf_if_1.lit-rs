@@ -29,7 +29,7 @@ pub fn test() -> TestResult {
     let region_if = op_if.get_region_then();
     let mut block_if = region_if.iter().next().unwrap_or_default();
     let mut op_call = Call::new(&callee, &[], &[], &loc).as_operation();
-    let mut op_yield = Yield::new_if(&[], &op_if, &[], &loc).as_operation();
+    let mut op_yield = Yield::new_if(&op_if, &[], &loc).as_operation();
     block_if.append_operation(&mut op_call);
     block_if.append_operation(&mut op_yield);
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();

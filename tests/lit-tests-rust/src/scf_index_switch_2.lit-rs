@@ -55,23 +55,12 @@ pub fn test() -> TestResult {
         Call::new(&callee, &[t_i32.clone()], &[f_block.get_arg(0)], &loc).as_operation();
     let mut op_call_5 =
         Call::new(&callee, &[t_i32.clone()], &[f_block.get_arg(0)], &loc).as_operation();
-    let mut op_yield_2 = Yield::new_index_switch(
-        &[t_i32.clone()],
-        &op_switch,
-        &[op_call_2.get_result(0)],
-        &loc,
-    )
-    .as_operation();
-    let mut op_yield_5 = Yield::new_index_switch(
-        &[t_i32.clone()],
-        &op_switch,
-        &[op_call_5.get_result(0)],
-        &loc,
-    )
-    .as_operation();
+    let mut op_yield_2 =
+        Yield::new_index_switch(&op_switch, &[op_call_2.get_result(0)], &loc).as_operation();
+    let mut op_yield_5 =
+        Yield::new_index_switch(&op_switch, &[op_call_5.get_result(0)], &loc).as_operation();
     let mut op_yield_default =
-        Yield::new_index_switch(&[t_i32.clone()], &op_switch, &[f_block.get_arg(1)], &loc)
-            .as_operation();
+        Yield::new_index_switch(&op_switch, &[f_block.get_arg(1)], &loc).as_operation();
     block_2.append_operation(&mut op_call_2);
     block_2.append_operation(&mut op_yield_2);
     block_5.append_operation(&mut op_call_5);

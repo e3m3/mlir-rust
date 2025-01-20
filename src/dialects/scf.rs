@@ -734,31 +734,19 @@ impl While {
 impl Yield {
     fn new(
         context: &Context,
-        results: &[Type],
         parent: &dyn IOperation,
         parent_op: Op,
         values: &[Value],
         loc: &Location,
     ) -> Self {
+        let results: Vec<Type> = values.iter().map(|v| v.get_type()).collect();
         let n_results = results.len() as isize;
         let n_results_parent = parent.as_operation().num_results();
-        let n_values = values.len() as isize;
         if n_results != n_results_parent {
             eprintln!(
                 "Expected matching number of results ({}) and parent results ({}) for yield operation",
                 n_results, n_results_parent,
             );
-            exit(ExitCode::DialectError);
-        }
-        if n_results != n_values {
-            eprintln!(
-                "Expected matching number of results ({}) and value operands ({}) for yield operation",
-                n_results, n_values,
-            );
-            exit(ExitCode::DialectError);
-        }
-        if iter::zip(results.iter(), values.iter()).any(|(r, v)| *r != v.get_type()) {
-            eprintln!("Expected matching result and value operand types for yield operation");
             exit(ExitCode::DialectError);
         }
         let dialect = context.get_dialect_scf();
@@ -770,15 +758,9 @@ impl Yield {
         Self::from((*op_state.create_operation().get(), *parent.get(), parent_op))
     }
 
-    pub fn new_execute_region(
-        results: &[Type],
-        parent: &ExecuteRegion,
-        values: &[Value],
-        loc: &Location,
-    ) -> Self {
+    pub fn new_execute_region(parent: &ExecuteRegion, values: &[Value], loc: &Location) -> Self {
         Self::new(
             &parent.as_operation().get_context(),
-            results,
             parent,
             Op::ExecuteRegion,
             values,
@@ -786,10 +768,9 @@ impl Yield {
         )
     }
 
-    pub fn new_for(results: &[Type], parent: &For, values: &[Value], loc: &Location) -> Self {
+    pub fn new_for(parent: &For, values: &[Value], loc: &Location) -> Self {
         Self::new(
             &parent.as_operation().get_context(),
-            results,
             parent,
             Op::For,
             values,
@@ -797,10 +778,9 @@ impl Yield {
         )
     }
 
-    pub fn new_if(results: &[Type], parent: &If, values: &[Value], loc: &Location) -> Self {
+    pub fn new_if(parent: &If, values: &[Value], loc: &Location) -> Self {
         Self::new(
             &parent.as_operation().get_context(),
-            results,
             parent,
             Op::If,
             values,
@@ -808,15 +788,9 @@ impl Yield {
         )
     }
 
-    pub fn new_index_switch(
-        results: &[Type],
-        parent: &IndexSwitch,
-        values: &[Value],
-        loc: &Location,
-    ) -> Self {
+    pub fn new_index_switch(parent: &IndexSwitch, values: &[Value], loc: &Location) -> Self {
         Self::new(
             &parent.as_operation().get_context(),
-            results,
             parent,
             Op::IndexSwitch,
             values,
@@ -824,10 +798,9 @@ impl Yield {
         )
     }
 
-    pub fn new_while(results: &[Type], parent: &While, values: &[Value], loc: &Location) -> Self {
+    pub fn new_while(parent: &While, values: &[Value], loc: &Location) -> Self {
         Self::new(
             &parent.as_operation().get_context(),
-            results,
             parent,
             Op::While,
             values,

@@ -57,8 +57,7 @@ pub fn test() -> TestResult {
         &loc,
     )
     .as_operation();
-    let mut op_yield =
-        Yield::new_for(&[t_f32.clone()], &op_for, &[op_call.get_result(0)], &loc).as_operation();
+    let mut op_yield = Yield::new_for(&op_for, &[op_call.get_result(0)], &loc).as_operation();
     block_for.append_operation(&mut op_call);
     block_for.append_operation(&mut op_yield);
     let mut op_ret = Return::new(&f, &[op_for.as_operation().get_result(0)], &loc).as_operation();

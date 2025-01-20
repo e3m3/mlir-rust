@@ -37,7 +37,7 @@ pub fn test() -> TestResult {
     let mut op_cond =
         Condition::new(&context, &op_while, &op_call_0.get_result(0), &[], &loc).as_operation();
     let mut op_call_1 = Call::new(&callee_1, &[], &[], &loc).as_operation();
-    let mut op_yield = Yield::new_while(&[], &op_while, &[], &loc).as_operation();
+    let mut op_yield = Yield::new_while(&op_while, &[], &loc).as_operation();
     block_before.append_operation(&mut op_call_0);
     block_before.append_operation(&mut op_cond);
     block_after.append_operation(&mut op_call_1);

@@ -37,7 +37,7 @@ pub fn test() -> TestResult {
     let region_for = op_for.get_region();
     let mut block_for = region_for.iter().next().unwrap_or_default();
     let mut op_call = Call::new(&callee, &[], &[], &loc).as_operation();
-    let mut op_yield = Yield::new_for(&[], &op_for, &[], &loc).as_operation();
+    let mut op_yield = Yield::new_for(&op_for, &[], &loc).as_operation();
     block_for.append_operation(&mut op_call);
     block_for.append_operation(&mut op_yield);
     let mut op_ret = Return::new(&f, &[], &loc).as_operation();

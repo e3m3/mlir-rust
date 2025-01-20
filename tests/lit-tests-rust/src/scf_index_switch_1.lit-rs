@@ -34,9 +34,9 @@ pub fn test() -> TestResult {
     let mut block_default = region_default.iter().next().unwrap_or_default();
     let mut op_call_2 = Call::new(&callee, &[], &[f_block.get_arg(0)], &loc).as_operation();
     let mut op_call_5 = Call::new(&callee, &[], &[f_block.get_arg(0)], &loc).as_operation();
-    let mut op_yield_2 = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
-    let mut op_yield_5 = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
-    let mut op_yield_default = Yield::new_index_switch(&[], &op_switch, &[], &loc).as_operation();
+    let mut op_yield_2 = Yield::new_index_switch(&op_switch, &[], &loc).as_operation();
+    let mut op_yield_5 = Yield::new_index_switch(&op_switch, &[], &loc).as_operation();
+    let mut op_yield_default = Yield::new_index_switch(&op_switch, &[], &loc).as_operation();
     block_2.append_operation(&mut op_call_2);
     block_2.append_operation(&mut op_yield_2);
     block_5.append_operation(&mut op_call_5);

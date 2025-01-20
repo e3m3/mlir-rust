@@ -62,14 +62,12 @@ pub fn test() -> TestResult {
     )
     .as_operation();
     let mut op_yield_0 = Yield::new_if(
-        &[t_i32.clone(), t_i32.clone()],
         &op_if,
         &[op_call_0.get_result(0), op_call_0.get_result(1)],
         &loc,
     )
     .as_operation();
     let mut op_yield_1 = Yield::new_if(
-        &[t_i32.clone(), t_i32.clone()],
         &op_if,
         &[op_call_1.get_result(0), op_call_1.get_result(1)],
         &loc,
