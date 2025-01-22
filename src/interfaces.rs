@@ -13,6 +13,7 @@ pub enum Interface {
     ArithFastMathInterface,
     ArithIntegerOverflowFlagsInterface,
     ArithRoundingModeInterface,
+    BranchOpInterface,
     CallOpInterface,
     CallableOpInterface,
     CastOpInterface,
@@ -64,6 +65,7 @@ impl fmt::Display for Interface {
                 "arith_integer_overflow_flags_interface".to_string()
             }
             Interface::ArithRoundingModeInterface => "arith_rounding_mode_interface".to_string(),
+            Interface::BranchOpInterface => "branch_op_interface".to_string(),
             Interface::CallOpInterface => "call_op_interface".to_string(),
             Interface::CallableOpInterface => "callable_op_interface".to_string(),
             Interface::CastOpInterface => "cast_op_interface".to_string(),
