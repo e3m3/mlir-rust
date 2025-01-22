@@ -179,6 +179,11 @@ impl Op {
 ///////////////////////////////
 
 impl Call {
+    /// Currently does not check that the signature of `callee` matches the operands to this
+    /// operation since the `callee` argument is just a symbol reference.
+    /// This symbol reference may not yet be owned by any parent operation/region at the time this
+    /// constructor is called.
+    /// To check the call signature, try the `CallIndirect` operation.
     pub fn new(callee: &Callee, t: &[Type], args: &[Value], loc: &Location) -> Self {
         let context = callee.get_context();
         let dialect = context.get_dialect_func();
