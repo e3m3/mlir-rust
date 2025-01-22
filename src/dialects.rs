@@ -23,7 +23,7 @@ use traits::Trait;
 
 pub mod affine;
 pub mod arith;
-//pub mod cf;
+pub mod cf;
 pub mod common;
 pub mod func;
 //pub mod gpu;

@@ -103,6 +103,7 @@ pub fn get_private_fn(
 pub fn get_registry() -> Registry {
     let mut registry = Registry::new();
     registry.register_arith();
+    registry.register_cf();
     registry.register_func();
     registry.register_gpu();
     registry.register_linalg();

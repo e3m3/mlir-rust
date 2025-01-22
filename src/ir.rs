@@ -105,6 +105,7 @@ use mlir_sys::mlirDialectRegistryCreate;
 use mlir_sys::mlirDialectRegistryDestroy;
 use mlir_sys::mlirDisctinctAttrCreate;
 use mlir_sys::mlirGetDialectHandle__arith__;
+use mlir_sys::mlirGetDialectHandle__cf__;
 use mlir_sys::mlirGetDialectHandle__func__;
 use mlir_sys::mlirGetDialectHandle__gpu__;
 use mlir_sys::mlirGetDialectHandle__linalg__;
@@ -747,6 +748,13 @@ impl Context {
     pub fn get_dialect_arith(&self) -> Dialect {
         Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
             mlirGetDialectHandle__arith__(),
+            self.0
+        )))
+    }
+
+    pub fn get_dialect_cf(&self) -> Dialect {
+        Dialect::from(do_unsafe!(mlirDialectHandleLoadDialect(
+            mlirGetDialectHandle__cf__(),
             self.0
         )))
     }
@@ -1515,6 +1523,13 @@ impl Registry {
     pub fn register_arith(&mut self) -> () {
         do_unsafe!(mlirDialectHandleInsertDialect(
             mlirGetDialectHandle__arith__(),
+            *self.get_mut()
+        ))
+    }
+
+    pub fn register_cf(&mut self) -> () {
+        do_unsafe!(mlirDialectHandleInsertDialect(
+            mlirGetDialectHandle__cf__(),
             *self.get_mut()
         ))
     }
