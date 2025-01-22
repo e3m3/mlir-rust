@@ -1,0 +1,92 @@
+// RUN: %O/run cf_cond_br_1 | @mlir-opt --canonicalize | @filecheck %M/cf_cond_br_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::attributes::specialized::NamedSymbolRef;
+use mlir::dialects::IOperation;
+use mlir::dialects::cf::Branch;
+use mlir::dialects::cf::CondBranch;
+use mlir::dialects::func::Call;
+use mlir::dialects::func::Callee;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::types::IType;
+use mlir::types::float::Float as FloatType;
+use mlir::types::float::Layout as FloatLayout;
+use mlir::types::index::Index;
+use mlir::types::integer::Integer as IntegerType;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_bool = IntegerType::new_bool(&context).as_type();
+    let t_f32 = FloatType::new(&context, FloatLayout::F32).as_type();
+    let t_i32 = IntegerType::new(&context, 32).as_type();
+    let t_index = Index::new(&context).as_type();
+    let f = get_empty_test_fn(
+        &context,
+        &[t_bool.clone(), t_i32.clone(), t_f32.clone()],
+        &[t_index.clone()],
+    );
+    let f_bb_0 = get_private_fn(
+        &context,
+        "black_box_0",
+        &[t_i32.clone()],
+        &[t_index.clone()],
+        None,
+        None,
+    );
+    let f_bb_1 = get_private_fn(
+        &context,
+        "black_box_1",
+        &[t_f32.clone()],
+        &[t_index.clone()],
+        None,
+        None,
+    );
+    let mut f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block_0 = f_region.iter().next().unwrap_or_default();
+    let mut f_block_1 = Block::new(1, &[t_i32.clone()], &[loc.clone()]);
+    let mut f_block_2 = Block::new(1, &[t_f32.clone()], &[loc.clone()]);
+    let mut f_block_3 = Block::new(1, &[t_index.clone()], &[loc.clone()]);
+    let callee_0 = Callee::from_symbol_ref(&f_bb_0.get_symbol_ref());
+    let callee_1 = Callee::from_symbol_ref(&f_bb_1.get_symbol_ref());
+    let mut op_cond_br = CondBranch::new(
+        &context,
+        &f_block_0.get_arg(0),
+        &[f_block_0.get_arg(1)],
+        &[f_block_0.get_arg(2)],
+        &f_block_1,
+        &f_block_2,
+        &loc,
+    )
+    .as_operation();
+    let mut op_call_0 =
+        Call::new(&callee_0, &[t_index.clone()], &[f_block_1.get_arg(0)], &loc).as_operation();
+    let mut op_call_1 =
+        Call::new(&callee_1, &[t_index.clone()], &[f_block_2.get_arg(0)], &loc).as_operation();
+    let mut op_br_0 =
+        Branch::new(&context, &[op_call_0.get_result(0)], &f_block_3, &loc).as_operation();
+    let mut op_br_1 =
+        Branch::new(&context, &[op_call_1.get_result(0)], &f_block_3, &loc).as_operation();
+    let mut op_ret = Return::new(&f, &[f_block_3.get_arg(0)], &loc).as_operation();
+    f_block_0.append_operation(&mut op_cond_br);
+    f_block_1.append_operation(&mut op_call_0);
+    f_block_1.append_operation(&mut op_br_0);
+    f_block_2.append_operation(&mut op_call_1);
+    f_block_2.append_operation(&mut op_br_1);
+    f_block_3.append_operation(&mut op_ret);
+    f_region.append_block(&mut f_block_1);
+    f_region.append_block(&mut f_block_2);
+    f_region.append_block(&mut f_block_3);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f_bb_0.as_operation());
+    block.append_operation(&mut f_bb_1.as_operation());
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}

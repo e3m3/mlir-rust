@@ -1,0 +1,39 @@
+// RUN: %O/run cf_assert_1 | @mlir-opt --canonicalize | @filecheck %M/cf_assert_1.mlir --check-prefix=CHECK_CAN
+
+extern crate mlir;
+
+use crate::common::*;
+
+use mlir::dialects::IOperation;
+use mlir::dialects::cf::Assert;
+use mlir::dialects::func::Return;
+use mlir::ir::Block;
+use mlir::ir::StringBacked;
+use mlir::types::IType;
+use mlir::types::integer::Integer as IntegerType;
+
+pub fn test() -> TestResult {
+    let mut module = get_module(&get_registry());
+    let context = module.get_context();
+    let loc = context.get_unknown_location();
+    let t_bool = IntegerType::new_bool(&context).as_type();
+    let f = get_empty_test_fn(&context, &[t_bool.clone()], &[]);
+    let f_region = f.as_operation().iter().next().unwrap_or_default();
+    let mut f_block = f_region.iter().next().unwrap_or_default();
+    let message = StringBacked::from("Expected condition to be true");
+    let mut op_assert = Assert::new(
+        &context,
+        &f_block.get_arg(0),
+        &message.as_string_ref(),
+        &loc,
+    )
+    .as_operation();
+    let mut op_ret = Return::new(&f, &[], &loc).as_operation();
+    f_block.append_operation(&mut op_assert);
+    f_block.append_operation(&mut op_ret);
+    let mut block = Block::new_empty();
+    block.append_operation(&mut f.as_operation());
+    module.take_body(&mut block);
+    println!("{}", module);
+    Ok(())
+}
