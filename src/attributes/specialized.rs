@@ -407,6 +407,66 @@ pub trait NamedBool: From<MlirAttribute> + IAttributeNamed + Sized {
     }
 }
 
+pub trait NamedIntegerDenseElements: From<MlirAttribute> + IAttributeNamed + Sized {
+    fn new(t: &Shaped, elements: &[i64]) -> Self {
+        if !t.get_element_type().is_integer() {
+            eprintln!("Expected integer element types for NamedIntegerDenseElements");
+            exit(ExitCode::IRError);
+        }
+        let w = t.get_width().unwrap_or(0);
+        match w {
+            8 => {
+                let e: Vec<i8> = elements.iter().map(|&x| x as i8).collect();
+                Self::new_i8(t, &e)
+            }
+            16 => {
+                let e: Vec<i16> = elements.iter().map(|&x| x as i16).collect();
+                Self::new_i16(t, &e)
+            }
+            32 => {
+                let e: Vec<i32> = elements.iter().map(|&x| x as i32).collect();
+                Self::new_i32(t, &e)
+            }
+            64 => Self::new_i64(t, elements),
+            _ => {
+                eprintln!(
+                    "Expected integer type width in {{8,16,32,64}} for NamedIntegerDenseElements"
+                );
+                exit(ExitCode::IRError);
+            }
+        }
+    }
+
+    fn new_i8(t: &Shaped, elements: &[i8]) -> Self {
+        Self::from(*DenseElements::new_i8(t, elements).get_mut())
+    }
+
+    fn new_i16(t: &Shaped, elements: &[i16]) -> Self {
+        Self::from(*DenseElements::new_i16(t, elements).get_mut())
+    }
+
+    fn new_i32(t: &Shaped, elements: &[i32]) -> Self {
+        Self::from(*DenseElements::new_i32(t, elements).get_mut())
+    }
+
+    fn new_i64(t: &Shaped, elements: &[i64]) -> Self {
+        Self::from(*DenseElements::new_i64(t, elements).get_mut())
+    }
+
+    fn from_checked(attr: MlirAttribute) -> Self {
+        let attr_ = Self::from(attr);
+        if !attr_.as_attribute().is_dense_elements_int() {
+            eprintln!("Expected dense elements integer attribute");
+            exit(ExitCode::IRError);
+        }
+        attr_
+    }
+
+    fn as_dense_elements(&self) -> DenseElements {
+        DenseElements::from(*self.get())
+    }
+}
+
 pub trait NamedFloatOrIndexOrInteger: From<MlirAttribute> + IAttributeNamed + Sized {
     fn new_float(attr: &FloatAttr) -> Self {
         Self::from(*attr.as_attribute().get())
