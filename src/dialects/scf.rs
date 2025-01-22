@@ -259,12 +259,28 @@ impl Condition {
 }
 
 impl ExecuteRegion {
+    pub fn new(context: &Context, results: &[Type], loc: &Location) -> Self {
+        let dialect = context.get_dialect_scf();
+        let name = dialect.get_op_name(&Op::ExecuteRegion);
+        let region = Region::new();
+        let mut op_state = OperationState::new(&name.as_string_ref(), loc);
+        op_state.add_regions(&[region]);
+        if !results.is_empty() {
+            op_state.add_results(results);
+        }
+        Self::from(*op_state.create_operation().get_mut())
+    }
+
     pub fn get(&self) -> &MlirOperation {
         &self.0
     }
 
     pub fn get_mut(&mut self) -> &mut MlirOperation {
         &mut self.0
+    }
+
+    pub fn get_region(&self) -> Region {
+        self.as_operation().get_region(0)
     }
 }
 
@@ -320,7 +336,7 @@ impl For {
         if !results.is_empty() {
             op_state.add_results(results);
         }
-        Self::from(*op_state.create_operation().get())
+        Self::from(*op_state.create_operation().get_mut())
     }
 
     pub fn get(&self) -> &MlirOperation {
