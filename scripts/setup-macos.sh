@@ -10,7 +10,7 @@ PYTHON_VER=3.12
 
 brew install python@${PYTHON_VER} llvm@${LLVM_VER} lit rustup
 
-RUSTUP_CHANNEL=nightly-2024-12-10
+RUSTUP_CHANNEL=nightly-2025-01-26
 RUSTUP_HOME=/root/.rustup
 
 rustup toolchain install ${RUSTUP_CHANNEL}

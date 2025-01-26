@@ -28,7 +28,7 @@ RUN dnf install -y \
     python3-lit
 RUN dnf clean -y all
 
-ENV RUST_CHANNEL=nightly-2024-12-10
+ENV RUST_CHANNEL=nightly-2025-01-26
 ENV RUSTFLAGS=''
 
 RUN rustup-init -y
